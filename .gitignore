@@ -1,0 +1,17 @@
+# Maven build output
+target/
+
+# Third-party / reference code
+smolagents/
+claude-code/
+
+# Archives
+src.rar
+
+# IDE
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db

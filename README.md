@@ -1,68 +1,167 @@
-# smolagents-java
+# MochaAgents
 
-Java implementation of smolagents - a lightweight AI agent framework.
+A Java-based AI agent framework — a pure Java reimplementation of [smolagents](https://github.com/huggingface/smolagents), designed for production-grade multi-agent systems.
+
+## Architecture
+
+```
+Agent<I,O>                    # Unified agent interface (sync / async / composable)
+├── CapableAgent              # Agent with tools, memory, and LLM integration
+│   ├── MultiStepAgent        # ReAct loop base (Think → Act → Observe)
+│   │   ├── ToolCallingAgent  # Tool-calling via structured output or JSON
+│   │   └── CodeAgent         # Code-execution agent with sandboxed runtime
+│   └── CompositeAgent        # Composite pattern — chain multiple agents
+```
 
 ## Features
 
-- **Code Agent**: Write actions as Java code for improved performance
-- **Tool Calling Agent**: Use JSON format for traditional tool calls
-- **Model Agnostic**: Support for multiple LLM backends (OpenAI, LiteLLM, etc.)
-- **Type Safe**: Leverage Java's type system for safety
-- **Async Support**: Built on Java 21 Virtual Threads
-- **Modular Design**: Easy to extend and customize
+### Agent Layer
+- **Unified `Agent<I,O>` interface** — sync/async execution, functional composition (`before`, `after`, `condition`)
+- **ReAct loop engine** — multi-step reasoning with Think-Act-Observe, spanning `SystemPromptStep → TaskStep → PlanningStep → ActionStep → FinalAnswerStep`
+- **Three loop strategies**: `ReAct`, `ThinkActObserve`, `ObservePlanActReflect`
+- **Termination control** — configurable max steps, `final_answer()` barrier, and custom conditions
+- **Reflection** — built-in self-critique and improvement plan generation
+
+### LLM Integration
+- **Provider-agnostic `LLM` interface** — sync, async, and streaming
+- **8 providers**: OpenAI, Anthropic Claude, DeepSeek, Qwen (通义千问), Ollama-compatible local models, generic OpenAI-compatible API, Mock (testing)
+- **LLM Router** — fallback strategy and cost optimization
+- **`BaseApiLLM`** — shared OkHttp + Jackson transport layer for custom providers
+
+### Tools & Execution
+- **`Tool` interface** — name, description, typed inputs, security level (LOW/MEDIUM/HIGH/CRITICAL)
+- **6 built-in tool categories**: Browser, CodeExecution, FileSystem, Git, Search, Terminal
+- **Tool pipeline & workbench** — chain and orchestrate tools
+- **MCP (Model Context Protocol) client**
+- **Janino runtime compiler** — compile and execute generated Java code at runtime
+- **Jython integration** — execute Python code blocks within the sandbox
+
+### Memory & Context
+- **`AgentMemory`** — step-level execution trace with planning, action, and observation entries
+- **Pluggable stores**: `InMemoryMemoryStore`, `MarkdownMemoryStore`
+- **`MemoryManager`** — retrieval-augmented memory with metadata filtering
+- **Context window management** — sliding window, summarization, and hybrid strategies
+
+### Planning
+- **`Planner` + `PlanningStrategy`** — hierarchical, adaptive, and replanning strategies
+- **Task decomposition** — semantic decomposition via `SemanticDecomposer`
+- **Dependency graph** — model step interdependencies
+- **Validation** — plan verification before execution
+
+### Reasoning
+- **4 reasoning strategies**: Chain-of-Thought, Tree-of-Thought, Graph-of-Thought, Program-of-Thought
+- **Verifiers**: consistency checker, logic verifier
+- **Structured `ReasoningChain`** — traceable reasoning with intermediate steps
+
+### Multi-Agent Orchestration
+- **`AgentTeam`** — role-based agent teams with leader/worker/specialist roles
+- **3 orchestration strategies**: Debate, Supervisor, Swarm
+- **Negotiation protocol** — inter-agent messaging with structured `AgentMessage`
+- **Message bus** — asynchronous message passing between agents
+
+### Safety & Perception
+- **`SafetyManager`** — multi-layered safety with configurable policies
+- **Code validator** — static analysis of generated code
+- **Content filter** — input/output content filtering
+- **Sandbox** — isolated execution environment
+- **Audit logging** — full execution trace with `ExecutionTracer`
+- **Perception** — browser, codebase, filesystem, and terminal environment sensors
+
+### Learning
+- **`Learner<I,O>` interface** — agents that improve from experience
+- **Three strategies**: Few-Shot, Curriculum, Feedback-based
+- **Experience replay buffer** — store and replay execution histories
+
+### Monitoring
+- **`Tracer` + `TraceSpan`** — distributed tracing for agent execution
+- **`MetricsCollector`** — collect and aggregate runtime metrics
+- **Agent dashboard** — live execution viewer
 
 ## Quick Start
 
-### Add Dependency
+### Prerequisites
 
-```xml
-<dependency>
-    <groupId>com.smolagents</groupId>
-    <artifactId>smolagents-java</artifactId>
-    <version>1.0.0</version>
-</dependency>
+- Java 17+
+- Maven 3.9+
+
+### Build
+
+```bash
+mvn clean compile
 ```
 
-### Create and Run Agent
+### Example: ToolCallingAgent
 
 ```java
-import io.sketch.mochaagents.agents.CodeAgent;
-import io.sketch.mochaagents.models.OpenAIModel;
-import io.sketch.mochaagents.tools.defaults.WebSearchTool;
+import io.sketch.mochaagents.agent.impl.ToolCallingAgent;
+import io.sketch.mochaagents.llm.provider.OpenAILLM;
 
-public class Main {
-    public static void main(String[] args) {
-        // Create model
-        Model model = new OpenAIModel("gpt-4o", System.getenv("OPENAI_API_KEY"));
+var model = new OpenAILLM("gpt-4o", System.getenv("OPENAI_API_KEY"));
 
-        // Create agent
-        CodeAgent agent = CodeAgent.builder()
-                .model(model)
-                .tools(List.of(new WebSearchTool()))
-                .maxSteps(20)
-                .build();
+var agent = new ToolCallingAgent.Builder()
+        .llm(model)
+        .maxSteps(15)
+        .build();
 
-        // Run task
-        Object result = agent.run("What is AI?");
-        System.out.println(result);
-    }
-}
+String answer = agent.execute("What is the capital of France?");
 ```
 
-## Modules
+### Example: CodeAgent
 
-- `agents` - Core agent implementations (CodeAgent, ToolCallingAgent)
-- `tools` - Tool abstraction and default tools
-- `models` - LLM model interface and implementations
-- `memory` - Memory system for tracking execution steps
-- `executor` - Java code executor
-- `monitoring` - Logging and monitoring
-- `types` - Multi-modal types (AgentImage, AgentAudio)
+```java
+import io.sketch.mochaagents.agent.impl.CodeAgent;
+import io.sketch.mochaagents.llm.provider.OpenAILLM;
 
-## Requirements
+var model = new OpenAILLM("gpt-4o", System.getenv("OPENAI_API_KEY"));
 
-- Java 21+
-- Maven 3.9+
+var agent = new CodeAgent.Builder()
+        .llm(model)
+        .maxSteps(20)
+        .build();
+
+String answer = agent.execute("Calculate the 20th Fibonacci number");
+```
+
+### Example: CompositeAgent
+
+```java
+import io.sketch.mochaagents.agent.impl.CompositeAgent;
+
+var composite = new CompositeAgent<>(List.of(agent1, agent2, agent3));
+List<String> results = composite.execute("Analyze this codebase");
+```
+
+## Module Overview
+
+| Module | Package | Description |
+|--------|---------|-------------|
+| **agent** | `io.sketch.mochaagents.agent` | Core agent interfaces, ReAct loop, step types, builders |
+| **llm** | `io.sketch.mochaagents.llm` | LLM abstraction, providers, request/response, router |
+| **tool** | `io.sketch.mochaagents.tool` | Tool interface, registry, executor, pipeline, MCP client |
+| **memory** | `io.sketch.mochaagents.memory` | Agent memory, storage backends, memory manager |
+| **context** | `io.sketch.mochaagents.context` | Context window strategies, compression |
+| **plan** | `io.sketch.mochaagents.plan` | Planner, task decomposition, dependency graphs |
+| **reasoning** | `io.sketch.mochaagents.reasoning` | CoT/ToT/GoT/PoT strategies, verifiers |
+| **orchestration** | `io.sketch.mochaagents.orchestration` | Agent teams, negotiation, supervisor, debate, swarm |
+| **safety** | `io.sketch.mochaagents.safety` | Safety manager, code validator, content filter, sandbox, audit |
+| **perception** | `io.sketch.mochaagents.perception` | Environment sensors and fusion |
+| **learn** | `io.sketch.mochaagents.learn` | Learning strategies, experience replay |
+| **interaction** | `io.sketch.mochaagents.interaction` | Autonomous, collaborative, supervised modes |
+| **monitor** | `io.sketch.mochaagents.monitor` | Tracing, metrics, dashboard |
+| **evaluation** | `io.sketch.mochaagents.evaluation` | Agent evaluation criteria and results |
+| **prompt** | `io.sketch.mochaagents.prompt` | YAML-based prompt templates |
+
+## Supported LLM Providers
+
+| Provider | Class | Notes |
+|----------|-------|-------|
+| OpenAI | `OpenAILLM` | GPT-4o, GPT-4, GPT-3.5 |
+| Anthropic | `AnthropicLLM` | Claude 3 Opus/Sonnet/Haiku |
+| DeepSeek | `DeepSeekLLM` | DeepSeek-V2/V3, DeepSeek-R1 |
+| Qwen | `QwenLLM` | Tongyi Qianwen (通义千问) |
+| Local | `LocalLLM` | Ollama, LM Studio via `/v1` |
+| Generic | `OpenAICompatibleLLM` | Any OpenAI-compatible endpoint |
+| Mock | `MockLLM` | Deterministic responses for testing |
 
 ## License
 
