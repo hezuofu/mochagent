@@ -1,8 +1,7 @@
 package io.sketch.mochaagents.examples;
 
-import io.sketch.mochaagents.core.*;
-import io.sketch.mochaagents.core.impl.BaseAgent;
-import java.util.Set;
+import io.sketch.mochaagents.agent.impl.BaseAgent;
+
 import java.util.concurrent.CompletableFuture;
 
 /**

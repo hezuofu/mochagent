@@ -1,7 +1,7 @@
 package io.sketch.mochaagents.orchestration;
 
-import io.sketch.mochaagents.core.Agent;
-import java.util.List;
+import io.sketch.mochaagents.agent.Agent;
+
 import java.util.concurrent.CompletableFuture;
 
 /**

@@ -1,6 +1,6 @@
 package io.sketch.mochaagents.orchestration;
 
-import io.sketch.mochaagents.core.Agent;
+import io.sketch.mochaagents.agent.Agent;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 

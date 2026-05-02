@@ -1,14 +1,12 @@
 package io.sketch.mochaagents.examples;
 
-import io.sketch.mochaagents.core.impl.ToolCallingAgent;
-import io.sketch.mochaagents.llm.provider.MockLLM;
+import io.sketch.mochaagents.agent.impl.ToolCallingAgent;
 import io.sketch.mochaagents.tool.ToolRegistry;
 import io.sketch.mochaagents.examples.tools.WeatherTool;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Example10 — 对应 smolagents 的 async_agent/main.py.

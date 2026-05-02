@@ -1,14 +1,13 @@
 package io.sketch.mochaagents.examples;
 
-import io.sketch.mochaagents.core.impl.CodeAgent;
-import io.sketch.mochaagents.core.impl.ToolCallingAgent;
+import io.sketch.mochaagents.agent.impl.CodeAgent;
+import io.sketch.mochaagents.agent.impl.ToolCallingAgent;
 import io.sketch.mochaagents.llm.provider.MockLLM;
 import io.sketch.mochaagents.tool.Tool;
 import io.sketch.mochaagents.tool.ToolInput;
 import io.sketch.mochaagents.tool.ToolRegistry;
 
 import java.util.Map;
-import java.util.Scanner;
 
 /**
  * Example11 — 对应 smolagents 的 open_deep_research/run.py.

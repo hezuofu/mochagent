@@ -1,6 +1,6 @@
 package io.sketch.mochaagents.orchestration.strategy;
 
-import io.sketch.mochaagents.core.Agent;
+import io.sketch.mochaagents.agent.Agent;
 import io.sketch.mochaagents.orchestration.*;
 import java.util.*;
 

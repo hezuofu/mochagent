@@ -1,14 +1,12 @@
 package io.sketch.mochaagents.examples;
 
-import io.sketch.mochaagents.core.impl.CodeAgent;
-import io.sketch.mochaagents.llm.provider.MockLLM;
+import io.sketch.mochaagents.agent.impl.CodeAgent;
 import io.sketch.mochaagents.memory.AgentMemory;
-import io.sketch.mochaagents.core.loop.step.MemoryStep;
-import io.sketch.mochaagents.core.loop.step.PlanningStep;
+import io.sketch.mochaagents.agent.loop.step.MemoryStep;
+import io.sketch.mochaagents.agent.loop.step.PlanningStep;
 import io.sketch.mochaagents.tool.ToolRegistry;
 
 import java.util.Scanner;
-import java.util.function.BiConsumer;
 
 /**
  * Example08 — 对应 smolagents 的 plan_customization.py.

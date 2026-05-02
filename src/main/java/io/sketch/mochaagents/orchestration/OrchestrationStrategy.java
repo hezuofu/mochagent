@@ -1,6 +1,6 @@
 package io.sketch.mochaagents.orchestration;
 
-import io.sketch.mochaagents.core.Agent;
+import io.sketch.mochaagents.agent.Agent;
 
 /**
  * 编排策略 — 定义多 Agent 如何协作完成任务.

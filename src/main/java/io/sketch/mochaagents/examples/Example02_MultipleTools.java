@@ -1,7 +1,6 @@
 package io.sketch.mochaagents.examples;
 
-import io.sketch.mochaagents.core.impl.CodeAgent;
-import io.sketch.mochaagents.llm.provider.MockLLM;
+import io.sketch.mochaagents.agent.impl.CodeAgent;
 import io.sketch.mochaagents.tool.ToolRegistry;
 import io.sketch.mochaagents.examples.tools.*;
 

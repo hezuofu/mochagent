@@ -1,6 +1,6 @@
 package io.sketch.mochaagents.examples;
 
-import io.sketch.mochaagents.core.impl.CodeAgent;
+import io.sketch.mochaagents.agent.impl.CodeAgent;
 import io.sketch.mochaagents.llm.LLM;
 import io.sketch.mochaagents.llm.LLMRequest;
 import io.sketch.mochaagents.llm.LLMResponse;
@@ -10,7 +10,6 @@ import io.sketch.mochaagents.tool.ToolRegistry;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 
 /**
  * Example09 — 对应 smolagents 的 multi_llm_agent.py.

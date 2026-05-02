@@ -1,6 +1,6 @@
 package io.sketch.mochaagents.memory;
 
-import io.sketch.mochaagents.core.loop.step.*;
+import io.sketch.mochaagents.agent.loop.step.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
