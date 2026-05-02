@@ -187,10 +187,10 @@ public abstract class MultiStepAgent extends CapableAgent<String, String> {
 
         // 各步骤
         for (MemoryStep step : memory.steps()) {
-            if (step instanceof SystemPromptStep sps) {
-                messages.add(Map.of("role", "system", "content", sps.systemPrompt()));
-            } else if (step instanceof TaskStep ts) {
-                messages.add(Map.of("role", "user", "content", ts.task()));
+            if (step instanceof ContentStep cs && cs.isSystemPrompt()) {
+                messages.add(Map.of("role", "system", "content", cs.text()));
+            } else if (step instanceof ContentStep cs && cs.isTask()) {
+                messages.add(Map.of("role", "user", "content", cs.text()));
             } else if (step instanceof PlanningStep ps) {
                 messages.add(Map.of("role", "assistant", "content", "Plan:\n" + ps.plan()));
             } else if (step instanceof ActionStep as) {
@@ -202,7 +202,7 @@ public abstract class MultiStepAgent extends CapableAgent<String, String> {
                             "content", "Observation:\n" + as.observation()));
                 }
             }
-            // FinalAnswerStep — 不加入消息
+            // ContentStep(final_answer) — 不加入消息
         }
 
         return messages;

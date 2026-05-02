@@ -65,19 +65,19 @@ public class AgentMemory {
         return steps.isEmpty() ? null : steps.get(steps.size() - 1);
     }
 
-    /** 是否以 FinalAnswerStep 结束. */
+    /** 是否以最终答案步结束. */
     public boolean hasFinalAnswer() {
-        return lastStep() instanceof FinalAnswerStep;
+        return lastStep() instanceof ContentStep cs && cs.isFinalAnswer();
     }
 
     // ============ 便捷追加方法 ============
 
     public void appendSystemPrompt(String prompt) {
-        steps.add(new SystemPromptStep(prompt));
+        steps.add(ContentStep.systemPrompt(prompt));
     }
 
     public void appendTask(String task) {
-        steps.add(new TaskStep(task));
+        steps.add(ContentStep.task(task));
     }
 
     public void appendPlanning(String plan, String modelOutput, int inputTokens, int outputTokens) {
@@ -89,7 +89,7 @@ public class AgentMemory {
     }
 
     public void appendFinalAnswer(Object output) {
-        steps.add(new FinalAnswerStep(output));
+        steps.add(ContentStep.finalAnswer(output));
     }
 
     // ============ 持久化桥接 ============
@@ -107,9 +107,9 @@ public class AgentMemory {
                 MemoryEntry entry = MemoryEntry.episodic(content, null);
                 entry.setImportance(act.hasError() ? 0.2 : 0.6);
                 entries.add(entry);
-            } else if (s instanceof FinalAnswerStep ans) {
+            } else if (s instanceof ContentStep cs && cs.isFinalAnswer()) {
                 entries.add(MemoryEntry.semantic(
-                        "Task result: " + ans.output(),
+                        "Task result: " + cs.payload(),
                         Set.of("final", "output")));
             }
         }
