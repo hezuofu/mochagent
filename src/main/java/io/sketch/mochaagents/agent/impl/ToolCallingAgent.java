@@ -7,6 +7,8 @@ import io.sketch.mochaagents.llm.LLMResponse;
 import io.sketch.mochaagents.memory.AgentMemory;
 import io.sketch.mochaagents.agent.loop.step.ActionStep;
 import io.sketch.mochaagents.tool.Tool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -28,6 +30,8 @@ import java.util.regex.Pattern;
  * <p>对应 smolagents 的 {@code ToolCallingAgent}.
  */
 public final class ToolCallingAgent extends MultiStepAgent {
+
+    private static final Logger log = LoggerFactory.getLogger(ToolCallingAgent.class);
 
     private static final Pattern ACTION_PATTERN =
             Pattern.compile("Action:\\s*(\\w+)\\((.*?)\\)", Pattern.DOTALL);
@@ -80,8 +84,12 @@ public final class ToolCallingAgent extends MultiStepAgent {
                     .temperature(0.7)
                     .build();
 
+            long llmStart = System.currentTimeMillis();
             LLMResponse response = llm.complete(request);
+            long llmMs = System.currentTimeMillis() - llmStart;
             String modelOutput = response.content();
+            log.info("[ToolCallingAgent] step {} LLM call: {}ms, tokens in={} out={}",
+                    stepNumber, llmMs, response.promptTokens(), response.completionTokens());
 
             // 3. 解析动作
             ParsedAction action = parseAction(modelOutput);
@@ -94,13 +102,20 @@ public final class ToolCallingAgent extends MultiStepAgent {
             if (action != null && toolRegistry != null && toolRegistry.has(action.name)) {
                 Tool tool = toolRegistry.get(action.name);
                 try {
+                    long toolStart = System.currentTimeMillis();
                     toolResult = tool.call(action.arguments);
+                    long toolMs = System.currentTimeMillis() - toolStart;
                     observation = String.valueOf(toolResult);
                     isFinalAnswer = "final_answer".equals(action.name);
+                    log.debug("ToolCallingAgent step {} executed tool '{}' in {}ms",
+                            stepNumber, action.name, toolMs);
                 } catch (Exception e) {
+                    log.warn("ToolCallingAgent step {} tool '{}' error: {}",
+                            stepNumber, action.name, e.getMessage());
                     observation = "Tool error: " + e.getMessage();
                 }
             } else if (action != null) {
+                log.warn("ToolCallingAgent step {} tool '{}' not found", stepNumber, action.name);
                 observation = "Tool not found: " + action.name
                         + ". Available: " + (toolRegistry != null
                         ? toolRegistry.all().stream().map(Tool::getName).toList() : "none");
@@ -126,8 +141,12 @@ public final class ToolCallingAgent extends MultiStepAgent {
             // 6. final_answer 记录为最后一步
             if (isFinalAnswer) {
                 memory.appendFinalAnswer(toolResult);
+                log.info("[ToolCallingAgent] step {} final_answer: {}",
+                        stepNumber, truncate(String.valueOf(toolResult), 200));
             }
 
+            log.debug("ToolCallingAgent step {} completed: action={}, finalAnswer={}",
+                    stepNumber, action != null ? action.name : "parse_error", isFinalAnswer);
             return StepResult.builder()
                     .stepNumber(stepNumber)
                     .state(isFinalAnswer ? LoopState.COMPLETE : LoopState.ACT)
@@ -138,6 +157,7 @@ public final class ToolCallingAgent extends MultiStepAgent {
                     .build();
 
         } catch (Exception e) {
+            log.error("ToolCallingAgent step {} failed", stepNumber, e);
             ActionStep errorStep = new ActionStep(
                     stepNumber, "", "", "", "",
                     e.getMessage(), 0, 0, false

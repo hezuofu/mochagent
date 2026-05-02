@@ -2,6 +2,8 @@ package io.sketch.mochaagents.tool;
 
 import io.sketch.mochaagents.skill.SkillRegistry;
 import io.sketch.mochaagents.tool.impl.SkillTool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -24,6 +26,8 @@ import java.util.stream.Collectors;
  * </ul>
  */
 public class ToolRegistry {
+    private static final Logger log = LoggerFactory.getLogger(ToolRegistry.class);
+
     private final Map<String, Tool> tools = new ConcurrentHashMap<>();
     private final Map<String, String> aliasToName = new ConcurrentHashMap<>();
 
@@ -32,12 +36,14 @@ public class ToolRegistry {
         for (String alias : tool.getAliases()) {
             aliasToName.put(alias, tool.getName());
         }
+        log.debug("Tool registered: {} (aliases: {})", tool.getName(), tool.getAliases());
     }
 
     public void unregister(String name) {
         Tool tool = tools.remove(name);
         if (tool != null) {
             tool.getAliases().forEach(aliasToName::remove);
+            log.debug("Tool unregistered: {}", name);
         }
     }
 
@@ -110,6 +116,7 @@ public class ToolRegistry {
     public SkillTool registerSkillTool(SkillRegistry skillRegistry) {
         SkillTool skillTool = new SkillTool(skillRegistry);
         register(skillTool);
+        log.info("SkillTool registered with {} skills", skillRegistry.size());
         return skillTool;
     }
 

@@ -1,6 +1,9 @@
 package io.sketch.mochaagents.orchestration;
 
 import io.sketch.mochaagents.agent.Agent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -8,6 +11,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * Agent 团队 — 管理一组协作 Agent，按角色组织.
  */
 public class AgentTeam {
+
+    private static final Logger log = LoggerFactory.getLogger(AgentTeam.class);
 
     private final String teamId;
     private final String name;
@@ -18,6 +23,7 @@ public class AgentTeam {
     public AgentTeam(String name) {
         this.teamId = UUID.randomUUID().toString();
         this.name = name;
+        log.info("AgentTeam '{}' created, id={}", name, teamId);
     }
 
     /** 添加成员 */
@@ -28,6 +34,7 @@ public class AgentTeam {
         if (role.type() == RoleType.LEADER) {
             leaderIds.add(id);
         }
+        log.debug("AgentTeam '{}' added member: {} as {}", name, id, role.type());
         return this;
     }
 
@@ -36,6 +43,7 @@ public class AgentTeam {
         agents.remove(agentId);
         roles.remove(agentId);
         leaderIds.remove(agentId);
+        log.debug("AgentTeam '{}' removed member: {}", name, agentId);
     }
 
     /** 获取所有 Agent */

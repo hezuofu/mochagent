@@ -2,6 +2,9 @@ package io.sketch.mochaagents.tool.workbench;
 
 import io.sketch.mochaagents.tool.Tool;
 import io.sketch.mochaagents.tool.ToolResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -12,6 +15,8 @@ import java.util.function.Function;
  * 工具编排器 — 智能编排多工具调用，支持顺序/并行/条件执行策略.
  */
 public class ToolOrchestrator {
+
+    private static final Logger log = LoggerFactory.getLogger(ToolOrchestrator.class);
 
     private final Map<String, Tool> tools = new LinkedHashMap<>();
     private final List<Function<Map<String, Object>, ToolResult>> preHooks = new ArrayList<>();
@@ -36,21 +41,27 @@ public class ToolOrchestrator {
 
     /** 顺序执行多个工具 */
     public List<ToolResult> executeSequential(List<ToolCall> calls) {
+        log.debug("ToolOrchestrator executing {} calls sequentially", calls.size());
         List<ToolResult> results = new ArrayList<>();
         for (ToolCall call : calls) {
             Tool tool = tools.get(call.toolName);
             if (tool == null) {
+                log.warn("ToolOrchestrator tool '{}' not found", call.toolName);
                 results.add(ToolResult.Builder.failure(call.toolName, "Tool not found: " + call.toolName, null));
                 continue;
             }
             try {
+                long callStart = System.currentTimeMillis();
                 Object output = tool.call(call.arguments);
-                ToolResult result = ToolResult.Builder.success(call.toolName, output, 0);
+                long callMs = System.currentTimeMillis() - callStart;
+                ToolResult result = ToolResult.Builder.success(call.toolName, output, callMs);
                 for (Function<ToolResult, ToolResult> hook : postHooks) {
                     result = hook.apply(result);
                 }
                 results.add(result);
+                log.debug("ToolOrchestrator call '{}' completed in {}ms", call.toolName, callMs);
             } catch (Exception e) {
+                log.error("ToolOrchestrator call '{}' failed", call.toolName, e);
                 results.add(ToolResult.Builder.failure(call.toolName, e.getMessage(), null));
             }
         }

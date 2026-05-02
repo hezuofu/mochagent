@@ -10,6 +10,8 @@ import io.sketch.mochaagents.agent.loop.step.*;
 import io.sketch.mochaagents.prompt.PromptTemplate;
 import io.sketch.mochaagents.tool.Tool;
 import io.sketch.mochaagents.tool.ToolInput;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -28,6 +30,8 @@ import java.util.*;
  * </ul>
  */
 public abstract class MultiStepAgent extends CapableAgent<String, String> {
+
+    protected final Logger log = LoggerFactory.getLogger(getClass());
 
     // ============ ReAct 核心组件 ============
 
@@ -83,6 +87,9 @@ public abstract class MultiStepAgent extends CapableAgent<String, String> {
 
     /** 运行 ReAct 循环（指定最大步数）. */
     public String run(String task, int maxSteps) {
+        long startMs = System.currentTimeMillis();
+        log.info("Agent '{}' starting task, maxSteps={}, task={}", name, maxSteps, truncate(task, 120));
+
         memory.reset(buildSystemPrompt());
         memory.appendTask(task);
 
@@ -99,10 +106,14 @@ public abstract class MultiStepAgent extends CapableAgent<String, String> {
 
         // 超出步数时提供兜底答案
         if (!memory.hasFinalAnswer()) {
+            log.warn("Agent '{}' exceeded max steps, providing fallback answer", name);
             result = provideFinalAnswer(task);
             memory.appendFinalAnswer(result);
         }
 
+        long elapsed = System.currentTimeMillis() - startMs;
+        log.info("Agent '{}' completed in {}ms, steps={}, result={}",
+                name, elapsed, memory.steps().size(), truncate(result, 300));
         return result;
     }
 
@@ -135,6 +146,8 @@ public abstract class MultiStepAgent extends CapableAgent<String, String> {
     protected String planStep(int stepNumber, String input, AgentMemory memory) {
         if (planningPromptTemplate == null) return null;
 
+        log.debug("Agent '{}' planning at step {}", name, stepNumber);
+
         String prompt = planningPromptTemplate.render(Map.of(
                 "task", input != null ? input : "",
                 "step", String.valueOf(stepNumber),
@@ -148,8 +161,10 @@ public abstract class MultiStepAgent extends CapableAgent<String, String> {
 
         try {
             LLMResponse response = llm.complete(request);
+            log.debug("Agent '{}' plan generated: {}", name, truncate(response.content(), 150));
             return response.content();
         } catch (Exception e) {
+            log.error("Agent '{}' planning failed at step {}", name, stepNumber, e);
             return null;
         }
     }
@@ -157,9 +172,11 @@ public abstract class MultiStepAgent extends CapableAgent<String, String> {
     /** 超出最大步数时的兜底答案. */
     protected String provideFinalAnswer(String task) {
         if (finalAnswerPreTemplate == null || finalAnswerPostTemplate == null) {
+            log.debug("Agent '{}' no fallback templates configured", name);
             return "Unable to complete task within step limit.";
         }
 
+        log.debug("Agent '{}' generating fallback answer via LLM", name);
         String preMsg = finalAnswerPreTemplate.render(Map.of());
         String postMsg = finalAnswerPostTemplate.render("task", task);
 
@@ -170,8 +187,11 @@ public abstract class MultiStepAgent extends CapableAgent<String, String> {
                 .build();
 
         try {
-            return llm.complete(request).content();
+            String answer = llm.complete(request).content();
+            log.debug("Agent '{}' fallback answer: {}", name, truncate(answer, 100));
+            return answer;
         } catch (Exception e) {
+            log.error("Agent '{}' fallback answer generation failed", name, e);
             return "Error generating final answer: " + e.getMessage();
         }
     }
@@ -186,6 +206,7 @@ public abstract class MultiStepAgent extends CapableAgent<String, String> {
         }
 
         // 各步骤
+        int stepCount = memory.steps().size();
         for (MemoryStep step : memory.steps()) {
             if (step instanceof ContentStep cs && cs.isSystemPrompt()) {
                 messages.add(Map.of("role", "system", "content", cs.text()));
@@ -205,6 +226,7 @@ public abstract class MultiStepAgent extends CapableAgent<String, String> {
             // ContentStep(final_answer) — 不加入消息
         }
 
+        log.debug("Agent '{}' built {} LLM messages from {} steps", name, messages.size(), stepCount);
         return messages;
     }
 
@@ -261,6 +283,13 @@ public abstract class MultiStepAgent extends CapableAgent<String, String> {
             return arguments.getOrDefault("answer", "");
         }
         @Override public SecurityLevel getSecurityLevel() { return SecurityLevel.LOW; }
+    }
+
+    // ============ 工具方法 ============
+
+    protected static String truncate(String s, int maxLen) {
+        if (s == null) return "null";
+        return s.length() <= maxLen ? s : s.substring(0, maxLen) + "...";
     }
 
     // ============ Builder ============

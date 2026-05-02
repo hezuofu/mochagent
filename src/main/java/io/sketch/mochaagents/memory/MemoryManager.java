@@ -1,5 +1,8 @@
 package io.sketch.mochaagents.memory;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -22,6 +25,8 @@ import java.util.stream.Stream;
  * </ul>
  */
 public class MemoryManager {
+
+    private static final Logger log = LoggerFactory.getLogger(MemoryManager.class);
 
     // ============ 评分权重 ============
 
@@ -73,6 +78,7 @@ public class MemoryManager {
     /** 存储一条记忆. */
     public void store(Memory memory) {
         store.store(memory);
+        log.debug("Memory stored: id={}, type={}", memory.id(), memory.type());
         enforceCapacity(memory.type());
     }
 
@@ -84,11 +90,13 @@ public class MemoryManager {
     /** 删除记忆. */
     public void forget(String id) {
         store.forget(id);
+        log.debug("Memory forgotten: id={}", id);
     }
 
     /** 清除指定类型. */
     public void clear(String type) {
         store.clear(type);
+        log.debug("Memory cleared: type={}", type);
     }
 
     public int size() { return store.size(); }
@@ -112,6 +120,7 @@ public class MemoryManager {
 
     /** 上下文检索 — 标签匹配 + 内容匹配，按重要性和最近访问排序. */
     public List<Memory> retrieve(String context, List<String> contextTags, int maxResults) {
+        log.debug("Memory retrieve: tags={}, maxResults={}", contextTags, maxResults);
         List<Memory> byTags = contextTags.stream()
                 .flatMap(tag -> searchByTag(tag).stream())
                 .distinct().toList();
@@ -133,6 +142,7 @@ public class MemoryManager {
 
     public List<Memory> hybridRetrieve(String query, int maxResults,
                                         double semanticWeight, double keywordWeight) {
+        log.debug("Memory hybridRetrieve: query='{}', maxResults={}", query, maxResults);
         List<Memory> candidates = search(query);
 
         Map<Memory, Double> scored = new LinkedHashMap<>();
@@ -189,20 +199,26 @@ public class MemoryManager {
     private void enforceCapacity(String type) {
         if (Memory.TYPE_WORKING.equals(type)) {
             List<Memory> working = getByType(Memory.TYPE_WORKING);
+            int removed = 0;
             while (working.size() > maxWorkingSize) {
                 working.stream()
                         .min(Comparator.comparingDouble(Memory::importance))
                         .ifPresent(m -> forget(m.id()));
                 working = getByType(Memory.TYPE_WORKING);
+                removed++;
             }
+            if (removed > 0) log.debug("Memory working capacity enforced: removed={}", removed);
         } else if (Memory.TYPE_EPISODIC.equals(type)) {
             List<Memory> episodic = getByType(Memory.TYPE_EPISODIC);
+            int removed = 0;
             while (episodic.size() > maxEpisodicSize) {
                 episodic.stream()
                         .min(Comparator.comparingDouble(Memory::importance))
                         .ifPresent(m -> forget(m.id()));
                 episodic = getByType(Memory.TYPE_EPISODIC);
+                removed++;
             }
+            if (removed > 0) log.debug("Memory episodic capacity enforced: removed={}", removed);
         }
     }
 

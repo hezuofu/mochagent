@@ -7,6 +7,8 @@ import io.sketch.mochaagents.llm.LLMResponse;
 import io.sketch.mochaagents.memory.AgentMemory;
 import io.sketch.mochaagents.agent.loop.step.ActionStep;
 import io.sketch.mochaagents.tool.Tool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
@@ -30,6 +32,8 @@ import java.util.regex.Pattern;
  * <p>对应 smolagents 的 {@code CodeAgent}.
  */
 public final class CodeAgent extends MultiStepAgent {
+
+    private static final Logger log = LoggerFactory.getLogger(CodeAgent.class);
 
     /** 代码块标记：支持多种格式 */
     private static final Pattern CODE_BLOCK_PATTERN = Pattern.compile(
@@ -103,12 +107,17 @@ public final class CodeAgent extends MultiStepAgent {
                     .temperature(0.3)
                     .build();
 
+            long llmStart = System.currentTimeMillis();
             LLMResponse response = llm.complete(request);
+            long llmMs = System.currentTimeMillis() - llmStart;
             String modelOutput = response.content();
+            log.info("[CodeAgent] step {} LLM call: {}ms, tokens in={} out={}",
+                    stepNumber, llmMs, response.promptTokens(), response.completionTokens());
 
             // 3. 解析代码块
             String code = extractCode(modelOutput);
             if (code == null || code.isBlank()) {
+                log.warn("CodeAgent step {} no code block found in output", stepNumber);
                 ActionStep emptyStep = new ActionStep(
                         stepNumber, messages.toString(), modelOutput,
                         "no_code", "No code block found in output. "
@@ -126,7 +135,11 @@ public final class CodeAgent extends MultiStepAgent {
             }
 
             // 4. 执行代码
+            long execStart = System.currentTimeMillis();
             CodeExecutionResult execResult = executeCode(code);
+            long execMs = System.currentTimeMillis() - execStart;
+            log.debug("CodeAgent step {} code execution took {}ms, finalAnswer={}",
+                    stepNumber, execMs, execResult.isFinalAnswer);
 
             // 5. 检查 final_answer
             boolean isFinalAnswer = execResult.isFinalAnswer;
@@ -155,8 +168,13 @@ public final class CodeAgent extends MultiStepAgent {
             // 8. final_answer 记录为最后一步
             if (isFinalAnswer && finalAnswer != null) {
                 memory.appendFinalAnswer(finalAnswer);
+                log.info("[CodeAgent] step {} final_answer: {}",
+                        stepNumber, truncate(finalAnswer, 200));
             }
 
+            long stepMs = System.currentTimeMillis() - start;
+            log.debug("CodeAgent step {} completed in {}ms, state={}",
+                    stepNumber, stepMs, isFinalAnswer ? "COMPLETE" : "ACT");
             return StepResult.builder()
                     .stepNumber(stepNumber)
                     .state(isFinalAnswer ? LoopState.COMPLETE : LoopState.ACT)
@@ -167,6 +185,7 @@ public final class CodeAgent extends MultiStepAgent {
                     .build();
 
         } catch (Exception e) {
+            log.error("CodeAgent step {} failed", stepNumber, e);
             ActionStep errorStep = new ActionStep(
                     stepNumber, "", "", "", "",
                     e.getMessage(), 0, 0, false
@@ -200,6 +219,7 @@ public final class CodeAgent extends MultiStepAgent {
 
     /** 执行代码并返回结果. */
     CodeExecutionResult executeCode(String code) {
+        log.debug("CodeAgent executing code, length={}", code.length());
         StringBuilder logs = new StringBuilder();
         List<String> printOutputs = new ArrayList<>();
 
@@ -259,6 +279,7 @@ public final class CodeAgent extends MultiStepAgent {
                     hasFinalAnswer ? finalAnswerValue : null
             );
         } catch (Exception e) {
+            log.warn("CodeAgent code execution error: {}", e.getMessage());
             logs.append("Execution error: ").append(e.getMessage()).append("\n");
             return new CodeExecutionResult(
                     "",
@@ -275,6 +296,8 @@ public final class CodeAgent extends MultiStepAgent {
      * <p>将 ToolRegistry 中的工具以同名函数暴露给代码执行上下文.
      */
     private String evaluateCodeWithTools(String code, List<String> printOutputs) {
+        log.debug("CodeAgent evaluating code with tools, injectable tools: {}",
+                toolRegistry != null ? toolRegistry.all().size() : 0);
         // 先去重 final_answer 调用行
         String cleanCode = code.replaceAll("final_answer\\s*\\([^)]*\\)", "");
         cleanCode = cleanCode.trim();

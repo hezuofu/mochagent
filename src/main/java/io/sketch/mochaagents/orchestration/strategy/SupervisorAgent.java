@@ -2,6 +2,9 @@ package io.sketch.mochaagents.orchestration.strategy;
 
 import io.sketch.mochaagents.agent.Agent;
 import io.sketch.mochaagents.orchestration.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.List;
 
 /**
@@ -9,11 +12,15 @@ import java.util.List;
  */
 public class SupervisorAgent implements OrchestrationStrategy {
 
+    private static final Logger log = LoggerFactory.getLogger(SupervisorAgent.class);
+
     @Override
     @SuppressWarnings("unchecked")
     public <I, O> O execute(AgentTeam team, I input) {
+        log.info("SupervisorAgent executing for team '{}'", team.name());
         List<Agent<?, ?>> workers = team.getByRole(RoleType.WORKER);
         List<Agent<?, ?>> leaders = team.getLeaders();
+        log.debug("SupervisorAgent: {} leaders, {} workers", leaders.size(), workers.size());
 
         // 领导者分解任务并分配
         final Object task;
@@ -30,9 +37,12 @@ public class SupervisorAgent implements OrchestrationStrategy {
 
         // 领导者汇总结果
         if (!leaders.isEmpty()) {
-            return ((Agent<List<Object>, O>) (Object) leaders.get(0)).execute(results);
+            O result = ((Agent<List<Object>, O>) (Object) leaders.get(0)).execute(results);
+            log.info("SupervisorAgent completed for team '{}'", team.name());
+            return result;
         }
 
+        log.info("SupervisorAgent completed for team '{}' (no leaders)", team.name());
         return (O) results;
     }
 }

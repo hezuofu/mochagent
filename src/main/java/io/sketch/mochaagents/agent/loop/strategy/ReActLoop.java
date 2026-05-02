@@ -5,6 +5,8 @@ import io.sketch.mochaagents.agent.loop.AgenticLoop;
 import io.sketch.mochaagents.agent.loop.StepResult;
 import io.sketch.mochaagents.agent.loop.TerminationCondition;
 import io.sketch.mochaagents.memory.AgentMemory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ReAct 循环 — {@link AgenticLoop} 的具体实现，执行 "思考→行动→观察" 迭代.
@@ -28,6 +30,8 @@ import io.sketch.mochaagents.memory.AgentMemory;
  * @param <O> 输出类型
  */
 public class ReActLoop<I, O> implements AgenticLoop<I, O> {
+
+    private static final Logger log = LoggerFactory.getLogger(ReActLoop.class);
 
     /**
      * 单步执行函数 — 一次 ReAct 迭代的完整实现.
@@ -70,6 +74,10 @@ public class ReActLoop<I, O> implements AgenticLoop<I, O> {
 
     @Override
     public O run(Agent<I, O> agent, I input, TerminationCondition condition) {
+        long loopStart = System.currentTimeMillis();
+        String agentName = agentName(agent);
+        log.info("[{}] ReAct loop starting", agentName);
+
         // 使用 Agent 内部的 memory
         AgentMemory memory = getMemory(agent);
         if (memory != null) {
@@ -77,11 +85,13 @@ public class ReActLoop<I, O> implements AgenticLoop<I, O> {
         }
 
         int step = 1;
+        int totalSteps = 0;
         StepResult result;
         do {
             // 可选规划
             if (planningFn != null && planningInterval > 0
                     && (step == 1 || (step - 1) % planningInterval == 0)) {
+                log.info("[{}] step {}: generating plan", agentName, step);
                 String planText = planningFn.plan(step, input, memory);
                 if (planText != null && memory != null) {
                     memory.appendPlanning(planText, "", 0, 0);
@@ -89,11 +99,24 @@ public class ReActLoop<I, O> implements AgenticLoop<I, O> {
             }
 
             // 执行单步
+            long stepStart = System.currentTimeMillis();
             result = stepExecutor.execute(step, input, memory);
-
+            long stepMs = System.currentTimeMillis() - stepStart;
+            totalSteps = step;
+            log.info("[{}] step {}: action={}, state={}, duration={}ms",
+                    agentName, step,
+                    result != null ? result.action() : "?",
+                    result != null ? result.state() : "?",
+                    stepMs);
             step++;
 
         } while (!condition.shouldTerminate(result) && !isFinalAnswer(memory));
+
+        long loopMs = System.currentTimeMillis() - loopStart;
+        log.info("[{}] loop finished: {} steps in {}ms, final_state={}, terminated={}",
+                agentName, totalSteps, loopMs,
+                result != null ? result.state() : "null",
+                condition.shouldTerminate(result));
 
         @SuppressWarnings("unchecked")
         O output = (O) result.output();
@@ -130,5 +153,14 @@ public class ReActLoop<I, O> implements AgenticLoop<I, O> {
 
     private boolean isFinalAnswer(AgentMemory memory) {
         return memory != null && memory.hasFinalAnswer();
+    }
+
+    @SuppressWarnings("unchecked")
+    private String agentName(Agent<I, O> agent) {
+        try {
+            return agent.metadata().name();
+        } catch (Exception e) {
+            return agent.getClass().getSimpleName();
+        }
     }
 }

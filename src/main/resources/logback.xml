@@ -4,9 +4,43 @@
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
-    
+
+    <!-- Core CLI -->
+    <logger name="io.sketch.mochaagents.cli" level="DEBUG"/>
+
+    <!-- Agent core loop -->
+    <logger name="io.sketch.mochaagents.agent.impl" level="INFO"/>
+    <logger name="io.sketch.mochaagents.agent.loop" level="INFO"/>
+
+    <!-- Tool chain -->
+    <logger name="io.sketch.mochaagents.tool" level="INFO"/>
+    <logger name="io.sketch.mochaagents.tool.workbench" level="INFO"/>
+
+    <!-- Memory -->
+    <logger name="io.sketch.mochaagents.memory" level="INFO"/>
+
+    <!-- Orchestration -->
+    <logger name="io.sketch.mochaagents.orchestration" level="INFO"/>
+
+    <!-- Context -->
+    <logger name="io.sketch.mochaagents.context" level="INFO"/>
+
+    <!-- Interaction & Permission -->
+    <logger name="io.sketch.mochaagents.interaction" level="INFO"/>
+
+    <!-- Planning -->
+    <logger name="io.sketch.mochaagents.plan" level="INFO"/>
+
+    <!-- Safety -->
+    <logger name="io.sketch.mochaagents.safety" level="INFO"/>
+
+    <!-- Plugin & LLM (existing) -->
+    <logger name="io.sketch.mochaagents.plugin" level="DEBUG"/>
+    <logger name="io.sketch.mochaagents.llm" level="DEBUG"/>
+
+    <!-- Third-party -->
     <logger name="com.smolagents" level="DEBUG"/>
-    
+
     <root level="INFO">
         <appender-ref ref="STDOUT"/>
     </root>
