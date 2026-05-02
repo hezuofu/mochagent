@@ -40,18 +40,18 @@ public class ToolOrchestrator {
         for (ToolCall call : calls) {
             Tool tool = tools.get(call.toolName);
             if (tool == null) {
-                results.add(ToolResult.failure(call.toolName, "Tool not found: " + call.toolName));
+                results.add(ToolResult.Builder.failure(call.toolName, "Tool not found: " + call.toolName, null));
                 continue;
             }
             try {
                 Object output = tool.call(call.arguments);
-                ToolResult result = new ToolResult(call.toolName, output, null, 0);
+                ToolResult result = ToolResult.Builder.success(call.toolName, output, 0);
                 for (Function<ToolResult, ToolResult> hook : postHooks) {
                     result = hook.apply(result);
                 }
                 results.add(result);
             } catch (Exception e) {
-                results.add(ToolResult.failure(call.toolName, e.getMessage()));
+                results.add(ToolResult.Builder.failure(call.toolName, e.getMessage(), null));
             }
         }
         return results;
@@ -63,16 +63,16 @@ public class ToolOrchestrator {
         for (ToolCall call : calls) {
             Tool tool = tools.get(call.toolName);
             if (tool == null) {
-                results.add(ToolResult.failure(call.toolName, "Tool not found"));
+                results.add(ToolResult.Builder.failure(call.toolName, "Tool not found", null));
                 break;
             }
             try {
                 Object output = tool.call(call.arguments);
-                ToolResult result = new ToolResult(call.toolName, output, null, 0);
+                ToolResult result = ToolResult.Builder.success(call.toolName, output, 0);
                 results.add(result);
                 if (result.isError()) break;
             } catch (Exception e) {
-                results.add(ToolResult.failure(call.toolName, e.getMessage()));
+                results.add(ToolResult.Builder.failure(call.toolName, e.getMessage(), null));
                 break;
             }
         }

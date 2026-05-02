@@ -45,18 +45,18 @@ public class ToolPipeline {
         for (PipelineStage stage : stages) {
             Tool tool = tools.get(stage.toolName);
             if (tool == null) {
-                results.add(ToolResult.failure(stage.toolName, "Tool not found"));
+                results.add(ToolResult.Builder.failure(stage.toolName, "Tool not found", null));
                 return results;
             }
             try {
                 Map<String, Object> args = stage.argumentMapper.apply(currentInput);
                 Object output = tool.call(args);
-                ToolResult result = new ToolResult(stage.toolName, output, null, 0);
+                ToolResult result = ToolResult.Builder.success(stage.toolName, output, 0);
                 results.add(result);
                 if (result.isError()) return results;
                 currentInput = result.output();
             } catch (Exception e) {
-                results.add(ToolResult.failure(stage.toolName, e.getMessage()));
+                results.add(ToolResult.Builder.failure(stage.toolName, e.getMessage(), null));
                 return results;
             }
         }

@@ -166,4 +166,4 @@ List<String> results = composite.execute("Analyze this codebase");
 
 ## License
 
-MIT License
+Apache License

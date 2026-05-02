@@ -12,13 +12,13 @@ public class ToolExecutor {
 
     public ToolResult execute(String toolName, Map<String, Object> arguments) {
         Tool tool = registry.get(toolName);
-        if (tool == null) return ToolResult.failure(toolName, "Tool not found: " + toolName);
+        if (tool == null) return ToolResult.Builder.failure(toolName, "Tool not found: " + toolName, null);
         try {
             long start = System.currentTimeMillis();
             Object result = tool.call(arguments);
-            return new ToolResult(toolName, result, null, System.currentTimeMillis() - start);
+            return ToolResult.Builder.success(toolName, result, System.currentTimeMillis() - start);
         } catch (Exception e) {
-            return ToolResult.failure(toolName, e.getMessage());
+            return ToolResult.Builder.failure(toolName, e.getMessage(), null);
         }
     }
 }
