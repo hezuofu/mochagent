@@ -24,7 +24,7 @@ Agent<I,O>                    # Unified agent interface (sync / async / composab
 
 ### LLM Integration
 - **Provider-agnostic `LLM` interface** — sync, async, and streaming
-- **8 providers**: OpenAI, Anthropic Claude, DeepSeek, Qwen (通义千问), Ollama-compatible local models, generic OpenAI-compatible API, Mock (testing)
+- **7 providers**: OpenAI, Anthropic Claude, DeepSeek, Qwen (通义千问), Ollama-compatible local models, generic OpenAI-compatible API, Mock (testing)
 - **LLM Router** — fallback strategy and cost optimization
 - **`BaseApiLLM`** — shared OkHttp + Jackson transport layer for custom providers
 
@@ -98,12 +98,12 @@ import io.sketch.mochaagents.llm.provider.OpenAILLM;
 
 var model = new OpenAILLM("gpt-4o", System.getenv("OPENAI_API_KEY"));
 
-var agent = new ToolCallingAgent.Builder()
+var agent = ToolCallingAgent.builder()
         .llm(model)
         .maxSteps(15)
         .build();
 
-String answer = agent.execute("What is the capital of France?");
+String answer = agent.run("What is the capital of France?");
 ```
 
 ### Example: CodeAgent
@@ -114,12 +114,12 @@ import io.sketch.mochaagents.llm.provider.OpenAILLM;
 
 var model = new OpenAILLM("gpt-4o", System.getenv("OPENAI_API_KEY"));
 
-var agent = new CodeAgent.Builder()
+var agent = CodeAgent.builder()
         .llm(model)
         .maxSteps(20)
         .build();
 
-String answer = agent.execute("Calculate the 20th Fibonacci number");
+String answer = agent.run("Calculate the 20th Fibonacci number");
 ```
 
 ### Example: CompositeAgent
@@ -129,6 +129,7 @@ import io.sketch.mochaagents.agent.impl.CompositeAgent;
 
 var composite = new CompositeAgent<>(List.of(agent1, agent2, agent3));
 List<String> results = composite.execute("Analyze this codebase");
+// 或使用静态工厂: var composite = CompositeAgent.of(agent1, agent2, agent3);
 ```
 
 ## Module Overview

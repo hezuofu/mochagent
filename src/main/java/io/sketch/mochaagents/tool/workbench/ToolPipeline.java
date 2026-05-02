@@ -3,7 +3,6 @@ package io.sketch.mochaagents.tool.workbench;
 import io.sketch.mochaagents.tool.Tool;
 import io.sketch.mochaagents.tool.ToolResult;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
