@@ -1,5 +1,6 @@
 package io.sketch.mochaagents.memory;
 
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
@@ -17,6 +18,7 @@ import java.util.stream.Stream;
  *   <li>提供高级检索策略: 上下文检索、混合检索</li>
  *   <li>重要性评分与内容压缩</li>
  *   <li>容量控制与淘汰策略</li>
+ *   <li>可选 MEMORY.md 索引管理（通过 {@link MemoryIndex}）</li>
  * </ul>
  */
 public class MemoryManager {
@@ -32,26 +34,38 @@ public class MemoryManager {
     // ============ 存储 ============
 
     private final MemoryStore store;
+    private final MemoryIndex memoryIndex;
     private final int maxWorkingSize;
     private final int maxEpisodicSize;
 
-    public MemoryManager(MemoryStore store, int maxWorkingSize, int maxEpisodicSize) {
+    public MemoryManager(MemoryStore store, MemoryIndex memoryIndex,
+                          int maxWorkingSize, int maxEpisodicSize) {
         this.store = Objects.requireNonNull(store, "MemoryStore must not be null");
+        this.memoryIndex = memoryIndex;
         this.maxWorkingSize = maxWorkingSize;
         this.maxEpisodicSize = maxEpisodicSize;
     }
 
+    public MemoryManager(MemoryStore store, int maxWorkingSize, int maxEpisodicSize) {
+        this(store, null, maxWorkingSize, maxEpisodicSize);
+    }
+
     public MemoryManager(MemoryStore store) {
-        this(store, 100, 10000);
+        this(store, null, 100, 10000);
     }
 
     public MemoryManager() {
-        this(new InMemoryMemoryStore(), 100, 10000);
+        this(new InMemoryMemoryStore(), null, 100, 10000);
     }
 
     /** 获取底层存储后端. */
     public MemoryStore store() {
         return store;
+    }
+
+    /** 获取索引管理器（可能为 null）. */
+    public Optional<MemoryIndex> index() {
+        return Optional.ofNullable(memoryIndex);
     }
 
     // ============ 委托 CRUD ============
@@ -205,5 +219,111 @@ public class MemoryManager {
         m.tags().forEach(t -> tagLower.add(t.toLowerCase()));
         long overlap = qWords.stream().filter(tagLower::contains).count();
         return tagLower.isEmpty() ? 0.0 : (double) overlap / Math.max(1, tagLower.size());
+    }
+
+    // ============ MEMORY.md 索引集成 ============
+
+    /**
+     * 存储记忆并同步更新 MEMORY.md 索引.
+     * <p>等价于先调用 {@link #store(Memory)}，再在 MEMORY.md 中追加入口.
+     * 如果没有配置 {@link MemoryIndex}，则退化为普通 store.
+     *
+     * @param memory   要持久化的记忆
+     * @param title    记忆标题（用于索引入口）
+     * @param hook     一句话描述（建议 ≤150 字符）
+     * @param fileName 对应的 .md 文件名（不含路径，如 "user_role.md"）
+     */
+    public void storeWithIndex(Memory memory, String title, String hook, String fileName) {
+        store(memory);
+        if (memoryIndex != null) {
+            memoryIndex.addEntry(title, fileName, hook);
+        }
+    }
+
+    /**
+     * 构建记忆系统 prompt — 对齐 claude-code 的 buildMemoryPrompt.
+     * <p>生成包含记忆系统使用说明和 MEMORY.md 索引内容的完整 prompt。
+     * 无索引时返回仅含说明的 prompt.
+     *
+     * @param displayName 显示名称（如 "auto memory"、"agent memory"）
+     * @param memoryDir   记忆目录路径（用于 prompt 中的路径展示）
+     * @return 格式化的记忆 prompt 字符串
+     */
+    public String loadMemoryPrompt(String displayName, String memoryDir) {
+        StringBuilder sb = new StringBuilder();
+
+        // 标题与基本说明
+        sb.append("# ").append(displayName).append("\n\n");
+        sb.append("You have a persistent, file-based memory system at `")
+                .append(memoryDir).append("`. ")
+                .append("This directory already exists — write to it directly ")
+                .append("with the Write tool (do not run mkdir or check for its existence).")
+                .append("\n\n");
+
+        sb.append("You should build up this memory system over time so that future ")
+                .append("conversations can have a complete picture of who the user is, ")
+                .append("how they'd like to collaborate with you, what behaviors to avoid ")
+                .append("or repeat, and the context behind the work the user gives you.")
+                .append("\n\n");
+
+        sb.append("If the user explicitly asks you to remember something, save it ")
+                .append("immediately as whichever type fits best. If they ask you to ")
+                .append("forget something, find and remove the relevant entry.")
+                .append("\n\n");
+
+        // 保存说明
+        sb.append("## How to save memories\n\n");
+
+        if (memoryIndex != null) {
+            sb.append("Saving a memory is a two-step process:\n\n");
+            sb.append("**Step 1** — write the memory to its own file (e.g., `user_role.md`, ")
+                    .append("`feedback_testing.md`) using frontmatter format.\n\n");
+            sb.append("**Step 2** — add a pointer to that file in `")
+                    .append(MemoryIndex.ENTRYPOINT_NAME).append("`. `")
+                    .append(MemoryIndex.ENTRYPOINT_NAME)
+                    .append("` is an index, not a memory — each entry should be one line, ")
+                    .append("under ~150 characters: `- [Title](file.md) — one-line hook`. ")
+                    .append("It has no frontmatter. Never write memory content directly into `")
+                    .append(MemoryIndex.ENTRYPOINT_NAME).append("`.\n\n");
+            sb.append("- `").append(MemoryIndex.ENTRYPOINT_NAME)
+                    .append("` is always loaded into your conversation context — lines after ")
+                    .append(MemoryIndex.MAX_ENTRYPOINT_LINES)
+                    .append(" will be truncated, so keep the index concise\n");
+        } else {
+            sb.append("Write each memory to its own file (e.g., `user_role.md`, ")
+                    .append("`feedback_testing.md`) using frontmatter format.\n\n");
+        }
+
+        sb.append("- Keep the name, description, and type fields in memory files up-to-date ")
+                .append("with the content\n");
+        sb.append("- Organize memory semantically by topic, not chronologically\n");
+        sb.append("- Update or remove memories that turn out to be wrong or outdated\n");
+        sb.append("- Do not write duplicate memories. First check if there is an existing ")
+                .append("memory you can update before writing a new one.\n\n");
+
+        // MEMORY.md 索引内容
+        sb.append("## ").append(MemoryIndex.ENTRYPOINT_NAME).append("\n\n");
+        if (memoryIndex != null) {
+            MemoryIndex.IndexContent ic = memoryIndex.readTruncated();
+            if (!ic.content().isEmpty()) {
+                sb.append(ic.content()).append("\n");
+            } else {
+                sb.append("Your `").append(MemoryIndex.ENTRYPOINT_NAME)
+                        .append("` is currently empty. When you save new memories, ")
+                        .append("they will appear here.\n");
+            }
+        } else {
+            sb.append("Memory index (MEMORY.md) is not configured. ")
+                    .append("Memories are stored directly without an index.\n");
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * loadMemoryPrompt 的便捷重载，不展示具体路径.
+     */
+    public String loadMemoryPrompt(String displayName) {
+        return loadMemoryPrompt(displayName, "<memory-dir>");
     }
 }
