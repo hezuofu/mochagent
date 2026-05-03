@@ -109,6 +109,11 @@ public interface Tool {
     /** 渲染用户可读的工具名称（用于 UI 展示）. 默认返回 name. */
     default String getUserFacingName() { return getName(); }
 
+    /** 生成人类可读的活动描述（用于进度报告，对齐claude-code的getActivityDescription）. */
+    default String describeActivity(Map<String, Object> args) {
+        return getName() + (args != null && !args.isEmpty() ? "(" + args.keySet() + ")" : "");
+    }
+
     // ==================== 安全等级枚举 ====================
 
     enum SecurityLevel { LOW, MEDIUM, HIGH, CRITICAL }
