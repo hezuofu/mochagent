@@ -18,6 +18,7 @@ import io.sketch.mochaagents.learn.Experience;
 import io.sketch.mochaagents.learn.Learner;
 import io.sketch.mochaagents.memory.Memory;
 import io.sketch.mochaagents.memory.MemoryManager;
+import io.sketch.mochaagents.orchestration.Orchestrator;
 import io.sketch.mochaagents.perception.PerceptionResult;
 import io.sketch.mochaagents.perception.Perceptor;
 import io.sketch.mochaagents.plan.Plan;
@@ -64,6 +65,8 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
     protected final Evaluator evaluator;
     protected final MemoryManager memoryManager;
     protected final Learner<I, O> learner;
+    protected final Orchestrator orchestrator;
+
     protected final ReflectionEngine reflectionEngine;
 
     protected BaseAgent(Builder<I, O, ?> builder) {
@@ -77,6 +80,7 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
         this.evaluator = builder.evaluator;
         this.memoryManager = builder.memoryManager;
         this.learner = builder.learner;
+        this.orchestrator = builder.orchestrator;
         this.reflectionEngine = builder.reflectionEngine != null
                 ? builder.reflectionEngine : ReflectionEngine.noop();
     }
@@ -275,6 +279,7 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
         protected Evaluator evaluator;
         protected MemoryManager memoryManager;
         protected Learner<I, O> learner;
+        protected Orchestrator orchestrator;
         protected ReflectionEngine reflectionEngine;
 
         public T name(String n) { this.name = n; return (T) this; }
@@ -287,6 +292,7 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
         public T evaluator(Evaluator e) { this.evaluator = e; return (T) this; }
         public T memoryManager(MemoryManager m) { this.memoryManager = m; return (T) this; }
         public T learner(Learner<I, O> l) { this.learner = l; return (T) this; }
+        public T orchestrator(Orchestrator l) { this.orchestrator = l; return (T) this; }
         public T reflectionEngine(ReflectionEngine r) { this.reflectionEngine = r; return (T) this; }
 
         public abstract BaseAgent<I, O> build();

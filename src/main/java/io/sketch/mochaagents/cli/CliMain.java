@@ -181,12 +181,29 @@ public final class CliMain {
 
     // ─── Interactive REPL ───
 
+    private static io.sketch.mochaagents.agent.impl.ToolCallingAgent replAgent;
+    private static io.sketch.mochaagents.cli.AgentBootstrap bootstrap;
+
+    /** Lazy-init the REPL agent with bootstrapped tools + MockLLM. */
+    private static synchronized io.sketch.mochaagents.agent.impl.ToolCallingAgent getReplAgent() {
+        if (replAgent == null) {
+            bootstrap = AgentBootstrap.init();
+            var llm = io.sketch.mochaagents.llm.provider.MockLLM.create();
+            replAgent = io.sketch.mochaagents.agent.impl.ToolCallingAgent.builder()
+                    .name("repl-agent")
+                    .llm(llm)
+                    .toolRegistry(bootstrap.toolRegistry())
+                    .maxSteps(10)
+                    .build();
+            log.info("REPL agent initialized with {} tools, {} skills",
+                    bootstrap.toolRegistry().size(),
+                    bootstrap.skillsInit().skillRegistry().size());
+        }
+        return replAgent;
+    }
+
     /**
      * Launch an interactive REPL session.
-     *
-     * <p>Corresponds to {@code launchRepl()} in claude-code's main.tsx,
-     * which starts the Ink-based interactive TUI. This Java version provides
-     * a simple stdin/stdout REPL loop.
      */
     private static void launchRepl(String[] args) {
         List<String> argList = Arrays.asList(args);
@@ -211,8 +228,9 @@ public final class CliMain {
                 if (input.isEmpty()) {
                     System.out.println("(no input provided)");
                 } else {
-                    System.out.println("[Print mode] Processing: " + abbreviate(input, 200));
-                    System.out.println("[Print mode] Result: task completed.");
+                    System.out.println("[Agent] Processing...");
+                    String result = getReplAgent().run(input);
+                    System.out.println("[Agent] Result: " + result);
                 }
             } catch (IOException e) {
                 log.error("Print mode: failed to read stdin", e);
@@ -234,39 +252,38 @@ public final class CliMain {
                 }
                 line = line.trim();
 
-                if (line.isEmpty()) {
-                    continue;
-                }
+                if (line.isEmpty()) continue;
 
                 cmdCount++;
                 log.debug("REPL command [#{}]: {}", cmdCount, abbreviate(line, 60));
 
                 switch (line.toLowerCase()) {
-                    case "exit":
-                    case "quit":
-                    case "q":
+                    case "exit": case "quit": case "q":
                         log.info("REPL exit requested by user");
                         System.out.println("Goodbye.");
                         return;
-                    case "help":
-                    case "h":
-                    case "?":
-                        log.debug("REPL help invoked");
+                    case "help": case "h": case "?":
                         printReplHelp();
                         break;
                     case "version":
-                        log.debug("REPL version requested");
                         System.out.println("MochaAgents 0.1.0");
                         break;
                     case "status":
-                        log.debug("REPL status requested");
-                        System.out.println("REPL active. No agent loaded.");
+                        var a = replAgent;
+                        System.out.println(a == null ? "REPL active. No agent loaded."
+                                : "Agent '" + a.metadata().name() + "' ready. "
+                                + (bootstrap != null ? bootstrap.toolRegistry().size() + " tools loaded." : ""));
                         break;
                     default:
-                        log.info("REPL task submission: {}", abbreviate(line, 80));
+                        log.info("REPL task: {}", abbreviate(line, 80));
                         System.out.println("[Agent] Processing: \"" + abbreviate(line, 80) + "\"");
-                        System.out.println("[Agent] (Agent execution not yet wired — returning echo)");
-                        System.out.println("[Agent] Result: " + line);
+                        try {
+                            String result = getReplAgent().run(line);
+                            System.out.println("[Agent] Result: " + result);
+                        } catch (Exception e) {
+                            log.error("Agent execution failed", e);
+                            System.out.println("[Agent] Error: " + e.getMessage());
+                        }
                 }
             }
         } catch (IOException e) {
