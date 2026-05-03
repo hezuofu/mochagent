@@ -11,13 +11,25 @@ public interface Sandbox {
 
     /**
      * Execute code in the sandbox.
-     *
      * @param code     source code to execute
      * @param language programming language (python, javascript, etc.)
      * @return execution output
-     * @throws SandboxException if execution fails or is blocked
      */
     String execute(String code, String language);
+
+    /**
+     * Execute a generic operation within sandbox constraints.
+     * Default calls the supplier directly (no isolation).
+     */
+    @SuppressWarnings("unchecked")
+    default <T> T execute(java.util.function.Supplier<T> operation) {
+        return operation.get();
+    }
+
+    /** Wrap a tool for sandboxed execution. */
+    default io.sketch.mochaagents.tool.Tool wrap(io.sketch.mochaagents.tool.Tool tool) {
+        return new SandboxedTool(tool, this);
+    }
 
     /** Human-readable name of this sandbox backend. */
     default String backendName() {
