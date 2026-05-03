@@ -1,5 +1,6 @@
 package io.sketch.mochaagents.cli;
 
+import io.sketch.mochaagents.AgentBootstrap;
 import io.sketch.mochaagents.tool.mcp.McpServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +55,14 @@ public final class Main {
         CliCommand plugin = (a, o, e) -> {
             if (a.length == 0) { o.println("Usage: mocha plugin <list>"); return 1; }
             switch (a[0]) {
-                case "list": o.println("No plugins installed."); return 0;
+                case "list":
+                    var bootstrap = AgentBootstrap.init();
+                    var plugins = bootstrap.pluginBootstrap().pluginManager().getPlugins();
+                    o.println("Enabled plugins: " + plugins.enabled().size());
+                    plugins.enabled().forEach(p -> o.println("  - " + p.name()
+                            + " v" + p.version() + " (" + p.skills().size() + " skills)"));
+                    if (plugins.enabled().isEmpty()) o.println("  (none)");
+                    return 0;
                 default: o.println("Unknown plugin subcommand: " + a[0]); return 1;
             }
         };
