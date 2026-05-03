@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.sketch.mochaagents.agent.impl.ToolCallingAgent;
-import io.sketch.mochaagents.cli.AgentBootstrap;
+import io.sketch.mochaagents.AgentBootstrap;
 import io.sketch.mochaagents.llm.provider.MockLLM;
 import io.sketch.mochaagents.tool.Tool;
 import io.sketch.mochaagents.tool.ToolInput;

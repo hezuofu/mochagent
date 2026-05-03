@@ -1,4 +1,4 @@
-package io.sketch.mochaagents.cli;
+package io.sketch.mochaagents;
 
 import io.sketch.mochaagents.plugin.PluginBootstrap;
 import io.sketch.mochaagents.skill.SkillsInit;
