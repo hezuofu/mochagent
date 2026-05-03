@@ -58,6 +58,7 @@ public final class CodeAgent extends MultiStepAgent {
     private final Set<String> authorizedImports;
     private final String codeLanguage;
     private final int maxPrintOutputLength;
+    private final boolean useStructuredOutput;
 
     private CodeAgent(Builder builder) {
         super(builder);
@@ -68,6 +69,7 @@ public final class CodeAgent extends MultiStepAgent {
         this.codeLanguage = builder.codeLanguage != null ? builder.codeLanguage : "python";
         this.maxPrintOutputLength = builder.maxPrintOutputLength > 0
                 ? builder.maxPrintOutputLength : 10000;
+        this.useStructuredOutput = builder.useStructuredOutput;
     }
 
     @Override
@@ -78,6 +80,18 @@ public final class CodeAgent extends MultiStepAgent {
                     "authorized_imports", String.join(", ", authorizedImports),
                     "instructions", description != null ? description : ""
             ));
+        }
+        if (useStructuredOutput) {
+            return String.format("""
+                    You are an AI assistant that solves tasks by writing and executing code.
+                    Output a JSON object with two fields:
+                    {"thought": "<your reasoning>", "code": "<executable code>"}
+
+                    The code will be executed and the output shown back to you.
+                    Call final_answer(\"your answer\") inside code to finish.
+                    Available tools:
+                    %s
+                    """, formatTools());
         }
         return String.format("""
                 You are an AI assistant that solves tasks by writing and executing code.
@@ -480,6 +494,7 @@ public final class CodeAgent extends MultiStepAgent {
         private Set<String> authorizedImports;
         private String codeLanguage = "python";
         private int maxPrintOutputLength = 10000;
+        private boolean useStructuredOutput;
 
         public Builder authorizedImports(Set<String> imports) {
             this.authorizedImports = imports; return this;
@@ -489,6 +504,9 @@ public final class CodeAgent extends MultiStepAgent {
         }
         public Builder maxPrintOutputLength(int max) {
             this.maxPrintOutputLength = max; return this;
+        }
+        public Builder useStructuredOutput(boolean v) {
+            this.useStructuredOutput = v; return this;
         }
 
         @Override
