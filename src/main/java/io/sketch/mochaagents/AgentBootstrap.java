@@ -46,11 +46,20 @@ public final class AgentBootstrap {
     }
 
     /** 引导整个 Agent 框架，返回统一入口. */
-    public static AgentBootstrap init() {
-        return new AgentBootstrap();
-    }
+    public static AgentBootstrap init() { return new AgentBootstrap(); }
 
     public ToolRegistry toolRegistry() { return toolRegistry; }
     public SkillManager skillManager() { return skillManager; }
     public PluginBootstrap pluginBootstrap() { return pluginBootstrap; }
+
+    /** Health check — returns a status map suitable for monitoring endpoints. */
+    public java.util.Map<String, Object> health() {
+        java.util.Map<String, Object> status = new java.util.LinkedHashMap<>();
+        status.put("status", "UP");
+        status.put("tools", toolRegistry.size());
+        status.put("skills", skillManager.skillRegistry().size());
+        status.put("plugins", pluginBootstrap.pluginManager().size());
+        status.put("pluginEnabled", pluginBootstrap.pluginManager().getPlugins().enabled().size());
+        return status;
+    }
 }
