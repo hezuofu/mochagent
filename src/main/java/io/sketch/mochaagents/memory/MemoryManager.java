@@ -198,29 +198,23 @@ public class MemoryManager {
     // ============ 内部 ============
 
     private void enforceCapacity(String type) {
-        if (Memory.TYPE_WORKING.equals(type)) {
-            List<Memory> working = getByType(Memory.TYPE_WORKING);
-            int removed = 0;
-            while (working.size() > maxWorkingSize) {
-                working.stream()
-                        .min(Comparator.comparingDouble(Memory::importance))
-                        .ifPresent(m -> forget(m.id()));
-                working = getByType(Memory.TYPE_WORKING);
-                removed++;
-            }
-            if (removed > 0) log.debug("Memory working capacity enforced: removed={}", removed);
-        } else if (Memory.TYPE_EPISODIC.equals(type)) {
-            List<Memory> episodic = getByType(Memory.TYPE_EPISODIC);
-            int removed = 0;
-            while (episodic.size() > maxEpisodicSize) {
-                episodic.stream()
-                        .min(Comparator.comparingDouble(Memory::importance))
-                        .ifPresent(m -> forget(m.id()));
-                episodic = getByType(Memory.TYPE_EPISODIC);
-                removed++;
-            }
-            if (removed > 0) log.debug("Memory episodic capacity enforced: removed={}", removed);
+        boolean isWorking = Memory.TYPE_WORKING.equals(type);
+        int maxSize = isWorking ? maxWorkingSize : maxEpisodicSize;
+        List<Memory> items = getByType(type);
+
+        if (items.size() <= maxSize) return;
+
+        // Sort by importance ascending, remove the lowest-N in one pass (O(n log n))
+        List<Memory> toRemove = items.stream()
+                .sorted(Comparator.comparingDouble(Memory::importance))
+                .limit(items.size() - maxSize)
+                .toList();
+
+        for (Memory m : toRemove) {
+            forget(m.id());
         }
+        log.debug("Memory {} capacity enforced: removed={}/{}, kept={}",
+                type, toRemove.size(), items.size(), maxSize);
     }
 
     private static double keywordScore(Memory m, String query) {
