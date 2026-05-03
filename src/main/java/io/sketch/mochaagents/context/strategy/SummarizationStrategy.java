@@ -2,8 +2,8 @@ package io.sketch.mochaagents.context.strategy;
 
 import io.sketch.mochaagents.context.ContextChunk;
 import io.sketch.mochaagents.context.ContextStrategy;
+import io.sketch.mochaagents.context.ContextSummarizer;
 import io.sketch.mochaagents.llm.LLM;
-import io.sketch.mochaagents.llm.LLMRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +63,8 @@ public class SummarizationStrategy implements ContextStrategy {
         List<ContextChunk> kept = chunks.subList(splitIdx, chunks.size());
 
         // Call LLM to summarize the overflow
-        String summary = summarizeOverflow(overflow);
+        String summary = "[Earlier conversation summary]\n"
+                + ContextSummarizer.summarize(llm, overflow, summaryBudgetTokens);
         int summaryTokens = Math.max(1, summary.length() / 4);
 
         List<ContextChunk> result = new ArrayList<>();
@@ -74,41 +75,5 @@ public class SummarizationStrategy implements ContextStrategy {
         log.debug("SummarizationStrategy: {} chunks overflow → {} token summary, kept {} recent chunks",
                 overflow.size(), summaryTokens, kept.size());
         return result;
-    }
-
-    private String summarizeOverflow(List<ContextChunk> overflow) {
-        StringBuilder content = new StringBuilder();
-        for (ContextChunk c : overflow) {
-            String prefix = switch (c.role()) {
-                case "user" -> "User: ";
-                case "assistant" -> "Assistant: ";
-                case "system" -> "System: ";
-                default -> c.role() + ": ";
-            };
-            content.append(prefix).append(c.content()).append("\n");
-        }
-
-        String prompt = """
-                Summarize the following conversation history concisely.
-                Include key facts, decisions, and the userʼs intent.
-                Keep the summary under %d words. Output only the summary, no preamble.
-
-                ---
-                %s
-                ---
-                Summary:""".formatted(summaryBudgetTokens / 4 * 3, content.toString());
-
-        try {
-            String response = llm.complete(LLMRequest.builder()
-                    .addMessage("user", prompt)
-                    .maxTokens(summaryBudgetTokens)
-                    .temperature(0.3)
-                    .build()).content();
-
-            return "[Earlier conversation summary]\n" + response.trim();
-        } catch (Exception e) {
-            log.warn("Summarization LLM call failed, falling back to truncation: {}", e.getMessage());
-            return "[Earlier context: " + overflow.size() + " messages omitted]";
-        }
     }
 }

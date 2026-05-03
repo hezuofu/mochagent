@@ -2,8 +2,8 @@ package io.sketch.mochaagents.context.strategy;
 
 import io.sketch.mochaagents.context.ContextChunk;
 import io.sketch.mochaagents.context.ContextStrategy;
+import io.sketch.mochaagents.context.ContextSummarizer;
 import io.sketch.mochaagents.llm.LLM;
-import io.sketch.mochaagents.llm.LLMRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +66,8 @@ public class HybridContextStrategy implements ContextStrategy {
         // Phase 3: if we have LLM and overflow, summarize it
         if (llm != null && overflowIdx > 0) {
             List<ContextChunk> overflow = chunks.subList(0, overflowIdx);
-            String summary = summarizeOverflow(overflow);
+            String summary = "[Conversation summary]\n"
+                    + ContextSummarizer.summarize(llm, overflow, SUMMARY_MAX_TOKENS);
             int summaryTokens = Math.max(1, summary.length() / 4);
 
             List<ContextChunk> result = new ArrayList<>();
@@ -83,39 +84,5 @@ public class HybridContextStrategy implements ContextStrategy {
         List<ContextChunk> result = new ArrayList<>(systemChunks);
         result.addAll(recent);
         return result;
-    }
-
-    private String summarizeOverflow(List<ContextChunk> overflow) {
-        StringBuilder content = new StringBuilder();
-        for (ContextChunk c : overflow) {
-            String prefix = switch (c.role()) {
-                case "user" -> "User: ";
-                case "assistant" -> "Assistant: ";
-                case "system" -> "System: ";
-                default -> c.role() + ": ";
-            };
-            content.append(prefix).append(c.content()).append("\n");
-        }
-
-        String prompt = """
-                Summarize this conversation history concisely.
-                Include key facts, decisions, and user intent.
-                Keep under %d words. Output only the summary.
-
-                ---
-                %s
-                ---
-                Summary:""".formatted(SUMMARY_MAX_TOKENS / 4 * 3, content.toString());
-
-        try {
-            return "[Conversation summary]\n" + llm.complete(LLMRequest.builder()
-                    .addMessage("user", prompt)
-                    .maxTokens(SUMMARY_MAX_TOKENS)
-                    .temperature(0.2)
-                    .build()).content().trim();
-        } catch (Exception e) {
-            log.warn("Hybrid LLM summary failed: {}", e.getMessage());
-            return "[Earlier context: " + overflow.size() + " messages omitted]";
-        }
     }
 }

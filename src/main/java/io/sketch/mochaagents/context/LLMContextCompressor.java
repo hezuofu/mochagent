@@ -44,42 +44,12 @@ public class LLMContextCompressor implements ContextCompressor {
         List<ContextChunk> toSummarize = chunks.subList(0, splitIdx);
         List<ContextChunk> toKeep = chunks.subList(splitIdx, chunks.size());
 
-        // Build conversation text from overflow chunks
-        StringBuilder content = new StringBuilder();
-        for (ContextChunk c : toSummarize) {
-            String prefix = switch (c.role()) {
-                case "user" -> "User: ";
-                case "assistant" -> "Assistant: ";
-                case "system" -> "System: ";
-                default -> c.role() + ": ";
-            };
-            content.append(prefix).append(c.content()).append("\n");
-        }
-
-        String summary;
-        try {
-            summary = llm.complete(LLMRequest.builder()
-                    .addMessage("user", """
-                            Summarize this conversation history concisely.
-                            Keep key facts, decisions made, and the userʼs overall intent.
-                            Output only the summary, no more than %d words.
-
-                            ---
-                            %s
-                            ---
-                            Summary:""".formatted(
-                            SUMMARY_MAX_TOKENS / 4 * 3, content.toString()))
-                    .maxTokens(SUMMARY_MAX_TOKENS)
-                    .temperature(0.2)
-                    .build()).content().trim();
-        } catch (Exception e) {
-            log.warn("LLM compression failed, using truncation: {}", e.getMessage());
-            summary = "[Earlier context: " + toSummarize.size() + " messages omitted]";
-        }
+        String summary = "[Compressed context]\n"
+                + ContextSummarizer.summarize(llm, toSummarize, SUMMARY_MAX_TOKENS);
 
         List<ContextChunk> result = new ArrayList<>();
         result.add(new ContextChunk("compressed-" + UUID.randomUUID().toString().substring(0, 8),
-                "system", "[Compressed context]\n" + summary,
+                "system", summary,
                 Math.max(1, summary.length() / 4)));
         result.addAll(toKeep);
 
