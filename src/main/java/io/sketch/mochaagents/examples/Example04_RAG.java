@@ -2,8 +2,6 @@ package io.sketch.mochaagents.examples;
 
 import io.sketch.mochaagents.agent.impl.CodeAgent;
 import io.sketch.mochaagents.tool.ToolRegistry;
-import io.sketch.mochaagents.examples.tools.RetrieverTool;
-
 import java.util.Map;
 
 /**
@@ -46,9 +44,29 @@ public final class Example04_RAG {
                         + "to have as few implementation dependencies as possible."
         );
 
-        var retrieverTool = new RetrieverTool(documents);
         var registry = new ToolRegistry();
-        registry.register(retrieverTool);
+        // Inline retriever tool for RAG demo — keyword-matches documents
+        registry.register(new io.sketch.mochaagents.tool.Tool() {
+            @Override public String getName() { return "retriever"; }
+            @Override public String getDescription() { return "Retrieve documents by keyword search."; }
+            @Override public Map<String, io.sketch.mochaagents.tool.ToolInput> getInputs() {
+                return Map.of("query", io.sketch.mochaagents.tool.ToolInput.string("Search query"));
+            }
+            @Override public String getOutputType() { return "string"; }
+            @Override public SecurityLevel getSecurityLevel() { return SecurityLevel.LOW; }
+            @Override public Object call(Map<String, Object> args) {
+                String q = String.valueOf(args.getOrDefault("query", "")).toLowerCase();
+                StringBuilder sb = new StringBuilder();
+                int count = 0;
+                for (var e : documents.entrySet()) {
+                    if (e.getKey().toLowerCase().contains(q) || e.getValue().toLowerCase().contains(q)) {
+                        sb.append("\n=== Document ").append(count).append(" ===\n").append(e.getValue());
+                        if (++count >= 3) break;
+                    }
+                }
+                return count > 0 ? "Retrieved:\n" + sb.toString() : "No matching documents.";
+            }
+        });
 
         // MockLLM 识别 "forward" "backward" 关键词 → 输出 CodeAgent 代码块
         var agent = CodeAgent.builder()

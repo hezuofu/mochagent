@@ -3,7 +3,6 @@ package io.sketch.mochaagents.examples;
 import io.sketch.mochaagents.agent.impl.CodeAgent;
 import io.sketch.mochaagents.agent.impl.ToolCallingAgent;
 import io.sketch.mochaagents.tool.ToolRegistry;
-import io.sketch.mochaagents.examples.tools.WeatherTool;
 
 /**
  * Example01 — 对应 smolagents 的 agent_from_any_llm.py.
@@ -29,7 +28,7 @@ public final class Example01_AgentFromAnyLLM {
 
         var llm = LLMFactory.create();
         var registry = new ToolRegistry();
-        registry.register(new WeatherTool());
+        registry.register(new io.sketch.mochaagents.tool.impl.WebFetchTool());
 
         // ── ToolCallingAgent ──
         System.out.println("\n>>> ToolCallingAgent:");

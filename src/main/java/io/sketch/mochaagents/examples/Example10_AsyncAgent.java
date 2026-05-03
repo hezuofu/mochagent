@@ -3,7 +3,6 @@ package io.sketch.mochaagents.examples;
 import io.sketch.mochaagents.agent.impl.CodeAgent;
 import io.sketch.mochaagents.agent.impl.ToolCallingAgent;
 import io.sketch.mochaagents.tool.ToolRegistry;
-import io.sketch.mochaagents.examples.tools.WeatherTool;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,7 +29,7 @@ public final class Example10_AsyncAgent {
 
         var llm = LLMFactory.create();
         var registry = new ToolRegistry();
-        registry.register(new WeatherTool());
+        registry.register(new io.sketch.mochaagents.tool.impl.WebFetchTool());
 
         // 创建单个 Agent 实例
         // Python smolagents uses CodeAgent for async example; match behavior

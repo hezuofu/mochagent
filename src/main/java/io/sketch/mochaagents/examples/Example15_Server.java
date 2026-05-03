@@ -1,12 +1,12 @@
 package io.sketch.mochaagents.examples;
 
+import io.sketch.mochaagents.tool.impl.WebSearchTool;
+
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpExchange;
 import io.sketch.mochaagents.agent.impl.CodeAgent;
 import io.sketch.mochaagents.tool.Tool;
 import io.sketch.mochaagents.tool.ToolRegistry;
-import io.sketch.mochaagents.examples.tools.WebSearchTool;
-import io.sketch.mochaagents.examples.tools.WeatherTool;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -58,8 +58,8 @@ public final class Example15_Server {
         List<Tool> getTools() {
             System.out.println("  [MCP] Fetching tools from " + url + " (transport: " + transport + ")");
             return List.of(
-                    new WebSearchTool(),
-                    new WeatherTool()
+                    new io.sketch.mochaagents.tool.impl.WebSearchTool(),
+                    new io.sketch.mochaagents.tool.impl.WebFetchTool()
             );
         }
 

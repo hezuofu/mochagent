@@ -2,7 +2,6 @@ package io.sketch.mochaagents.examples;
 
 import io.sketch.mochaagents.agent.impl.CodeAgent;
 import io.sketch.mochaagents.tool.ToolRegistry;
-import io.sketch.mochaagents.examples.tools.*;
 
 /**
  * Example02 — 对应 smolagents 的 multiple_tools.py.
@@ -32,12 +31,12 @@ public final class Example02_MultipleTools {
         System.out.println("=".repeat(60));
 
         var registry = new ToolRegistry();
-        registry.register(new CurrencyTool());
-        registry.register(new WeatherTool());
-        registry.register(new NewsTool());
-        registry.register(new JokeTool());
-        registry.register(new FactTool());
-        registry.register(new WikipediaTool());
+        registry.register(new io.sketch.mochaagents.tool.impl.WebFetchTool());
+        registry.register(new io.sketch.mochaagents.tool.impl.WebFetchTool());
+        registry.register(new io.sketch.mochaagents.tool.impl.WebFetchTool());
+        registry.register(new io.sketch.mochaagents.tool.impl.WebFetchTool());
+        registry.register(new io.sketch.mochaagents.tool.impl.WebFetchTool());
+        registry.register(new io.sketch.mochaagents.tool.impl.WebFetchTool());
 
         String[] queries = {
                 "Convert 5000 dollars to Euros",

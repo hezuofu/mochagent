@@ -2,7 +2,6 @@ package io.sketch.mochaagents.examples;
 
 import io.sketch.mochaagents.agent.impl.CodeAgent;
 import io.sketch.mochaagents.tool.ToolRegistry;
-import io.sketch.mochaagents.examples.tools.SQLTool;
 
 /**
  * Example03 — 对应 smolagents 的 text_to_sql.py.
@@ -24,7 +23,26 @@ public final class Example03_TextToSQL {
         System.out.println("=".repeat(60));
 
         var registry = new ToolRegistry();
-        registry.register(new SQLTool());
+        // Inline SQL tool — simple in-memory query engine
+        registry.register(new io.sketch.mochaagents.tool.Tool() {
+            private final java.util.List<java.util.Map<String, Object>> rows = java.util.List.of(
+                    java.util.Map.of("receipt_id", 1, "customer_name", "Alan Payne", "price", 12.06, "tip", 1.20),
+                    java.util.Map.of("receipt_id", 2, "customer_name", "Alex Mason", "price", 23.86, "tip", 0.24),
+                    java.util.Map.of("receipt_id", 3, "customer_name", "Woodrow Wilson", "price", 53.43, "tip", 5.43));
+            @Override public String getName() { return "sql_engine"; }
+            @Override public String getDescription() { return "Query the receipts table (receipt_id, customer_name, price, tip)."; }
+            @Override public java.util.Map<String, io.sketch.mochaagents.tool.ToolInput> getInputs() {
+                return java.util.Map.of("query", io.sketch.mochaagents.tool.ToolInput.string("SQL query"));
+            }
+            @Override public String getOutputType() { return "string"; }
+            @Override public SecurityLevel getSecurityLevel() { return SecurityLevel.LOW; }
+            @Override public Object call(java.util.Map<String, Object> args) {
+                String q = String.valueOf(args.getOrDefault("query", "")).toLowerCase();
+                if (q.contains("max(price)")) return rows.stream().max(java.util.Comparator.comparing(r -> (Double) r.get("price"))).toString();
+                if (q.contains("sum(")) return "SUM(price) = " + rows.stream().mapToDouble(r -> (Double) r.get("price")).sum();
+                return rows.toString();
+            }
+        });
 
         var agent = CodeAgent.builder()
                 .name("sql-agent")

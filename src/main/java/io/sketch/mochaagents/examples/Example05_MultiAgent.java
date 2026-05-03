@@ -1,12 +1,13 @@
 package io.sketch.mochaagents.examples;
 
+import io.sketch.mochaagents.tool.impl.WebSearchTool;
+
 import io.sketch.mochaagents.agent.impl.CodeAgent;
 import io.sketch.mochaagents.agent.impl.ToolCallingAgent;
 import io.sketch.mochaagents.llm.provider.MockLLM;
 import io.sketch.mochaagents.tool.Tool;
 import io.sketch.mochaagents.tool.ToolInput;
 import io.sketch.mochaagents.tool.ToolRegistry;
-import io.sketch.mochaagents.examples.tools.WikipediaTool;
 
 import java.util.Map;
 
@@ -34,7 +35,7 @@ public final class Example05_MultiAgent {
 
         // ── 子 Agent: 搜索 Agent ──
         var searchRegistry = new ToolRegistry();
-        searchRegistry.register(new WikipediaTool());
+        searchRegistry.register(new io.sketch.mochaagents.tool.impl.WebFetchTool());
 
         ToolCallingAgent searchAgent = ToolCallingAgent.builder()
                 .name("search_agent")

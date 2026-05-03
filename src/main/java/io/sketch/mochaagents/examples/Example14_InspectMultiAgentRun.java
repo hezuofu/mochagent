@@ -1,13 +1,13 @@
 package io.sketch.mochaagents.examples;
 
+import io.sketch.mochaagents.tool.impl.WebSearchTool;
+
 import io.sketch.mochaagents.agent.impl.CodeAgent;
 import io.sketch.mochaagents.agent.impl.ToolCallingAgent;
 import io.sketch.mochaagents.llm.provider.MockLLM;
 import io.sketch.mochaagents.tool.Tool;
 import io.sketch.mochaagents.tool.ToolInput;
 import io.sketch.mochaagents.tool.ToolRegistry;
-import io.sketch.mochaagents.examples.tools.WebSearchTool;
-import io.sketch.mochaagents.examples.tools.WikipediaTool;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -158,8 +158,8 @@ public final class Example14_InspectMultiAgentRun {
     /** 带遥测的 Search Agent 封装 */
     static ToolCallingAgent createSearchAgent(TelemetryMonitor telemetry) {
         var registry = new ToolRegistry();
-        registry.register(new WebSearchTool());
-        registry.register(new WikipediaTool());
+        registry.register(new io.sketch.mochaagents.tool.impl.WebSearchTool());
+        registry.register(new io.sketch.mochaagents.tool.impl.WebFetchTool());
 
         return ToolCallingAgent.builder()
                 .name("search_agent")

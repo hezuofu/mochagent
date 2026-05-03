@@ -1,10 +1,10 @@
 package io.sketch.mochaagents.examples;
 
+import io.sketch.mochaagents.tool.impl.WebSearchTool;
+
 import io.sketch.mochaagents.agent.impl.CodeAgent;
 import io.sketch.mochaagents.agent.impl.ToolCallingAgent;
 import io.sketch.mochaagents.tool.ToolRegistry;
-import io.sketch.mochaagents.examples.tools.WebSearchTool;
-import io.sketch.mochaagents.examples.tools.WikipediaTool;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -215,8 +215,8 @@ public final class Example16_Benchmark {
                     }
                     case "code" -> {
                         var registry = new ToolRegistry();
-                        registry.register(new WebSearchTool());
-                        registry.register(new WikipediaTool());
+                        registry.register(new io.sketch.mochaagents.tool.impl.WebSearchTool());
+                        registry.register(new io.sketch.mochaagents.tool.impl.WebFetchTool());
                         var agent = CodeAgent.builder()
                                 .name("benchmark-code-agent")
                                 .llm(LLMFactory.create())
@@ -229,8 +229,8 @@ public final class Example16_Benchmark {
                     }
                     case "tool-calling" -> {
                         var registry = new ToolRegistry();
-                        registry.register(new WebSearchTool());
-                        registry.register(new WikipediaTool());
+                        registry.register(new io.sketch.mochaagents.tool.impl.WebSearchTool());
+                        registry.register(new io.sketch.mochaagents.tool.impl.WebFetchTool());
                         var agent = ToolCallingAgent.builder()
                                 .name("benchmark-tc-agent")
                                 .llm(LLMFactory.create())

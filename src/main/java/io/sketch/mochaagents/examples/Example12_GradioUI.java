@@ -1,10 +1,11 @@
 package io.sketch.mochaagents.examples;
 
+import io.sketch.mochaagents.tool.impl.WebSearchTool;
+
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpExchange;
 import io.sketch.mochaagents.agent.impl.CodeAgent;
 import io.sketch.mochaagents.tool.ToolRegistry;
-import io.sketch.mochaagents.examples.tools.WebSearchTool;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -138,7 +139,7 @@ public final class Example12_GradioUI {
 
         // 创建 CodeAgent（带 WebSearchTool）
         var registry = new ToolRegistry();
-        registry.register(new WebSearchTool());
+        registry.register(new io.sketch.mochaagents.tool.impl.WebSearchTool());
 
         var agent = CodeAgent.builder()
                 .name("gradio_agent")

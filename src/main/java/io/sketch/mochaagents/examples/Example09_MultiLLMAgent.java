@@ -1,5 +1,7 @@
 package io.sketch.mochaagents.examples;
 
+import io.sketch.mochaagents.tool.impl.WebSearchTool;
+
 import io.sketch.mochaagents.agent.impl.CodeAgent;
 import io.sketch.mochaagents.llm.LLM;
 import io.sketch.mochaagents.llm.LLMRequest;
