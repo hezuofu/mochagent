@@ -2,6 +2,7 @@ package io.sketch.mochaagents.plugin;
 
 import io.sketch.mochaagents.skill.Skill;
 import io.sketch.mochaagents.skill.SkillRegistry;
+import io.sketch.mochaagents.skill.SkillSource;
 import io.sketch.mochaagents.tool.ToolRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,12 +66,20 @@ public class PluginBootstrap {
      * 新增内置插件在此方法中添加。
      */
     private void registerBuiltinPlugins() {
-        // 预留：后续可添加内置插件
-        // pluginManager.register(PluginDescriptor.builder("code-review", "Code review tools")
-        //     .skills(List.of(reviewPrSkill, commitSkill))
-        //     .build());
+        // 收集已注册的捆绑技能并按用途分组为插件
+        List<Skill> bundled = skillRegistry.filterBySource(SkillSource.BUNDLED);
 
-        log.debug("Builtin plugins registered");
+        PluginDescriptor gitPlugin = PluginDescriptor.builder("git-utilities",
+                "Git commit, review, and code explanation tools")
+                .version("1.0")
+                .skills(bundled)
+                .defaultEnabled(true)
+                .build();
+        pluginManager.register(gitPlugin);
+
+        log.info("Registered {} builtin plugins with {} skills",
+                pluginManager.size(),
+                bundled.size());
     }
 
     // ==================== 技能同步 ====================
