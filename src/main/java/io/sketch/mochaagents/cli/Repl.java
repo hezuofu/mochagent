@@ -2,6 +2,7 @@ package io.sketch.mochaagents.cli;
 
 import io.sketch.mochaagents.AgentBootstrap;
 import io.sketch.mochaagents.agent.impl.ToolCallingAgent;
+import io.sketch.mochaagents.llm.LLM;
 import io.sketch.mochaagents.llm.provider.MockLLM;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,8 +16,12 @@ final class Repl implements CliCommand {
 
     private static final Logger log = LoggerFactory.getLogger(Repl.class);
     private static final String VERSION = "0.1.0";
+    private final ModelConfig modelCfg;
     private ToolCallingAgent agent;
     private AgentBootstrap bootstrap;
+    private LLM llm;
+
+    Repl(ModelConfig modelCfg) { this.modelCfg = modelCfg; }
 
     @Override
     public int run(String[] args, PrintStream out, PrintStream err) {
@@ -49,9 +54,11 @@ final class Repl implements CliCommand {
     private ToolCallingAgent agent() {
         if (agent == null) {
             bootstrap = AgentBootstrap.init();
-            agent = ToolCallingAgent.builder().name("repl-agent").llm(MockLLM.create())
-                    .toolRegistry(bootstrap.toolRegistry()).maxSteps(10).build();
-            log.info("REPL agent ready");
+            llm = modelCfg.build();
+            String modelInfo = modelCfg.hasModels() ? llm.modelName() : "mock";
+            agent = ToolCallingAgent.builder().name("repl-agent").llm(llm)
+                    .toolRegistry(bootstrap.toolRegistry()).maxSteps(modelCfg.maxTokens() > 0 ? 20 : 10).build();
+            log.info("REPL agent ready — model: {}, temperature: {}", modelInfo, modelCfg.temperature());
         }
         return agent;
     }
