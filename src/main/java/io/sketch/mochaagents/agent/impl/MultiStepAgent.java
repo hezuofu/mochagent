@@ -451,8 +451,11 @@ public abstract class MultiStepAgent extends BaseAgent<String, String>
         protected PromptTemplate planningPromptTemplate;
         protected PromptTemplate finalAnswerPreTemplate;
         protected PromptTemplate finalAnswerPostTemplate;
+        protected io.sketch.mochaagents.llm.OptimizationConfig optimization
+                = io.sketch.mochaagents.llm.OptimizationConfig.balanced();
 
         public T llm(LLM llm) { this.llm = llm; return (T) this; }
+        public T optimization(io.sketch.mochaagents.llm.OptimizationConfig cfg) { this.optimization = cfg; return (T) this; }
         public T router(io.sketch.mochaagents.llm.router.LLMRouter router) { this.router = router; return (T) this; }
         public T orchestrator(io.sketch.mochaagents.orchestration.Orchestrator o) { this.orchestrator = o; return (T) this; }
         public T tools(List<Tool> tools) { this.tools = tools; return (T) this; }
