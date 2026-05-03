@@ -10,6 +10,7 @@ public class LLMRequest {
 
     private final String prompt;
     private final List<Map<String, String>> messages;
+    private final List<io.sketch.mochaagents.agent.message.Message> typedMessages;
     private final double temperature;
     private final int maxTokens;
     private final double topP;
@@ -19,6 +20,7 @@ public class LLMRequest {
     private LLMRequest(Builder builder) {
         this.prompt = builder.prompt;
         this.messages = List.copyOf(builder.messages);
+        this.typedMessages = builder.typedMessages != null ? List.copyOf(builder.typedMessages) : List.of();
         this.temperature = builder.temperature;
         this.maxTokens = builder.maxTokens;
         this.topP = builder.topP;
@@ -28,6 +30,9 @@ public class LLMRequest {
 
     public String prompt() { return prompt; }
     public List<Map<String, String>> messages() { return messages; }
+
+    /** Typed messages (new API). Providers should check this first, fall back to messages(). */
+    public List<io.sketch.mochaagents.agent.message.Message> typedMessages() { return typedMessages; }
     public double temperature() { return temperature; }
     public int maxTokens() { return maxTokens; }
     public double topP() { return topP; }
@@ -39,6 +44,7 @@ public class LLMRequest {
     public static class Builder {
         private String prompt = "";
         private List<Map<String, String>> messages = new ArrayList<>();
+        private List<io.sketch.mochaagents.agent.message.Message> typedMessages;
         private double temperature = 0.7;
         private int maxTokens = 4096;
         private double topP = 1.0;
@@ -50,6 +56,10 @@ public class LLMRequest {
         public Builder addMessage(String role, String content) {
             this.messages.add(Map.of("role", role, "content", content));
             return this;
+        }
+
+        public Builder typedMessages(List<io.sketch.mochaagents.agent.message.Message> msgs) {
+            this.typedMessages = msgs; return this;
         }
         public Builder temperature(double temperature) { this.temperature = temperature; return this; }
         public Builder maxTokens(int maxTokens) { this.maxTokens = maxTokens; return this; }
