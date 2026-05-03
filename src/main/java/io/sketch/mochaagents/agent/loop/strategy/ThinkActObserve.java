@@ -1,65 +1,83 @@
 package io.sketch.mochaagents.agent.loop.strategy;
 
 import io.sketch.mochaagents.agent.Agent;
-import io.sketch.mochaagents.agent.loop.AgenticLoop;
-import io.sketch.mochaagents.agent.loop.LoopState;
-import io.sketch.mochaagents.agent.loop.StepResult;
-import io.sketch.mochaagents.agent.loop.TerminationCondition;
+import io.sketch.mochaagents.agent.loop.*;
+import io.sketch.mochaagents.memory.AgentMemory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Think-Act-Observe 策略 — 先思考，再行动，最后观察.
+ * Think-Act-Observe — 三步认知循环.
  *
- * <p>三步循环，更强调前置推理阶段.
+ * <p>Think: 生成推理 → Act: 执行工具/代码 → Observe: 记录结果，迭代至终止.
+ * <p>与 ReActLoop 共享相同的 StepExecutor 契约，可在 MultiStepAgent 中替换使用.
  * @author lanxia39@163.com
  */
 public class ThinkActObserve<I, O> implements AgenticLoop<I, O> {
 
+    private static final Logger log = LoggerFactory.getLogger(ThinkActObserve.class);
+
+    @FunctionalInterface
+    public interface StepExecutor<I> {
+        StepResult execute(int stepNumber, I input, AgentMemory memory);
+    }
+
+    @FunctionalInterface
+    public interface PlanningFn<I> {
+        String plan(int stepNumber, I input, AgentMemory memory);
+    }
+
+    private final PlanningFn<I> planningFn;
+    private final StepExecutor<I> stepExecutor;
+
+    public ThinkActObserve(PlanningFn<I> planningFn, StepExecutor<I> stepExecutor) {
+        this.planningFn = planningFn;
+        this.stepExecutor = stepExecutor;
+    }
+
     @Override
     public O run(Agent<I, O> agent, I input, TerminationCondition condition) {
-        O lastOutput = null;
-        int stepNum = 0;
-        while (true) {
-            StepResult result = step(agent, input, stepNum + 1);
-            stepNum++;
-            if (condition.shouldTerminate(result)) {
-                break;
+        String agentName = agent.metadata().name();
+        AgentMemory memory = getMemory(agent);
+        log.info("[{}] TAO loop starting", agentName);
+
+        int step = 1;
+        StepResult result;
+        do {
+            // Think phase
+            if (planningFn != null && memory != null) {
+                String plan = planningFn.plan(step, input, memory);
+                if (plan != null) {
+                    memory.appendPlanning(plan, "", 0, 0);
+                }
             }
-            lastOutput = agent.execute(input);
-        }
-        return lastOutput;
+
+            // Act + Observe phase (handled by executor)
+            long stepStart = System.currentTimeMillis();
+            result = stepExecutor.execute(step, input, memory);
+            long stepMs = System.currentTimeMillis() - stepStart;
+
+            log.info("[{}] step {}: action={}, state={}, duration={}ms",
+                    agentName, step, result != null ? result.action() : "?",
+                    result != null ? result.state() : "?", stepMs);
+            step++;
+
+        } while (!condition.shouldTerminate(result) && (memory == null || !memory.hasFinalAnswer()));
+
+        @SuppressWarnings("unchecked")
+        O output = result != null ? (O) result.output() : null;
+        log.info("[{}] TAO loop finished: {} steps", agentName, step - 1);
+        return output;
     }
 
     @Override
     public StepResult step(Agent<I, O> agent, I input, int stepNum) {
-        long start = System.currentTimeMillis();
-        try {
-            // Think phase
-            StepResult thinkResult = StepResult.builder()
-                    .stepNumber(stepNum)
-                    .state(LoopState.PLAN)
-                    .action("think")
-                    .durationMs(0)
-                    .build();
+        AgentMemory memory = getMemory(agent);
+        return stepExecutor.execute(stepNum, input, memory);
+    }
 
-            // Act phase
-            O output = agent.execute(input);
-
-            // Observe phase
-            return StepResult.builder()
-                    .stepNumber(stepNum)
-                    .state(LoopState.OBSERVE)
-                    .observation(output != null ? output.toString() : "")
-                    .action("think→act→observe")
-                    .output(output != null ? output.toString() : "")
-                    .durationMs(System.currentTimeMillis() - start)
-                    .build();
-        } catch (Exception e) {
-            return StepResult.builder()
-                    .stepNumber(stepNum)
-                    .state(LoopState.ERROR)
-                    .error(e.getMessage())
-                    .durationMs(System.currentTimeMillis() - start)
-                    .build();
-        }
+    private static AgentMemory getMemory(Agent<?, ?> agent) {
+        if (agent instanceof MemoryProvider mp) return mp.memory();
+        return null;
     }
 }

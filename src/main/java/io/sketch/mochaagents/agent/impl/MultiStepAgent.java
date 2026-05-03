@@ -48,6 +48,7 @@ public abstract class MultiStepAgent extends CapableAgent<String, String>
     // ============ ReAct 核心组件 ============
 
     protected final LLM llm;
+    protected final io.sketch.mochaagents.llm.router.LLMRouter router;
     protected final AgentMemory memory = new AgentMemory();
     protected final int maxSteps;
     protected final int planningInterval;
@@ -76,6 +77,7 @@ public abstract class MultiStepAgent extends CapableAgent<String, String>
     protected MultiStepAgent(Builder<?> builder) {
         super(builder);
         this.llm = builder.llm;
+        this.router = builder.router;
         this.maxSteps = builder.maxSteps;
         this.planningInterval = builder.planningInterval;
         this.addBaseTools = builder.addBaseTools;
@@ -86,6 +88,14 @@ public abstract class MultiStepAgent extends CapableAgent<String, String>
         this.finalAnswerPostTemplate = builder.finalAnswerPostTemplate;
         setupManagedAgents(builder.managedAgents);
         setupTools(builder.tools);
+    }
+
+    /** Resolve the LLM to use — router if configured, otherwise direct LLM. */
+    protected LLM resolveLlm(io.sketch.mochaagents.llm.LLMRequest request) {
+        if (router != null && !router.getProviders().isEmpty()) {
+            return router.route(request);
+        }
+        return llm;
     }
 
     // ============ Public API ============
@@ -431,6 +441,7 @@ public abstract class MultiStepAgent extends CapableAgent<String, String>
             extends CapableAgent.Builder<String, String, T> {
 
         protected LLM llm;
+        protected io.sketch.mochaagents.llm.router.LLMRouter router;
         protected List<Tool> tools = new ArrayList<>();
         protected List<MultiStepAgent> managedAgents = new ArrayList<>();
         protected int maxSteps = 20;
@@ -442,6 +453,7 @@ public abstract class MultiStepAgent extends CapableAgent<String, String>
         protected PromptTemplate finalAnswerPostTemplate;
 
         public T llm(LLM llm) { this.llm = llm; return (T) this; }
+        public T router(io.sketch.mochaagents.llm.router.LLMRouter router) { this.router = router; return (T) this; }
         public T tools(List<Tool> tools) { this.tools = tools; return (T) this; }
         public T managedAgents(List<MultiStepAgent> agents) { this.managedAgents = agents; return (T) this; }
         public T maxSteps(int maxSteps) { this.maxSteps = maxSteps; return (T) this; }
