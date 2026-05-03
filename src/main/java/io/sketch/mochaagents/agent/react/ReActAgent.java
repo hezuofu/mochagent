@@ -67,9 +67,18 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
     // ============ Context ============
 
+    private io.sketch.mochaagents.context.AutoCompactor autoCompactor;
+
     /** Create a fresh ContextManager for each run — avoids stale state leakage. */
     protected ContextManager newContextManager() {
-        return new ContextManager(8192, (chunks, maxT) -> chunks, null);
+        ContextManager cm = new ContextManager(8192, (chunks, maxT) -> chunks, null);
+        if (autoCompactor == null) autoCompactor = new io.sketch.mochaagents.context.AutoCompactor(cm, 8192);
+        return cm;
+    }
+
+    /** Check and auto-compact context if approaching limit (claude-code pattern). */
+    protected void autoCompact() {
+        if (autoCompactor != null) autoCompactor.checkAndCompact();
     }
 
     // ============ Prompt 模板 ============
