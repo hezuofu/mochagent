@@ -3,6 +3,8 @@ package io.sketch.mochaagents.tool.impl;
 import io.sketch.mochaagents.agent.Agent;
 import io.sketch.mochaagents.agent.AgentContext;
 import io.sketch.mochaagents.agent.AgentMetadata;
+import io.sketch.mochaagents.agent.impl.ToolCallingAgent;
+import io.sketch.mochaagents.llm.LLM;
 import io.sketch.mochaagents.orchestration.TaskNotification;
 import io.sketch.mochaagents.tool.AbstractTool;
 import io.sketch.mochaagents.tool.ToolInput;
@@ -109,21 +111,27 @@ public class AgentTool extends AbstractTool {
     }
 
     /**
-     * 注册默认的通用 Agent 工厂. 需要 ToolRegistry 来组装子 Agent.
+     * 注册默认的通用 Agent 工厂，使用真实的 ToolCallingAgent.
      */
-    public void registerDefaultAgent(ToolRegistry toolRegistry) {
-        agentFactories.put("general-purpose", () -> createDefaultAgent(toolRegistry));
+    public void registerDefaultAgent(ToolRegistry toolRegistry, LLM llm) {
+        agentFactories.put("general-purpose", () -> createDefaultAgent(toolRegistry, llm));
     }
 
-    private Agent<Map<String, Object>, String> createDefaultAgent(ToolRegistry registry) {
-        // 创建一个简单的子 Agent，使用 ToolCallingAgent 类似的逻辑
+    /** 向后兼容 — 无 LLM 工厂注册，子 Agent 不可用. */
+    public void registerDefaultAgent(ToolRegistry toolRegistry) {
+        agentFactories.put("general-purpose", () -> createFallbackAgent());
+    }
+
+    private Agent<Map<String, Object>, String> createDefaultAgent(ToolRegistry registry, LLM llm) {
+        ToolCallingAgent subAgent = ToolCallingAgent.builder()
+                .name("SubAgent-General")
+                .llm(llm)
+                .toolRegistry(registry)
+                .maxSteps(10)
+                .build();
+
         return new Agent<Map<String, Object>, String>() {
             private final String id = "subagent-" + UUID.randomUUID().toString().substring(0, 8);
-            private final AgentMetadata metadata = AgentMetadata.builder()
-                    .name("SubAgent-General")
-                    .version("1.0")
-                    .description("General-purpose sub-agent for autonomous task execution")
-                    .build();
 
             @Override
             public String execute(Map<String, Object> input, io.sketch.mochaagents.agent.AgentContext ctx) {
@@ -138,34 +146,35 @@ public class AgentTool extends AbstractTool {
             public CompletableFuture<String> executeAsync(Map<String, Object> input, io.sketch.mochaagents.agent.AgentContext ctx) {
                 String prompt = (String) input.getOrDefault("prompt", "");
                 String taskDesc = (String) input.getOrDefault("description", "task");
-
-                // Build a simple agent context
-                Map<String, Object> context = new LinkedHashMap<>();
-                context.put("agentId", id);
-                context.put("prompt", prompt);
-                context.put("description", taskDesc);
+                String task = !prompt.isEmpty() ? prompt : taskDesc;
 
                 return CompletableFuture.supplyAsync(() -> {
-                    // Sub-agent execution: in a real implementation,
-                    // this would invoke the full ReAct loop with tools.
-                    // For now, return a structured result.
-                    StringBuilder result = new StringBuilder();
-                    result.append("[SubAgent:").append(id).append("]\n");
-                    result.append("Task: ").append(taskDesc).append("\n");
-                    result.append("Prompt: ").append(prompt).append("\n");
-                    result.append("Status: completed\n");
-                    result.append("The sub-agent has analyzed the task and executed the requested operations.\n");
-                    result.append("Please check the output above for the result.");
-                    return result.toString();
+                    return subAgent.run(io.sketch.mochaagents.agent.AgentContext.builder()
+                            .userMessage(task).sessionId(ctx != null ? ctx.sessionId() : null)
+                            .userId(ctx != null ? ctx.userId() : null).build());
                 });
             }
 
-            @Override
-            public AgentMetadata metadata() { return metadata; }
-            @Override
-            public void addListener(io.sketch.mochaagents.agent.AgentListener<Map<String, Object>, String> listener) {}
-            @Override
-            public void removeListener(io.sketch.mochaagents.agent.AgentListener<Map<String, Object>, String> listener) {}
+            @Override public AgentMetadata metadata() {
+                return AgentMetadata.builder().name("SubAgent-General")
+                        .version("1.0").description("ToolCallingAgent-backed sub-agent").build();
+            }
+            @Override public void addListener(io.sketch.mochaagents.agent.AgentListener<Map<String, Object>, String> l) {}
+            @Override public void removeListener(io.sketch.mochaagents.agent.AgentListener<Map<String, Object>, String> l) {}
+        };
+    }
+
+    private Agent<Map<String, Object>, String> createFallbackAgent() {
+        return new Agent<Map<String, Object>, String>() {
+            @Override public String execute(Map<String, Object> input, io.sketch.mochaagents.agent.AgentContext ctx) {
+                return "[SubAgent] No LLM configured — cannot execute autonomously.";
+            }
+            @Override public CompletableFuture<String> executeAsync(Map<String, Object> input, io.sketch.mochaagents.agent.AgentContext ctx) {
+                return CompletableFuture.completedFuture(execute(input, ctx));
+            }
+            @Override public AgentMetadata metadata() { return AgentMetadata.builder().name("SubAgent-Noop").build(); }
+            @Override public void addListener(io.sketch.mochaagents.agent.AgentListener<Map<String, Object>, String> l) {}
+            @Override public void removeListener(io.sketch.mochaagents.agent.AgentListener<Map<String, Object>, String> l) {}
         };
     }
 

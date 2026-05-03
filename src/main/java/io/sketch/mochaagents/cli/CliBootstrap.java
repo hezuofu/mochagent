@@ -60,6 +60,10 @@ public final class CliBootstrap {
             System.setProperty("mocha.simple", "true");
         }
 
+        // ── Bootstrap agent framework (skills + plugins) ──
+        log.debug("Bootstrapping agent framework");
+        AgentBootstrap.init();
+
         // ── Default: load full CLI ──
         log.info("Loading full CLI, command={}", args[0]);
         try {
