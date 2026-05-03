@@ -32,7 +32,7 @@ import java.util.regex.Pattern;
  * <p>对应 smolagents 的 {@code CodeAgent}.
  * @author lanxia39@163.com
  */
-public final class CodeAgent extends MultiStepAgent {
+public final class CodeAgent extends ReActAgent {
 
     private static final Logger log = LoggerFactory.getLogger(CodeAgent.class);
 
@@ -490,7 +490,7 @@ public final class CodeAgent extends MultiStepAgent {
         return new Builder();
     }
 
-    public static final class Builder extends MultiStepAgent.Builder<Builder> {
+    public static final class Builder extends ReActAgent.Builder<Builder> {
         private Set<String> authorizedImports;
         private String codeLanguage = "python";
         private int maxPrintOutputLength = 10000;

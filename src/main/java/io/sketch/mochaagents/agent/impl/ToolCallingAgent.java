@@ -30,7 +30,7 @@ import java.util.regex.Pattern;
  * <p>对应 smolagents 的 {@code ToolCallingAgent}.
  * @author lanxia39@163.com
  */
-public final class ToolCallingAgent extends MultiStepAgent {
+public final class ToolCallingAgent extends ReActAgent {
 
     private static final Logger log = LoggerFactory.getLogger(ToolCallingAgent.class);
 
@@ -232,7 +232,7 @@ public final class ToolCallingAgent extends MultiStepAgent {
         return new Builder();
     }
 
-    public static final class Builder extends MultiStepAgent.Builder<Builder> {
+    public static final class Builder extends ReActAgent.Builder<Builder> {
         @Override
         public ToolCallingAgent build() {
             return new ToolCallingAgent(this);

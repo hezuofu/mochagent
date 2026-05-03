@@ -26,12 +26,12 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 /**
- * MultiStepAgent — ReAct 循环的抽象基类.
+ * ReActAgent — ReAct 循环的抽象基类.
  *
  * <p>封装 "思考→行动→观察" 主循环，子类实现 {@link #executeReActStep(int, AgentMemory)}
  * 提供不同的动作执行策略。
  *
- * <p>对应 smolagents 的 {@code MultiStepAgent}.
+ * <p>对应 smolagents 的 {@code ReActAgent}.
  *
  * <h3>子类</h3>
  * <ul>
@@ -40,7 +40,7 @@ import java.util.*;
  * </ul>
  * @author lanxia39@163.com
  */
-public abstract class MultiStepAgent extends BaseAgent<String, String>
+public abstract class ReActAgent extends BaseAgent<String, String>
         implements MemoryProvider, SystemPromptProvider {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
@@ -55,7 +55,7 @@ public abstract class MultiStepAgent extends BaseAgent<String, String>
     protected final int maxSteps;
     protected final int planningInterval;
     protected final boolean addBaseTools;
-    protected final Map<String, MultiStepAgent> managedAgents = new LinkedHashMap<>();
+    protected final Map<String, ReActAgent> managedAgents = new LinkedHashMap<>();
     protected final io.sketch.mochaagents.orchestration.Orchestrator orchestrator;
     protected final io.sketch.mochaagents.agent.AgentEvents events = new io.sketch.mochaagents.agent.AgentEvents();
 
@@ -76,7 +76,7 @@ public abstract class MultiStepAgent extends BaseAgent<String, String>
     protected PromptTemplate finalAnswerPreTemplate;
     protected PromptTemplate finalAnswerPostTemplate;
 
-    protected MultiStepAgent(Builder<?> builder) {
+    protected ReActAgent(Builder<?> builder) {
         super(builder);
         this.optimization = builder.optimization;
         this.costTracker = new io.sketch.mochaagents.llm.CostTracker();
@@ -484,9 +484,9 @@ public abstract class MultiStepAgent extends BaseAgent<String, String>
 
     // ============ 初始化辅助 ============
 
-    private void setupManagedAgents(List<MultiStepAgent> agents) {
+    private void setupManagedAgents(List<ReActAgent> agents) {
         if (agents == null) return;
-        for (MultiStepAgent a : agents) {
+        for (ReActAgent a : agents) {
             managedAgents.put(a.name, a);
             if (orchestrator != null) {
                 orchestrator.register(a, io.sketch.mochaagents.orchestration.Role.worker(a.name));
@@ -557,7 +557,7 @@ public abstract class MultiStepAgent extends BaseAgent<String, String>
         protected io.sketch.mochaagents.llm.router.LLMRouter router;
         protected io.sketch.mochaagents.orchestration.Orchestrator orchestrator;
         protected List<Tool> tools = new ArrayList<>();
-        protected List<MultiStepAgent> managedAgents = new ArrayList<>();
+        protected List<ReActAgent> managedAgents = new ArrayList<>();
         protected int maxSteps = 20;
         protected int planningInterval;
         protected boolean addBaseTools;
@@ -573,7 +573,7 @@ public abstract class MultiStepAgent extends BaseAgent<String, String>
         public T router(io.sketch.mochaagents.llm.router.LLMRouter router) { this.router = router; return (T) this; }
         public T orchestrator(io.sketch.mochaagents.orchestration.Orchestrator o) { this.orchestrator = o; return (T) this; }
         public T tools(List<Tool> tools) { this.tools = tools; return (T) this; }
-        public T managedAgents(List<MultiStepAgent> agents) { this.managedAgents = agents; return (T) this; }
+        public T managedAgents(List<ReActAgent> agents) { this.managedAgents = agents; return (T) this; }
         public T maxSteps(int maxSteps) { this.maxSteps = maxSteps; return (T) this; }
         public T planningInterval(int interval) { this.planningInterval = interval; return (T) this; }
         public T addBaseTools(boolean add) { this.addBaseTools = add; return (T) this; }

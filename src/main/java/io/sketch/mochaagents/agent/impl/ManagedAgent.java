@@ -14,12 +14,12 @@ import java.util.Map;
  */
 public final class ManagedAgent implements Tool {
 
-    private final MultiStepAgent agent;
+    private final ReActAgent agent;
     private final String taskTemplate;
     private final String reportTemplate;
     private final boolean includeRunSummary;
 
-    public ManagedAgent(MultiStepAgent agent, String taskTemplate, String reportTemplate,
+    public ManagedAgent(ReActAgent agent, String taskTemplate, String reportTemplate,
                          boolean includeRunSummary) {
         this.agent = agent;
         this.taskTemplate = taskTemplate;
@@ -27,7 +27,7 @@ public final class ManagedAgent implements Tool {
         this.includeRunSummary = includeRunSummary;
     }
 
-    public ManagedAgent(MultiStepAgent agent) {
+    public ManagedAgent(ReActAgent agent) {
         this(agent, "Task: {{task}}", "Result: {{answer}}", false);
     }
 

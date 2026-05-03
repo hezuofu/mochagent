@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
  * Think-Act-Observe — 三步认知循环.
  *
  * <p>Think: 生成推理 → Act: 执行工具/代码 → Observe: 记录结果，迭代至终止.
- * <p>与 ReActLoop 共享相同的 StepExecutor 契约，可在 MultiStepAgent 中替换使用.
+ * <p>与 ReActLoop 共享相同的 StepExecutor 契约，可在 ReActAgent 中替换使用.
  * @author lanxia39@163.com
  */
 public class ThinkActObserve<I, O> implements AgenticLoop<I, O> {
