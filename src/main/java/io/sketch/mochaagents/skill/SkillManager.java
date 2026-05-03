@@ -19,20 +19,20 @@ import java.util.List;
  *
  * <p>典型用法:
  * <pre>{@code
- * SkillsInit init = SkillsInit.bootstrap(toolRegistry);
+ * SkillManager init = SkillManager.bootstrap(toolRegistry);
  * // 后续可通过 init.skillRegistry() 查找技能
  * }</pre>
  * @author lanxia39@163.com
  */
-public class SkillsInit {
+public class SkillManager {
 
-    private static final Logger log = LoggerFactory.getLogger(SkillsInit.class);
+    private static final Logger log = LoggerFactory.getLogger(SkillManager.class);
 
     private final SkillRegistry skillRegistry;
     private final FileSystemSkillLoader fileLoader;
     private final ToolRegistry toolRegistry;
 
-    private SkillsInit(ToolRegistry toolRegistry) {
+    private SkillManager(ToolRegistry toolRegistry) {
         this.skillRegistry = new SkillRegistry();
         this.fileLoader = new FileSystemSkillLoader();
         this.toolRegistry = toolRegistry;
@@ -42,10 +42,10 @@ public class SkillsInit {
      * 引导技能系统: 注册内置技能 + 加载文件系统技能 + 注册 SkillTool.
      *
      * @param toolRegistry 全局工具注册表
-     * @return 初始化后的 SkillsInit 实例
+     * @return 初始化后的 SkillManager 实例
      */
-    public static SkillsInit bootstrap(ToolRegistry toolRegistry) {
-        SkillsInit init = new SkillsInit(toolRegistry);
+    public static SkillManager bootstrap(ToolRegistry toolRegistry) {
+        SkillManager init = new SkillManager(toolRegistry);
         init.registerBundledSkills();
         init.loadFileSystemSkills();
         init.registerSkillTool();

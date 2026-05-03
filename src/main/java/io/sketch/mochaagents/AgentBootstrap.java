@@ -1,7 +1,7 @@
 package io.sketch.mochaagents;
 
 import io.sketch.mochaagents.plugin.PluginBootstrap;
-import io.sketch.mochaagents.skill.SkillsInit;
+import io.sketch.mochaagents.skill.SkillManager;
 import io.sketch.mochaagents.tool.ToolRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,15 +17,15 @@ public final class AgentBootstrap {
     private static final Logger log = LoggerFactory.getLogger(AgentBootstrap.class);
 
     private final ToolRegistry toolRegistry;
-    private final SkillsInit skillsInit;
+    private final SkillManager skillManager;
     private final PluginBootstrap pluginBootstrap;
 
     private AgentBootstrap() {
         this.toolRegistry = new ToolRegistry();
-        this.skillsInit = SkillsInit.bootstrap(toolRegistry);
-        this.pluginBootstrap = PluginBootstrap.bootstrap(skillsInit.skillRegistry());
+        this.skillManager = SkillManager.bootstrap(toolRegistry);
+        this.pluginBootstrap = PluginBootstrap.bootstrap(skillManager.skillRegistry());
         log.info("Agent framework bootstrapped: {} tools, {} skills, {} plugins",
-                toolRegistry.size(), skillsInit.skillRegistry().size(),
+                toolRegistry.size(), skillManager.skillRegistry().size(),
                 pluginBootstrap.pluginManager().size());
     }
 
@@ -35,6 +35,6 @@ public final class AgentBootstrap {
     }
 
     public ToolRegistry toolRegistry() { return toolRegistry; }
-    public SkillsInit skillsInit() { return skillsInit; }
+    public SkillManager skillManager() { return skillManager; }
     public PluginBootstrap pluginBootstrap() { return pluginBootstrap; }
 }
