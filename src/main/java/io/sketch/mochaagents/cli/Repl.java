@@ -43,8 +43,24 @@ final class Repl implements CliCommand {
                                 + (bootstrap != null ? bootstrap.toolRegistry().size() : 0)); break;
                     default:
                         out.println("[Agent] " + truncate(line, 80));
-                        try { out.println(" => " + agent().run(line)); }
-                        catch (Exception e) { log.error("Agent error", e); out.println("Error: " + e.getMessage()); }
+                        try {
+                            // Subscribe to events for real-time feedback
+                            var a = agent();
+                            var unsub = a.onEvent(e -> {
+                                switch (e.type()) {
+                                    case io.sketch.mochaagents.agent.AgentEvents.COST -> {
+                                        double[] c = (double[]) e.data();
+                                        out.printf("  [cost: $%.4f, %d in/%d out tokens]%n",
+                                                c[0], (long) c[1], (long) c[2]);
+                                    }
+                                    case io.sketch.mochaagents.agent.AgentEvents.COMPLETED ->
+                                        out.println("  [completed in " + e.elapsedMs() + "ms]");
+                                }
+                            });
+                            String result = a.run(line);
+                            unsub.run(); // unsubscribe
+                            out.println(" => " + result);
+                        } catch (Exception e) { log.error("Agent error", e); out.println("Error: " + e.getMessage()); }
                 }
             }
         } catch (Exception e) { log.error("REPL error", e); }
