@@ -11,17 +11,17 @@ import java.util.List;
  * 监督 Agent 策略 — 一个监督 Agent 分配任务给工作 Agent，审查结果.
  * @author lanxia39@163.com
  */
-public class SupervisorAgent implements OrchestrationStrategy {
+public class SupervisorStrategy implements OrchestrationStrategy {
 
-    private static final Logger log = LoggerFactory.getLogger(SupervisorAgent.class);
+    private static final Logger log = LoggerFactory.getLogger(SupervisorStrategy.class);
 
     @Override
     @SuppressWarnings("unchecked")
     public <I, O> O execute(AgentTeam team, I input) {
-        log.info("SupervisorAgent executing for team '{}'", team.name());
+        log.info("SupervisorStrategy executing for team '{}'", team.name());
         List<Agent<?, ?>> workers = team.getByRole(RoleType.WORKER);
         List<Agent<?, ?>> leaders = team.getLeaders();
-        log.debug("SupervisorAgent: {} leaders, {} workers", leaders.size(), workers.size());
+        log.debug("SupervisorStrategy: {} leaders, {} workers", leaders.size(), workers.size());
 
         // 领导者分解任务并分配
         final Object task;
@@ -39,11 +39,11 @@ public class SupervisorAgent implements OrchestrationStrategy {
         // 领导者汇总结果
         if (!leaders.isEmpty()) {
             O result = ((Agent<List<Object>, O>) (Object) leaders.get(0)).execute(results);
-            log.info("SupervisorAgent completed for team '{}'", team.name());
+            log.info("SupervisorStrategy completed for team '{}'", team.name());
             return result;
         }
 
-        log.info("SupervisorAgent completed for team '{}' (no leaders)", team.name());
+        log.info("SupervisorStrategy completed for team '{}' (no leaders)", team.name());
         return (O) results;
     }
 }
