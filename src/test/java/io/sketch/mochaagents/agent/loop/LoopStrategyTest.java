@@ -5,7 +5,7 @@ import io.sketch.mochaagents.agent.AgentContext;
 import io.sketch.mochaagents.agent.AgentListener;
 import io.sketch.mochaagents.agent.AgentMetadata;
 import io.sketch.mochaagents.agent.MemoryProvider;
-import io.sketch.mochaagents.agent.loop.reflection.ReflectionEngine;
+import io.sketch.mochaagents.agent.loop.ReflectionEngine;
 import io.sketch.mochaagents.agent.loop.strategy.ObservePlanActReflect;
 import io.sketch.mochaagents.agent.loop.strategy.ThinkActObserve;
 import io.sketch.mochaagents.memory.AgentMemory;
