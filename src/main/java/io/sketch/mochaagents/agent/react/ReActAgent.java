@@ -61,9 +61,10 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     protected final Map<String, ReActAgent> managedAgents = new LinkedHashMap<>();
     protected final io.sketch.mochaagents.orchestration.Orchestrator orchestrator;
     protected final io.sketch.mochaagents.agent.AgentEvents events = new io.sketch.mochaagents.agent.AgentEvents();
+    protected final io.sketch.mochaagents.agent.react.Hooks hooks = new io.sketch.mochaagents.agent.react.Hooks();
 
-    /** Subscribe to real-time execution events. Returns unsubscribe handle. */
     public Runnable onEvent(io.sketch.mochaagents.agent.AgentEvents.Listener l) { return events.subscribe(l); }
+    public Hooks hooks() { return hooks; }
 
     // ============ Context ============
 
