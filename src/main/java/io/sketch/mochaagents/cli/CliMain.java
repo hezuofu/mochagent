@@ -85,9 +85,8 @@ public final class CliMain {
         }
         switch (args[0]) {
             case "serve":
-                log.info("MCP serve requested");
-                System.out.println("[MCP] Starting MCP server stub...");
-                System.out.println("[MCP] Server ready on stdio (NDJSON protocol)");
+                log.info("MCP serve — starting real MCP server");
+                new io.sketch.mochaagents.tool.mcp.McpServer().serve();
                 break;
             case "list":
                 log.debug("MCP list requested");
