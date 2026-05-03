@@ -1,6 +1,7 @@
 package io.sketch.mochaagents.agent.impl;
 
 import io.sketch.mochaagents.agent.AgentContext;
+import io.sketch.mochaagents.agent.AgentEvents;
 import io.sketch.mochaagents.agent.MemoryProvider;
 import io.sketch.mochaagents.agent.SystemPromptProvider;
 import io.sketch.mochaagents.agent.loop.TerminationCondition;
@@ -56,6 +57,10 @@ public abstract class MultiStepAgent extends BaseAgent<String, String>
     protected final boolean addBaseTools;
     protected final Map<String, MultiStepAgent> managedAgents = new LinkedHashMap<>();
     protected final io.sketch.mochaagents.orchestration.Orchestrator orchestrator;
+    protected final io.sketch.mochaagents.agent.AgentEvents events = new io.sketch.mochaagents.agent.AgentEvents();
+
+    /** Subscribe to real-time execution events. Returns unsubscribe handle. */
+    public Runnable onEvent(io.sketch.mochaagents.agent.AgentEvents.Listener l) { return events.subscribe(l); }
 
     // ============ Context ============
 
@@ -177,6 +182,7 @@ public abstract class MultiStepAgent extends BaseAgent<String, String>
         String task = ctx.userMessage();
         log.info("Agent '{}' starting, session={}, user={}, maxSteps={}, task={}",
                 name, ctx.sessionId(), ctx.userId(), maxSteps, truncate(task, 120));
+        events.fire(new AgentEvents.Event(AgentEvents.STARTED, name, task, 0));
 
         // 构建系统提示（可被 ctx.metadata 覆盖）
         String systemPrompt = buildSystemPrompt();
@@ -221,6 +227,13 @@ public abstract class MultiStepAgent extends BaseAgent<String, String>
         long elapsed = System.currentTimeMillis() - startMs;
         log.info("Agent '{}' completed in {}ms, steps={}, result={}",
                 name, elapsed, memory.steps().size(), truncate(result, 300));
+
+        // Fire completion events
+        events.fire(new AgentEvents.Event(AgentEvents.COMPLETED, name, result, elapsed));
+        events.fire(new AgentEvents.Event(AgentEvents.COST, name,
+                new double[]{costTracker.estimatedTotalCost(),
+                        (double) costTracker.totalInputTokens(),
+                        (double) costTracker.totalOutputTokens()}, elapsed));
         return result;
     }
 
