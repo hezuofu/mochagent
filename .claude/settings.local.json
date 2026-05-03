@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 *)",
+      "Bash(mvn test *)",
+      "Bash(mvn compile *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(mvn test-compile *)",
+      "Bash(mvn clean *)",
+      "Bash(iconv -f GBK -t UTF-8)",
+      "Bash(python -c ' *)",
+      "Bash(python *)",
+      "Bash(mvn pmd:pmd -q)",
+      "Bash(mvn spotbugs:check)"
+    ]
+  }
+}

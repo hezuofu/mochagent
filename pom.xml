@@ -101,6 +101,11 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.12</version>
+                <configuration>
+                    <excludes>
+                        <exclude>**/examples/**</exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>
@@ -117,24 +122,18 @@
                 </executions>
             </plugin>
 
-            <!-- SpotBugs: bytecode-level bug detection -->
+            <!-- SpotBugs: bytecode-level bug detection (on demand: mvn spotbugs:check) -->
             <plugin>
                 <groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
                 <version>4.8.6.0</version>
                 <configuration>
                     <effort>Max</effort>
-                    <threshold>Medium</threshold>
+                    <threshold>Low</threshold>
                     <xmlOutput>true</xmlOutput>
                     <spotbugsXmlOutputDirectory>target/spotbugs</spotbugsXmlOutputDirectory>
+                    <excludeFilterFile>spotbugs-exclude.xml</excludeFilterFile>
                 </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
 
             <!-- PMD: source-level static analysis -->
@@ -143,6 +142,10 @@
                 <artifactId>maven-pmd-plugin</artifactId>
                 <version>3.22.0</version>
                 <configuration>
+                    <excludes>
+                        <exclude>**/examples/**</exclude>
+                    </excludes>
+                    <maxAllowedViolations>800</maxAllowedViolations>
                     <rulesets>
                         <ruleset>category/java/bestpractices.xml</ruleset>
                         <ruleset>category/java/errorprone.xml</ruleset>

@@ -40,11 +40,8 @@ public class BugCheckTool extends AbstractTool {
             "\\.printStackTrace\\s*\\(");
 
     public BugCheckTool() {
-        super("bug_check");
+        super("bug_check", "Static analysis tool for detecting common bugs", SecurityLevel.LOW);
     }
-
-    @Override
-    public String getName() { return "bug_check"; }
 
     @Override
     public String getDescription() {
@@ -66,7 +63,7 @@ public class BugCheckTool extends AbstractTool {
 
     @Override
     public ToolSchema getSchema() {
-        return ToolSchema.inputBuilder()
+        return ToolSchema.builder()
                 .inputRequired("code")
                 .inputProperty("code", "string", "Source code to analyze", true)
                 .inputProperty("language", "string", "Programming language (java/python/sql)", false)
