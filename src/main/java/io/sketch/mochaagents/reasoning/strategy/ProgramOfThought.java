@@ -27,12 +27,12 @@ public class ProgramOfThought implements ReasoningStrategy {
         ReasoningChain chain = new ReasoningChain();
 
         String prompt = """
-                Solve by writing executable code.
-                Output:
-                ```python
-                # compute the answer, use print() for output
+                Solve this problem by writing JavaScript code.
+                Output format:
+                ```javascript
+                // Compute the answer, use console.log() or return the result
                 ```
-                Explanation: <why this works>
+                Then on a new line write: Explanation: <why this approach works>
 
                 Question: %s""".formatted(question);
 

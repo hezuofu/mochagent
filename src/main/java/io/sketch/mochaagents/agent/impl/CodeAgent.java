@@ -79,18 +79,15 @@ public final class CodeAgent extends MultiStepAgent {
                     "instructions", description != null ? description : ""
             ));
         }
-        return """
+        return String.format("""
                 You are an AI assistant that solves tasks by writing and executing code.
-                You have access to the following tools:
-                {tools}
+                Available tools:
+                %s
 
-                For each step, write code to accomplish the task.
-                Enclose your code in <code>...</code> tags.
-                The output of your code will be shown to you.
-
-                To give the final answer, call final_answer("your answer") inside the code block.
-                You can print to see intermediate results but use final_answer() for the final result.
-                """.replace("{tools}", formatTools());
+                Enclose code in <code>...</code> tags. The code output is shown back to you.
+                Call final_answer(\"your answer\") inside code to finish.
+                You can print for debugging but use final_answer() for the final result.
+                """, formatTools());
     }
 
     @Override

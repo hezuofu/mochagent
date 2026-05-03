@@ -53,21 +53,21 @@ public final class ToolCallingAgent extends MultiStepAgent {
             ));
         }
         // 默认系统提示
-        return """
+        return String.format("""
                 You are an AI assistant that solves tasks step by step.
-                You have access to the following tools:
-                {tools}
+                Available tools:
+                %s
 
                 For each step, respond in this exact format:
                 Thought: <your reasoning about what to do next>
-                Action: <tool_name>(<arguments>)
+                Action: <tool_name>(arguments)
 
-                When you have the final answer, use:
-                Action: final_answer(answer="your answer")
+                Arguments use key=\"value\" format: tool(key=\"value\")
+                When done, use: Action: final_answer(answer=\"your answer\")
 
-                After each action, you will receive an Observation.
+                You will receive an Observation after each action.
                 Use these observations to decide your next action.
-                """.replace("{tools}", formatTools());
+                """, formatTools());
     }
 
     @Override
