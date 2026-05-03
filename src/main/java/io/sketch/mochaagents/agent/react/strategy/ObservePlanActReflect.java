@@ -1,11 +1,11 @@
-package io.sketch.mochaagents.agent.loop.strategy;
+package io.sketch.mochaagents.agent.react.strategy;
 
 import io.sketch.mochaagents.agent.Agent;
 import java.util.function.Predicate;
 import io.sketch.mochaagents.agent.MemoryProvider;
-import io.sketch.mochaagents.agent.loop.*;
-import io.sketch.mochaagents.agent.loop.ReflectionEngine;
-import io.sketch.mochaagents.agent.loop.SelfCritique;
+import io.sketch.mochaagents.agent.react.*;
+import io.sketch.mochaagents.agent.react.ReflectionEngine;
+import io.sketch.mochaagents.agent.react.SelfCritique;
 import io.sketch.mochaagents.memory.AgentMemory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,7 +64,7 @@ public class ObservePlanActReflect<I, O> implements AgenticLoop<I, O> {
             if (observer != null && memory != null) {
                 String obs = observer.observe(step, input, memory);
                 if (obs != null && !obs.isEmpty()) {
-                    memory.append(new io.sketch.mochaagents.agent.loop.step.ContentStep(
+                    memory.append(new io.sketch.mochaagents.agent.react.step.ContentStep(
                             "observation", obs, null, java.util.List.of()));
                 }
             }

@@ -1,4 +1,4 @@
-package io.sketch.mochaagents.agent.loop;
+package io.sketch.mochaagents.agent.react;
 
 /**
  * 单步执行结果 — 记录每一步的状态、动作与产出.

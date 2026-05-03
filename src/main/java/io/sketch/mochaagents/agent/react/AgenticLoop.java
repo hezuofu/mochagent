@@ -1,4 +1,4 @@
-package io.sketch.mochaagents.agent.loop;
+package io.sketch.mochaagents.agent.react;
 
 import io.sketch.mochaagents.agent.Agent;
 import java.util.function.Predicate;

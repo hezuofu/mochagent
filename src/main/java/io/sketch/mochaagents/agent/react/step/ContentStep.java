@@ -1,4 +1,4 @@
-package io.sketch.mochaagents.agent.loop.step;
+package io.sketch.mochaagents.agent.react.step;
 
 import java.util.List;
 

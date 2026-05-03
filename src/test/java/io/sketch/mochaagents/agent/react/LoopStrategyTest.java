@@ -1,13 +1,13 @@
-package io.sketch.mochaagents.agent.loop;
+package io.sketch.mochaagents.agent.react;
 
 import io.sketch.mochaagents.agent.Agent;
 import io.sketch.mochaagents.agent.AgentContext;
 import io.sketch.mochaagents.agent.AgentListener;
 import io.sketch.mochaagents.agent.AgentMetadata;
 import io.sketch.mochaagents.agent.MemoryProvider;
-import io.sketch.mochaagents.agent.loop.ReflectionEngine;
-import io.sketch.mochaagents.agent.loop.strategy.ObservePlanActReflect;
-import io.sketch.mochaagents.agent.loop.strategy.ThinkActObserve;
+import io.sketch.mochaagents.agent.react.ReflectionEngine;
+import io.sketch.mochaagents.agent.react.strategy.ObservePlanActReflect;
+import io.sketch.mochaagents.agent.react.strategy.ThinkActObserve;
 import io.sketch.mochaagents.memory.AgentMemory;
 import org.junit.jupiter.api.Test;
 
@@ -22,7 +22,7 @@ class LoopStrategyTest {
                                       AgentMemory memory, int maxSteps, boolean produceFinalAnswer) {
         counter.incrementAndGet();
         if (memory != null) {
-            memory.appendAction(new io.sketch.mochaagents.agent.loop.step.ActionStep(
+            memory.appendAction(new io.sketch.mochaagents.agent.react.step.ActionStep(
                     stepNumber, input, "", "tool", "ok", null, 1, 1, false));
             if (produceFinalAnswer && stepNumber >= maxSteps) {
                 memory.appendFinalAnswer("done");

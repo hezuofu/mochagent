@@ -1,9 +1,9 @@
-package io.sketch.mochaagents.agent.loop.strategy;
+package io.sketch.mochaagents.agent.react.strategy;
 
 import io.sketch.mochaagents.agent.Agent;
-import io.sketch.mochaagents.agent.loop.AgenticLoop;
+import io.sketch.mochaagents.agent.react.AgenticLoop;
 import io.sketch.mochaagents.agent.MemoryProvider;
-import io.sketch.mochaagents.agent.loop.StepResult;
+import io.sketch.mochaagents.agent.react.StepResult;
 import io.sketch.mochaagents.agent.SystemPromptProvider;
 import java.util.function.Predicate;
 import io.sketch.mochaagents.memory.AgentMemory;

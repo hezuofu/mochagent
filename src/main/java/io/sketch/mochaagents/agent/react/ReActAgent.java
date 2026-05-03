@@ -1,20 +1,21 @@
-package io.sketch.mochaagents.agent.impl;
+package io.sketch.mochaagents.agent.react;
 
 import io.sketch.mochaagents.agent.AgentContext;
 import io.sketch.mochaagents.agent.AgentEvents;
 import java.util.function.Predicate;
+import io.sketch.mochaagents.agent.impl.BaseAgent;
 import io.sketch.mochaagents.agent.MemoryProvider;
 import io.sketch.mochaagents.agent.SystemPromptProvider;
-import io.sketch.mochaagents.agent.loop.StepResult;
-import io.sketch.mochaagents.agent.loop.Termination;
-import io.sketch.mochaagents.agent.loop.strategy.ReActLoop;
+import io.sketch.mochaagents.agent.react.StepResult;
+import io.sketch.mochaagents.agent.react.Termination;
+import io.sketch.mochaagents.agent.react.strategy.ReActLoop;
 import io.sketch.mochaagents.context.ContextManager;
 import io.sketch.mochaagents.evaluation.EvaluationResult;
 import io.sketch.mochaagents.llm.LLM;
 import io.sketch.mochaagents.llm.LLMRequest;
 import io.sketch.mochaagents.llm.LLMResponse;
 import io.sketch.mochaagents.memory.AgentMemory;
-import io.sketch.mochaagents.agent.loop.step.*;
+import io.sketch.mochaagents.agent.react.step.*;
 import io.sketch.mochaagents.perception.PerceptionResult;
 import io.sketch.mochaagents.plan.Plan;
 import io.sketch.mochaagents.plan.PlanningRequest;
@@ -224,7 +225,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     }
 
     /** Override in subclasses to add streaming. Default falls back to normal execution. */
-    protected io.sketch.mochaagents.agent.loop.StepResult executeReActStepStreaming(
+    protected io.sketch.mochaagents.agent.react.StepResult executeReActStepStreaming(
             int stepNumber, String input, AgentMemory memory,
             java.util.function.Consumer<String> onToken) {
         return executeReActStep(stepNumber, input, memory);
@@ -327,7 +328,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
      * @param memory     Agent 记忆
      * @return StepResult 包含观察、输出和终止状态
      */
-    protected abstract io.sketch.mochaagents.agent.loop.StepResult executeReActStep(
+    protected abstract io.sketch.mochaagents.agent.react.StepResult executeReActStep(
             int stepNumber, String input, AgentMemory memory);
 
     // ============ 内部方法 ============

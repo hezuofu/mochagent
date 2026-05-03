@@ -1,7 +1,7 @@
 package io.sketch.mochaagents.memory;
 
-import io.sketch.mochaagents.agent.loop.step.ActionStep;
-import io.sketch.mochaagents.agent.loop.step.ContentStep;
+import io.sketch.mochaagents.agent.react.step.ActionStep;
+import io.sketch.mochaagents.agent.react.step.ContentStep;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

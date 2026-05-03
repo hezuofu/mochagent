@@ -1,4 +1,4 @@
-package io.sketch.mochaagents.agent.loop.step;
+package io.sketch.mochaagents.agent.react.step;
 
 /**
  * 行动步 — 记录单次 ReAct 循环中的思考-行动-观察.

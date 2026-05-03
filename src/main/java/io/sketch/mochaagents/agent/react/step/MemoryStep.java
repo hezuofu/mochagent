@@ -1,4 +1,4 @@
-package io.sketch.mochaagents.agent.loop.step;
+package io.sketch.mochaagents.agent.react.step;
 
 /**
  * Agent 执行步 — sealed 接口，定义 ReAct 循环中记录的步骤类型.

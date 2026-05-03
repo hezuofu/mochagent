@@ -1,4 +1,4 @@
-package io.sketch.mochaagents.agent.loop.step;
+package io.sketch.mochaagents.agent.react.step;
 
 /**
  * 规划步 — 记录 Agent 在规划阶段生成的计划.

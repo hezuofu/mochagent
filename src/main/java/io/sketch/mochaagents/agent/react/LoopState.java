@@ -1,4 +1,4 @@
-package io.sketch.mochaagents.agent.loop;
+package io.sketch.mochaagents.agent.react;
 
 /**
  * Agentic Loop 循环状态枚举.

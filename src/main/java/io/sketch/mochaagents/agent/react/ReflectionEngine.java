@@ -1,4 +1,4 @@
-package io.sketch.mochaagents.agent.loop;
+package io.sketch.mochaagents.agent.react;
 
 /**
  * 反思引擎接口 — 评估单步执行结果，生成改进计划.

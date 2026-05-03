@@ -1,11 +1,12 @@
 package io.sketch.mochaagents.agent.impl;
 
-import io.sketch.mochaagents.agent.loop.LoopState;
-import io.sketch.mochaagents.agent.loop.StepResult;
+import io.sketch.mochaagents.agent.react.LoopState;
+import io.sketch.mochaagents.agent.react.ReActAgent;
+import io.sketch.mochaagents.agent.react.StepResult;
 import io.sketch.mochaagents.llm.LLMRequest;
 import io.sketch.mochaagents.llm.LLMResponse;
 import io.sketch.mochaagents.memory.AgentMemory;
-import io.sketch.mochaagents.agent.loop.step.ActionStep;
+import io.sketch.mochaagents.agent.react.step.ActionStep;
 import io.sketch.mochaagents.tool.Tool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

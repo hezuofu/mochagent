@@ -2,8 +2,8 @@ package io.sketch.mochaagents.examples;
 
 import io.sketch.mochaagents.agent.impl.CodeAgent;
 import io.sketch.mochaagents.memory.AgentMemory;
-import io.sketch.mochaagents.agent.loop.step.MemoryStep;
-import io.sketch.mochaagents.agent.loop.step.PlanningStep;
+import io.sketch.mochaagents.agent.react.step.MemoryStep;
+import io.sketch.mochaagents.agent.react.step.PlanningStep;
 import io.sketch.mochaagents.tool.ToolRegistry;
 
 import java.util.Scanner;

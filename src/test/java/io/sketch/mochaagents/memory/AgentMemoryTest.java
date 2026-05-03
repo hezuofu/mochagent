@@ -1,8 +1,8 @@
 package io.sketch.mochaagents.memory;
 
-import io.sketch.mochaagents.agent.loop.step.ActionStep;
-import io.sketch.mochaagents.agent.loop.step.ContentStep;
-import io.sketch.mochaagents.agent.loop.step.PlanningStep;
+import io.sketch.mochaagents.agent.react.step.ActionStep;
+import io.sketch.mochaagents.agent.react.step.ContentStep;
+import io.sketch.mochaagents.agent.react.step.PlanningStep;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

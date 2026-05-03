@@ -1,9 +1,9 @@
-package io.sketch.mochaagents.agent.loop.strategy;
+package io.sketch.mochaagents.agent.react.strategy;
 
 import io.sketch.mochaagents.agent.Agent;
 import java.util.function.Predicate;
 import io.sketch.mochaagents.agent.MemoryProvider;
-import io.sketch.mochaagents.agent.loop.*;
+import io.sketch.mochaagents.agent.react.*;
 import io.sketch.mochaagents.memory.AgentMemory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
