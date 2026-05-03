@@ -145,10 +145,9 @@
                     <excludes>
                         <exclude>**/examples/**</exclude>
                     </excludes>
-                    <maxAllowedViolations>800</maxAllowedViolations>
+                    <maxAllowedViolations>300</maxAllowedViolations>
                     <rulesets>
-                        <ruleset>category/java/bestpractices.xml</ruleset>
-                        <ruleset>category/java/errorprone.xml</ruleset>
+                        <ruleset>pmd-rules.xml</ruleset>
                     </rulesets>
                 </configuration>
                 <executions>

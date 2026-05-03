@@ -205,7 +205,6 @@ public final class StructuredIO implements AutoCloseable {
             if (!"user".equals(type) && !"assistant".equals(type)
                     && !"system".equals(type) && !"control_request".equals(type)) {
                 log.warn("Ignoring unknown message type: {}", type);
-                System.err.println("[StructuredIO] Ignoring unknown message type: " + type);
                 continue;
             }
 
@@ -426,7 +425,6 @@ public final class StructuredIO implements AutoCloseable {
             return MAPPER.readValue(line, MAP_TYPE);
         } catch (IOException e) {
             log.warn("Error parsing NDJSON line: {}: {}", abbreviate(line, 80), e.getMessage());
-            System.err.println("[StructuredIO] Error parsing line: " + abbreviate(line, 80) + ": " + e.getMessage());
             return null;
         }
     }
@@ -437,7 +435,6 @@ public final class StructuredIO implements AutoCloseable {
         Map<String, Object> response = (Map<String, Object>) message.get("response");
         if (response == null) {
             log.warn("control_response missing 'response' field");
-            System.err.println("[StructuredIO] control_response missing 'response' field");
             return;
         }
 

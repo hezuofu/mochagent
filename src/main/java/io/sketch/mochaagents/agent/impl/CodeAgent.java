@@ -355,7 +355,7 @@ public final class CodeAgent extends MultiStepAgent {
         engine.put("print", (java.util.function.Consumer<Object>) obj -> {
             String s = obj != null ? obj.toString() : "null";
             printOutputs.add(s);
-            System.out.println("[CodeAgent output] " + s);
+            log.debug("[CodeAgent output] {}", s);
         });
     }
 

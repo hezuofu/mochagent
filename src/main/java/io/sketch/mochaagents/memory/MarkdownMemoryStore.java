@@ -1,5 +1,8 @@
 package io.sketch.mochaagents.memory;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -34,6 +37,7 @@ import java.util.stream.Stream;
  */
 public class MarkdownMemoryStore implements MemoryStore {
 
+    private static final Logger log = LoggerFactory.getLogger(MarkdownMemoryStore.class);
     private static final String EXT = ".md";
     private static final String FRONTMATTER_DELIM = "---";
 
@@ -134,7 +138,7 @@ public class MarkdownMemoryStore implements MemoryStore {
                     cache.put(entry.id(), entry);
                 } catch (Exception e) {
                     // 跳过损坏文件，不阻塞整体加载
-                    System.err.println("[MarkdownMemoryStore] Skip corrupted file: " + file + " - " + e.getMessage());
+                    log.warn("Skip corrupted file: {} - {}", file, e.getMessage());
                 }
             }
         } catch (IOException e) {
