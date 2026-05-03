@@ -171,6 +171,63 @@ public abstract class MultiStepAgent extends BaseAgent<String, String>
         return run(AgentContext.of(task), maxSteps);
     }
 
+    /** 流式执行 — 实时推送每个 LLM 调用 token 到回调. */
+    public String runStreaming(AgentContext ctx, java.util.function.Consumer<String> onToken) {
+        return runStreaming(ctx, maxSteps, onToken);
+    }
+
+    /** 流式执行 — 指定最大步数,实时推送 token. */
+    public String runStreaming(AgentContext ctx, int maxSteps, java.util.function.Consumer<String> onToken) {
+        long startMs = System.currentTimeMillis();
+        String task = ctx.userMessage();
+        log.info("Agent '{}' starting (streaming), maxSteps={}, task={}", name, maxSteps, truncate(task, 120));
+        onToken.accept("[Agent:" + name + "] ");
+
+        String systemPrompt = buildSystemPrompt();
+        systemPrompt = enrichFromContext(systemPrompt, ctx);
+        memory.reset(systemPrompt);
+        memory.appendTask(task);
+        injectConversationHistory(ctx);
+
+        ContextManager ctxMgr = newContextManager();
+        injectMemories(task, ctxMgr);
+        perceiveAndRemember(task, ctxMgr);
+        ReasoningChain chain = reason(task, ctxMgr);
+        planAndRemember(task, chain, ctxMgr);
+
+        // Streaming ReAct loop
+        ReActLoop<String, String> loop = new ReActLoop<>(
+                (ReActLoop.PlanningFn<String>) this::planStep,
+                (ReActLoop.StepExecutor<String>) (step, input, mem) ->
+                        executeReActStepStreaming(step, input, mem, onToken),
+                planningInterval);
+
+        TerminationCondition condition = TerminationCondition.maxSteps(maxSteps)
+                .or(TerminationCondition.onError());
+        String result = loop.run(this, task, condition);
+
+        if (!memory.hasFinalAnswer()) {
+            result = provideFinalAnswer(task);
+            memory.appendFinalAnswer(result);
+        }
+
+        EvaluationResult eval = evaluate(task, result, ctxMgr);
+        reflectAndLearn(task, result, eval, ctxMgr);
+        ctxMgr.compress();
+
+        long elapsed = System.currentTimeMillis() - startMs;
+        onToken.accept("\n[" + name + " done in " + elapsed + "ms, " + memory.steps().size() + " steps]");
+        log.info("Agent '{}' streaming completed in {}ms", name, elapsed);
+        return result;
+    }
+
+    /** Override in subclasses to add streaming. Default falls back to normal execution. */
+    protected io.sketch.mochaagents.agent.loop.StepResult executeReActStepStreaming(
+            int stepNumber, String input, AgentMemory memory,
+            java.util.function.Consumer<String> onToken) {
+        return executeReActStep(stepNumber, input, memory);
+    }
+
     /** 运行 ReAct 循环 — 以 AgentContext 承载会话/对话历史/元数据. */
     public String run(AgentContext ctx) {
         return run(ctx, maxSteps);
