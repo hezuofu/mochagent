@@ -116,6 +116,65 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- SpotBugs: bytecode-level bug detection -->
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+                <version>4.8.6.0</version>
+                <configuration>
+                    <effort>Max</effort>
+                    <threshold>Medium</threshold>
+                    <xmlOutput>true</xmlOutput>
+                    <spotbugsXmlOutputDirectory>target/spotbugs</spotbugsXmlOutputDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- PMD: source-level static analysis -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <version>3.22.0</version>
+                <configuration>
+                    <rulesets>
+                        <ruleset>category/java/bestpractices.xml</ruleset>
+                        <ruleset>category/java/errorprone.xml</ruleset>
+                    </rulesets>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Checkstyle: coding standards enforcement -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <configLocation>sun_checks.xml</configLocation>
+                    <violationSeverity>warning</violationSeverity>
+                    <maxAllowedViolations>200</maxAllowedViolations>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>

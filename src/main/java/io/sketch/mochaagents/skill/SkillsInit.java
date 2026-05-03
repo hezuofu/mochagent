@@ -102,6 +102,22 @@ public class SkillsInit {
                         + "and any notable patterns or edge cases.")))
                 .build());
 
+        registerSkill(BundledSkill.builder("bug-check",
+                "Static analysis: check code for null safety, resource leaks, "
+                + "SQL injection, infinite loops, hardcoded secrets, and more",
+                SkillSource.BUNDLED)
+                .prompt(args -> List.of(ContentBlock.text(
+                        "Analyze the following code for bugs. Check for: "
+                        + "1) null pointer dereferences, "
+                        + "2) unclosed resources (files, streams, sockets), "
+                        + "3) SQL/command injection vulnerabilities, "
+                        + "4) empty catch blocks swallowing exceptions, "
+                        + "5) hardcoded passwords or API keys, "
+                        + "6) infinite loops without break conditions, "
+                        + "7) race conditions or thread safety issues. "
+                        + "Report each issue with severity (LOW/MEDIUM/HIGH/CRITICAL), line number, and fix suggestion.")))
+                .build());
+
         log.info("Registered {} bundled skills", skillRegistry.filterBySource(SkillSource.BUNDLED).size());
     }
 
