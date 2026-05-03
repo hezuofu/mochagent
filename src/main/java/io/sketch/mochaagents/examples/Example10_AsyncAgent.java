@@ -1,5 +1,6 @@
 package io.sketch.mochaagents.examples;
 
+import io.sketch.mochaagents.agent.impl.CodeAgent;
 import io.sketch.mochaagents.agent.impl.ToolCallingAgent;
 import io.sketch.mochaagents.tool.ToolRegistry;
 import io.sketch.mochaagents.examples.tools.WeatherTool;
@@ -32,7 +33,8 @@ public final class Example10_AsyncAgent {
         registry.register(new WeatherTool());
 
         // 创建单个 Agent 实例
-        var agent = ToolCallingAgent.builder()
+        // Python smolagents uses CodeAgent for async example; match behavior
+        var agent = CodeAgent.builder()
                 .name("async-weather")
                 .llm(llm)
                 .toolRegistry(registry)
@@ -55,8 +57,7 @@ public final class Example10_AsyncAgent {
         long start = System.currentTimeMillis();
 
         for (String city : cities) {
-            // 每个任务使用独立的 Agent（线程安全）
-            var cityAgent = ToolCallingAgent.builder()
+            var cityAgent = CodeAgent.builder()
                     .name("weather-" + city.hashCode())
                     .llm(LLMFactory.create())
                     .toolRegistry(registry)
@@ -83,7 +84,7 @@ public final class Example10_AsyncAgent {
 
         // ── 3. 组合链式异步 ──
         System.out.println("\n── 3. 链式组合 ──");
-        var chainAgent = ToolCallingAgent.builder()
+        var chainAgent = CodeAgent.builder()
                 .name("chain-agent")
                 .llm(LLMFactory.create())
                 .toolRegistry(registry)

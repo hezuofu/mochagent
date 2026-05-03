@@ -5,7 +5,6 @@ import io.sketch.mochaagents.agent.MemoryProvider;
 import io.sketch.mochaagents.agent.SystemPromptProvider;
 import io.sketch.mochaagents.agent.loop.TerminationCondition;
 import io.sketch.mochaagents.agent.loop.strategy.ReActLoop;
-import io.sketch.mochaagents.context.ContextChunk;
 import io.sketch.mochaagents.context.ContextManager;
 import io.sketch.mochaagents.evaluation.EvaluationResult;
 import io.sketch.mochaagents.llm.LLM;
@@ -65,7 +64,7 @@ public abstract class MultiStepAgent extends BaseAgent<String, String>
 
     // ============ Prompt 模板 ============
 
-    protected PromptTemplate systemPromptTemplate = PromptTemplate.of("");
+    protected PromptTemplate systemPromptTemplate;
     protected PromptTemplate planningPromptTemplate;
     protected PromptTemplate finalAnswerPreTemplate;
     protected PromptTemplate finalAnswerPostTemplate;
@@ -154,8 +153,8 @@ public abstract class MultiStepAgent extends BaseAgent<String, String>
 
         // ===== Core ReAct loop =====
         ReActLoop<String, String> loop = new ReActLoop<>(
-                (ReActLoop.PlanningFn<String>) this::planStep,
-                (ReActLoop.StepExecutor<String>) this::executeReActStep,
+                this::planStep,
+                this::executeReActStep,
                 planningInterval
         );
 
@@ -248,7 +247,7 @@ public abstract class MultiStepAgent extends BaseAgent<String, String>
     private void perceiveAndRemember(String input, ContextManager ctx) {
         if (perceptor == null) return;
         PerceptionResult<String> result = perceptor.perceive(input);
-        String data = result.data() != null ? result.data().toString() : "";
+        String data = result.data() != null ? result.data() : "";
         if (!data.isEmpty()) {
             memory.append(ContentStep.systemPrompt("[Perception]:\n" + data));
         }
