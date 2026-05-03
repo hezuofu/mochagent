@@ -9,13 +9,16 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * 计算器工具 — 安全评估数学表达式.
+ * Calculator tool — evaluates math expressions safely.
  * @author lanxia39@163.com
  */
 public class CalculatorTool implements Tool {
 
     @Override public String getName() { return "calculator"; }
-    @Override public String getDescription() { return "Evaluate a math expression. Input: expression (e.g. '2+3*4', 'sqrt(144)', '15% of 200')"; }
+    @Override public String getDescription() {
+        return "Evaluate a math expression (e.g. '2+3*4', 'sqrt(144)'). "
+             + "Input: 'expression' (string)";
+    }
     @Override public Map<String, ToolInput> getInputs() {
         Map<String, ToolInput> in = new LinkedHashMap<>();
         in.put("expression", ToolInput.string("Math expression to evaluate"));
@@ -27,72 +30,67 @@ public class CalculatorTool implements Tool {
     @Override
     public Object call(Map<String, Object> args) {
         String expr = (String) args.getOrDefault("expression", "0");
-        return evaluate(expr);
-    }
-
-    private String evaluate(String expr) {
-        String sanitized = expr.replaceAll("[^0-9+\\-*/().%^\\s]", "").trim();
+        // Sanitize: allow digits, operators, parens, dot, spaces
+        String sanitized = expr.replaceAll("[^0-9+\\-*/().\\s]", "").trim();
         if (sanitized.isEmpty()) return "Error: empty expression";
 
-        // Try ScriptEngine first
+        // Try ScriptEngine (GraalJS/Nashorn)
         try {
-            ScriptEngine engine = new ScriptEngineManager().getEngineByName("JavaScript");
-            if (engine == null) engine = new ScriptEngineManager().getEngineByName("graal.js");
+            ScriptEngine engine = findEngine();
             if (engine != null) return engine.eval(sanitized).toString();
         } catch (Exception ignored) {}
 
-        // Fallback: simple arithmetic parser
+        // Fallback: basic arithmetic (+, -, *, /)
         try {
-            return String.valueOf(evalArithmetic(sanitized));
+            return String.valueOf(evalSimple(sanitized));
         } catch (Exception e) {
             return "Error: " + e.getMessage();
         }
     }
 
-    private static double evalArithmetic(String expr) {
-        expr = expr.replaceAll("\\s+", "");
-        // Handle parentheses
-        while (expr.contains("(")) {
-            int start = expr.lastIndexOf('(');
-            int end = expr.indexOf(')', start);
-            if (end < 0) throw new IllegalArgumentException("Unmatched parenthesis");
-            double inner = evalArithmetic(expr.substring(start + 1, end));
-            expr = expr.substring(0, start) + inner + expr.substring(end + 1);
-        }
-        // Process * and /
-        for (int i = 0; i < expr.length(); i++) {
-            char c = expr.charAt(i);
-            if (c == '*' || c == '/') {
-                double left = extractLeft(expr, i);
-                double right = extractRight(expr, i);
-                String before = expr.substring(0, i - String.valueOf(left).length());
-                String after = expr.substring(i + 1 + String.valueOf(right).length());
-                expr = before + (c == '*' ? left * right : left / right) + after;
-                i = 0;
-            }
-        }
-        // Process + and -
+    private static ScriptEngine findEngine() {
+        ScriptEngineManager mgr = new ScriptEngineManager();
+        ScriptEngine e = mgr.getEngineByName("graal.js");
+        if (e != null) return e;
+        e = mgr.getEngineByName("JavaScript");
+        if (e != null) return e;
+        return mgr.getEngineByName("nashorn");
+    }
+
+    private static Object evalSimple(String expr) {
+        // Handle basic arithmetic: only + - * /
+        String[] terms = expr.split("(?=[+\\-])|(?<=[+\\-])");
         double result = 0;
-        String[] parts = expr.split("(?=[+-])|(?<=[+-])");
-        double sign = 1;
-        for (String p : parts) {
-            p = p.trim();
-            if (p.equals("+")) sign = 1;
-            else if (p.equals("-")) sign = -1;
-            else if (!p.isEmpty()) result += sign * Double.parseDouble(p);
+        String pendingOp = "+";
+        for (String term : terms) {
+            term = term.trim();
+            if (term.equals("+")) pendingOp = "+";
+            else if (term.equals("-")) pendingOp = "-";
+            else if (!term.isEmpty()) {
+                double val = parseFactor(term);
+                if (pendingOp.equals("+")) result += val;
+                else result -= val;
+            }
         }
         return result;
     }
 
-    private static double extractLeft(String expr, int opIdx) {
-        int i = opIdx - 1;
-        while (i >= 0 && (Character.isDigit(expr.charAt(i)) || expr.charAt(i) == '.')) i--;
-        return Double.parseDouble(expr.substring(i + 1, opIdx));
-    }
-
-    private static double extractRight(String expr, int opIdx) {
-        int i = opIdx + 1;
-        while (i < expr.length() && (Character.isDigit(expr.charAt(i)) || expr.charAt(i) == '.')) i++;
-        return Double.parseDouble(expr.substring(opIdx + 1, i));
+    private static double parseFactor(String expr) {
+        if (expr.contains("*") || expr.contains("/")) {
+            String[] parts = expr.split("(?=[*/])|(?<=[*/])");
+            double result = 1;
+            String op = "*";
+            for (String p : parts) {
+                p = p.trim();
+                if (p.equals("*")) op = "*";
+                else if (p.equals("/")) op = "/";
+                else if (!p.isEmpty()) {
+                    double v = Double.parseDouble(p);
+                    result = op.equals("*") ? result * v : result / v;
+                }
+            }
+            return result;
+        }
+        return Double.parseDouble(expr);
     }
 }
