@@ -40,7 +40,7 @@ import java.util.*;
  * </ul>
  * @author lanxia39@163.com
  */
-public abstract class MultiStepAgent extends CapableAgent<String, String>
+public abstract class MultiStepAgent extends BaseAgent<String, String>
         implements MemoryProvider, SystemPromptProvider {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
@@ -54,6 +54,7 @@ public abstract class MultiStepAgent extends CapableAgent<String, String>
     protected final int planningInterval;
     protected final boolean addBaseTools;
     protected final Map<String, MultiStepAgent> managedAgents = new LinkedHashMap<>();
+    protected final io.sketch.mochaagents.orchestration.Orchestrator orchestrator;
 
     // ============ Context ============
 
@@ -78,6 +79,7 @@ public abstract class MultiStepAgent extends CapableAgent<String, String>
         super(builder);
         this.llm = builder.llm;
         this.router = builder.router;
+        this.orchestrator = builder.orchestrator;
         this.maxSteps = builder.maxSteps;
         this.planningInterval = builder.planningInterval;
         this.addBaseTools = builder.addBaseTools;
@@ -186,11 +188,11 @@ public abstract class MultiStepAgent extends CapableAgent<String, String>
 
     // ============ 抽象方法（CapableAgent + 子类） ============
 
-    // ============ 实现 BaseAgent / CapableAgent 钩子 ============
+    // ============ 实现 BaseAgent 钩子 ============
 
     /**
      * BaseAgent 主入口 — 直接委托给 {@link #run(AgentContext)}.
-     * 绕过 CapableAgent 的 8 步流水线，使用 ReAct 循环.
+     * 绕过 8 步流水线，使用 ReAct 循环.
      */
     @Override
     protected String doExecute(String input, AgentContext actx) {
@@ -378,6 +380,9 @@ public abstract class MultiStepAgent extends CapableAgent<String, String>
         if (agents == null) return;
         for (MultiStepAgent a : agents) {
             managedAgents.put(a.name, a);
+            if (orchestrator != null) {
+                orchestrator.register(a, io.sketch.mochaagents.orchestration.Role.worker(a.name));
+            }
         }
     }
 
@@ -438,10 +443,11 @@ public abstract class MultiStepAgent extends CapableAgent<String, String>
 
     @SuppressWarnings("unchecked")
     public abstract static class Builder<T extends Builder<T>>
-            extends CapableAgent.Builder<String, String, T> {
+            extends BaseAgent.Builder<String, String, T> {
 
         protected LLM llm;
         protected io.sketch.mochaagents.llm.router.LLMRouter router;
+        protected io.sketch.mochaagents.orchestration.Orchestrator orchestrator;
         protected List<Tool> tools = new ArrayList<>();
         protected List<MultiStepAgent> managedAgents = new ArrayList<>();
         protected int maxSteps = 20;
@@ -454,6 +460,7 @@ public abstract class MultiStepAgent extends CapableAgent<String, String>
 
         public T llm(LLM llm) { this.llm = llm; return (T) this; }
         public T router(io.sketch.mochaagents.llm.router.LLMRouter router) { this.router = router; return (T) this; }
+        public T orchestrator(io.sketch.mochaagents.orchestration.Orchestrator o) { this.orchestrator = o; return (T) this; }
         public T tools(List<Tool> tools) { this.tools = tools; return (T) this; }
         public T managedAgents(List<MultiStepAgent> agents) { this.managedAgents = agents; return (T) this; }
         public T maxSteps(int maxSteps) { this.maxSteps = maxSteps; return (T) this; }
