@@ -5,7 +5,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -149,7 +148,7 @@ public class PluginManager {
                 desc.pluginId(),
                 desc.skills(),
                 isEnabled(desc.name()),
-                true // isBuiltin
+                true
         );
     }
 

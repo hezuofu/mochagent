@@ -13,7 +13,8 @@
       "Bash(python *)",
       "Bash(mvn pmd:pmd -q)",
       "Bash(mvn spotbugs:check)",
-      "Bash(git rm *)"
+      "Bash(git rm *)",
+      "Bash(mvn pmd:check)"
     ]
   }
 }

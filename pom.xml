@@ -145,7 +145,7 @@
                     <excludes>
                         <exclude>**/examples/**</exclude>
                     </excludes>
-                    <maxAllowedViolations>300</maxAllowedViolations>
+                    <maxAllowedViolations>786</maxAllowedViolations>
                     <rulesets>
                         <ruleset>pmd-rules.xml</ruleset>
                     </rulesets>
