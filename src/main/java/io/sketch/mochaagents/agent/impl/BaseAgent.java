@@ -17,6 +17,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *
  * @param <I> 输入类型
  * @param <O> 输出类型
+ * @author lanxia39@163.com
  */
 public abstract class BaseAgent<I, O> implements Agent<I, O> {
 

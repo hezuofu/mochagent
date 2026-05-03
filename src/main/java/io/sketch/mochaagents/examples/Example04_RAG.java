@@ -17,6 +17,7 @@ import java.util.Map;
  *     agent = CodeAgent(tools=[retriever_tool], model=model, max_steps=4)
  *     agent.run("For a transformers model training, which is slower, forward or backward pass?")
  * </pre>
+ * @author lanxia39@163.com
  */
 public final class Example04_RAG {
 

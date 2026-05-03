@@ -2,6 +2,7 @@ package io.sketch.mochaagents.perception;
 
 /**
  * 感知结果 — 封装感知器输出.
+ * @author lanxia39@163.com
  */
 public final class PerceptionResult<T> {
 

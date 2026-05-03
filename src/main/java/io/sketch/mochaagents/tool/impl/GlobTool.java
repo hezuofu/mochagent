@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
  * Glob 文件匹配工具 — 对齐 claude-code 的 GlobTool.
  *
  * <p>支持通配符模式匹配文件名，返回相对路径列表。只读、并发安全。
+ * @author lanxia39@163.com
  */
 public class GlobTool extends AbstractTool {
 

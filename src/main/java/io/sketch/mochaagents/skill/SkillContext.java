@@ -6,6 +6,7 @@ package io.sketch.mochaagents.skill;
  *   <li>INLINE — 技能 prompt 直接注入当前对话（默认）</li>
  *   <li>FORK — 在隔离子 Agent 中执行（预留）</li>
  * </ul>
+ * @author lanxia39@163.com
  */
 public enum SkillContext {
     INLINE, FORK

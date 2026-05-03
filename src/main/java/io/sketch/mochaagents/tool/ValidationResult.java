@@ -9,6 +9,7 @@ import java.util.Map;
  *   valid=true  → 通过校验，继续执行
  *   valid=false → 校验失败，含错误码和消息
  * </pre>
+ * @author lanxia39@163.com
  */
 public final class ValidationResult {
 

@@ -20,6 +20,7 @@ import java.util.Map;
  *
  * <p>支持文本文件（行号+偏移+限制）、图片（Base64）、PDF.
  * 只读、并发安全。
+ * @author lanxia39@163.com
  */
 public class FileReadTool extends AbstractTool {
 

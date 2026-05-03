@@ -2,6 +2,7 @@ package io.sketch.mochaagents.agent.loop.reflection;
 
 /**
  * 自我批评 — 对单步执行的分析与评分.
+ * @author lanxia39@163.com
  */
 public final class SelfCritique {
 

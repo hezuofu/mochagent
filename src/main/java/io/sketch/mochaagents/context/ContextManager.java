@@ -8,6 +8,7 @@ import java.util.List;
 
 /**
  * 上下文管理器 — 统一管理上下文块的增删、压缩与策略执行.
+ * @author lanxia39@163.com
  */
 public class ContextManager {
 

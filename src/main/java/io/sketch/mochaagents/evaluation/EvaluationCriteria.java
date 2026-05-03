@@ -4,6 +4,7 @@ import java.util.*;
 
 /**
  * 评估标准 — 定义评估的维度、权重与阈值.
+ * @author lanxia39@163.com
  */
 public class EvaluationCriteria {
 

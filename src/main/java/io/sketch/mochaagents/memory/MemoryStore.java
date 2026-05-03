@@ -17,6 +17,7 @@ import java.util.stream.Stream;
  *
  * <p>存储层只负责基础 CRUD 和简单检索，高级检索策略
  * 由 {@link MemoryManager} 在协调层实现.
+ * @author lanxia39@163.com
  */
 public interface MemoryStore {
 

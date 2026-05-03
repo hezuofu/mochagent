@@ -6,6 +6,7 @@ import io.sketch.mochaagents.reasoning.ReasoningStrategy;
 
 /**
  * Chain of Thought 策略 — 逐步推理.
+ * @author lanxia39@163.com
  */
 public class ChainOfThought implements ReasoningStrategy {
 

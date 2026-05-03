@@ -4,6 +4,7 @@ import java.util.List;
 
 /**
  * 安全指标 — 评估输出的安全性，检测有害内容.
+ * @author lanxia39@163.com
  */
 public class SafetyMetrics {
 

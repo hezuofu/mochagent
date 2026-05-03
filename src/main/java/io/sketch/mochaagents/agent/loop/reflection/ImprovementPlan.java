@@ -4,6 +4,7 @@ import java.util.List;
 
 /**
  * 改进计划 — 基于自我批评生成的行动修正.
+ * @author lanxia39@163.com
  */
 public final class ImprovementPlan {
 

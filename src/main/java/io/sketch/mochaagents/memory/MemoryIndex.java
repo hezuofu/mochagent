@@ -28,6 +28,7 @@ import java.nio.file.Path;
  * }</pre>
  *
  * @see MarkdownMemoryStore 用于持久化单个记忆文件
+ * @author lanxia39@163.com
  */
 public class MemoryIndex {
 

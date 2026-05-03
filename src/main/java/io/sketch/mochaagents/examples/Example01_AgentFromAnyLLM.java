@@ -18,6 +18,7 @@ import io.sketch.mochaagents.examples.tools.WeatherTool;
  *     agent = CodeAgent(tools=[get_weather], model=model)
  *     agent.run("What's the weather like in Paris?")
  * </pre>
+ * @author lanxia39@163.com
  */
 public final class Example01_AgentFromAnyLLM {
 

@@ -8,6 +8,7 @@ import java.util.*;
 
 /**
  * 权限管理器 — 集中管理 Agent 操作权限的申请、审批与撤销.
+ * @author lanxia39@163.com
  */
 public class PermissionManager {
 

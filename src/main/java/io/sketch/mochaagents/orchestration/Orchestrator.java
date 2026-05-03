@@ -6,6 +6,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * 编排器 — 协调多个 Agent 协同工作，管理任务分配与结果聚合.
+ * @author lanxia39@163.com
  */
 public interface Orchestrator {
 

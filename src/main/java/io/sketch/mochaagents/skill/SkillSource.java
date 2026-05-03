@@ -2,6 +2,7 @@ package io.sketch.mochaagents.skill;
 
 /**
  * 技能来源枚举 — 对齐 claude-code 的 LoadedFrom / source.
+ * @author lanxia39@163.com
  */
 public enum SkillSource {
     /** 编译进 JAR 的内置技能. */

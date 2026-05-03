@@ -8,6 +8,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * 代码库感知器 — 感知项目结构和代码内容.
+ * @author lanxia39@163.com
  */
 public class CodebasePerceptor implements Perceptor<String, Observation> {
 

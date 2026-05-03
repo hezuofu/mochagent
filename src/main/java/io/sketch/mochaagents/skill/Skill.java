@@ -16,6 +16,7 @@ import java.util.List;
  *   <li>default 方法提供安全默认值，实现类按需覆盖</li>
  *   <li>allowedTools 可限制子任务工具白名单</li>
  * </ul>
+ * @author lanxia39@163.com
  */
 public interface Skill {
 

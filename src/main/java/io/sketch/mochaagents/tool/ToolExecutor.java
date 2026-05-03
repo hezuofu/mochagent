@@ -7,6 +7,7 @@ import java.util.Map;
 
 /**
  * 工具执行器 — 权限校验 + 执行 + 结果封装.
+ * @author lanxia39@163.com
  */
 public class ToolExecutor {
 

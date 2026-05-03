@@ -10,6 +10,7 @@ import java.util.*;
  * 类型用字符串区分: {@link Memory#TYPE_WORKING} /
  * {@link Memory#TYPE_EPISODIC} /
  * {@link Memory#TYPE_SEMANTIC}.
+ * @author lanxia39@163.com
  */
 public final class MemoryEntry implements Memory {
 

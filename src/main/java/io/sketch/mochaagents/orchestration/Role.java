@@ -2,6 +2,7 @@ package io.sketch.mochaagents.orchestration;
 
 /**
  * Agent 角色 — 定义 Agent 在团队中的职责与能力范围.
+ * @author lanxia39@163.com
  */
 public class Role {
 

@@ -9,6 +9,7 @@ import java.util.Map;
  * Agent 执行上下文 — 封装单次调用的会话、用户、消息及元数据.
  *
  * <p>参考需求文档参考代码 AgentContext 类.
+ * @author lanxia39@163.com
  */
 public final class AgentContext {
 

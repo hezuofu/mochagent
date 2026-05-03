@@ -12,6 +12,7 @@ import java.util.function.Function;
 
 /**
  * 工具管道 — 链式工具调用，前一个工具的输出可作为下一个工具的输入.
+ * @author lanxia39@163.com
  */
 public class ToolPipeline {
 

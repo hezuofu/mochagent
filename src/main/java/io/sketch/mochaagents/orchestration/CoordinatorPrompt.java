@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
  *   <li>Implementation — Workers 实施修改</li>
  *   <li>Verification — Workers 验证</li>
  * </ol>
+ * @author lanxia39@163.com
  */
 public final class CoordinatorPrompt {
 

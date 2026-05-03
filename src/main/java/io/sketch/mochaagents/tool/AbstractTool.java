@@ -27,6 +27,7 @@ import java.util.concurrent.CompletableFuture;
  *   <li>isDestructive → false</li>
  *   <li>checkPermissions → allow (default)</li>
  * </ul>
+ * @author lanxia39@163.com
  */
 public abstract class AbstractTool implements Tool {
 

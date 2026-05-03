@@ -16,6 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <p>管理插件生命周期: 注册、启用/禁用、组件分发。
  * 插件 ID 使用 {@code name@builtin} 格式。
+ * @author lanxia39@163.com
  */
 public class PluginManager {
 

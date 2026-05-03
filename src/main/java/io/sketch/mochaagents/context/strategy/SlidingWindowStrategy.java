@@ -8,6 +8,7 @@ import java.util.List;
 
 /**
  * 滑动窗口策略 — 保留最近 N 个 token 的上下文块.
+ * @author lanxia39@163.com
  */
 public class SlidingWindowStrategy implements ContextStrategy {
 

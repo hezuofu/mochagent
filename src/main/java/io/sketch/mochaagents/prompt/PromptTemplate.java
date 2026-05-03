@@ -14,6 +14,7 @@ import java.util.regex.Pattern;
  * PromptTemplate t = new PromptTemplate("Hello, {name}. Your task: {task}");
  * String result = t.render(Map.of("name", "Agent", "task", "solve it"));
  * }</pre>
+ * @author lanxia39@163.com
  */
 public final class PromptTemplate {
 

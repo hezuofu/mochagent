@@ -17,6 +17,7 @@ import io.sketch.mochaagents.llm.provider.*;
  *   <li>{@code OLLAMA_HOST} 或本地检测 → LocalLLM</li>
  *   <li>降级 → MockLLM</li>
  * </ol>
+ * @author lanxia39@163.com
  */
 public final class LLMFactory {
 

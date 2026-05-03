@@ -16,6 +16,7 @@ import java.util.List;
  * @param text       文本内容（system_prompt / task）
  * @param payload    附加负载（final_answer 的 output）
  * @param imagePaths 关联图片路径（task 专用，默认空列表）
+ * @author lanxia39@163.com
  */
 public record ContentStep(String type, String text, Object payload, List<String> imagePaths)
         implements MemoryStep {

@@ -9,6 +9,7 @@ import java.util.Map;
 
 /**
  * LLM 评判 — 使用另一个 LLM 对输出进行质量评判.
+ * @author lanxia39@163.com
  */
 public class LLMJudge {
 

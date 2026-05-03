@@ -2,6 +2,7 @@ package io.sketch.mochaagents.context;
 
 /**
  * 上下文块 — 上下文的最小存储单位.
+ * @author lanxia39@163.com
  */
 public final class ContextChunk {
 

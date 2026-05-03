@@ -5,6 +5,7 @@ import java.util.UUID;
 
 /**
  * 权限请求 — 描述一次操作权限申请.
+ * @author lanxia39@163.com
  */
 public class PermissionRequest {
 

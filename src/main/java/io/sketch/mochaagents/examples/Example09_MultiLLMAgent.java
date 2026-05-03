@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *     )
  *     agent = CodeAgent(tools=[WebSearchTool()], model=model)
  * </pre>
+ * @author lanxia39@163.com
  */
 public final class Example09_MultiLLMAgent {
 

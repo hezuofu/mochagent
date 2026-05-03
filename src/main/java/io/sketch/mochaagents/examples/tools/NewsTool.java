@@ -7,6 +7,7 @@ import java.util.Map;
 
 /**
  * 新闻工具 — 对应 smolagents 的 get_news_headlines.
+ * @author lanxia39@163.com
  */
 public final class NewsTool implements Tool {
     @Override public String getName() { return "get_news_headlines"; }

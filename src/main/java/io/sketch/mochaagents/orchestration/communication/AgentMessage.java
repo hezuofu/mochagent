@@ -6,6 +6,7 @@ import java.util.UUID;
 
 /**
  * Agent 消息 — Agent 之间通信的消息载体.
+ * @author lanxia39@163.com
  */
 public class AgentMessage {
 

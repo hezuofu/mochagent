@@ -14,6 +14,7 @@ import io.sketch.mochaagents.examples.tools.SQLTool;
  *     agent = CodeAgent(tools=[sql_engine], model=model)
  *     agent.run("Can you give me the name of the client who got the most expensive receipt?")
  * </pre>
+ * @author lanxia39@163.com
  */
 public final class Example03_TextToSQL {
 

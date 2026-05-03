@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * LLM 路由器 — 根据请求特征（复杂度、成本、延迟）智能路由到最合适的 LLM.
+ * @author lanxia39@163.com
  */
 public class LLMRouter {
 

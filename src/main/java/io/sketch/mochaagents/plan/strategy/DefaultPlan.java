@@ -8,6 +8,7 @@ import java.util.UUID;
 
 /**
  * 默认计划实现 — Plan 接口的基础实现.
+ * @author lanxia39@163.com
  */
 class DefaultPlan<T> implements Plan<T> {
 

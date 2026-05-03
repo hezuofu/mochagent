@@ -10,6 +10,7 @@ import io.sketch.mochaagents.agent.loop.TerminationCondition;
  * Think-Act-Observe 策略 — 先思考，再行动，最后观察.
  *
  * <p>三步循环，更强调前置推理阶段.
+ * @author lanxia39@163.com
  */
 public class ThinkActObserve<I, O> implements AgenticLoop<I, O> {
 

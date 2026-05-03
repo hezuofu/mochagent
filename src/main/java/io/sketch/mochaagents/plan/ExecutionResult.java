@@ -2,6 +2,7 @@ package io.sketch.mochaagents.plan;
 
 /**
  * 执行结果.
+ * @author lanxia39@163.com
  */
 public final class ExecutionResult {
     private final Object output;

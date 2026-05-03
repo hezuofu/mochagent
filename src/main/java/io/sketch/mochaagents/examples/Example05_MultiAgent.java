@@ -21,6 +21,7 @@ import java.util.Map;
  *     manager_agent = CodeAgent(tools=[], model=model, managed_agents=[search_agent])
  *     manager_agent.run("If the US keeps its 2024 growth rate, how many years for GDP to double?")
  * </pre>
+ * @author lanxia39@163.com
  */
 public final class Example05_MultiAgent {
 

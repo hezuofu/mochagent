@@ -11,6 +11,7 @@ import java.util.List;
  *
  * @param <I> 输入类型
  * @param <O> 输出类型
+ * @author lanxia39@163.com
  */
 public class FeedbackLearner<I, O> implements Learner<I, O> {
 

@@ -4,6 +4,7 @@ import java.util.*;
 
 /**
  * 依赖图 — 管理步骤之间的依赖关系，支持拓扑排序和循环检测.
+ * @author lanxia39@163.com
  */
 public class DependencyGraph {
 

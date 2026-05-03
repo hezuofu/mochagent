@@ -10,6 +10,7 @@ import java.util.Map;
  *   DENY   → 拒绝执行
  *   ASK    → 需要用户确认
  * </pre>
+ * @author lanxia39@163.com
  */
 public final class PermissionResult {
 

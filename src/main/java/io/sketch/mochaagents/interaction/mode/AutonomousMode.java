@@ -7,6 +7,7 @@ import io.sketch.mochaagents.interaction.permission.PermissionRequest;
 
 /**
  * 自主模式 — Agent 全自动运行，所有操作自动批准.
+ * @author lanxia39@163.com
  */
 public class AutonomousMode implements Interactor {
 

@@ -6,6 +6,7 @@ import java.util.Map;
 
 /**
  * 人类评判 — 提供人工评估接口和反馈收集.
+ * @author lanxia39@163.com
  */
 public class HumanJudge {
 

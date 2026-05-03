@@ -8,6 +8,7 @@ import java.util.Map;
  * 计划接口 — 任务执行的蓝图.
  *
  * @param <T> 目标类型
+ * @author lanxia39@163.com
  */
 public interface Plan<T> {
     String getPlanId();

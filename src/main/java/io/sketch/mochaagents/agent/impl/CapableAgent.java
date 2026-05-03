@@ -55,6 +55,7 @@ import java.util.concurrent.CompletableFuture;
  *
  * @param <I> 输入类型
  * @param <O> 输出类型
+ * @author lanxia39@163.com
  */
 public abstract class CapableAgent<I, O> extends BaseAgent<I, O> {
 

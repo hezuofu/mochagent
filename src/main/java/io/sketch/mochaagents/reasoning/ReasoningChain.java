@@ -5,6 +5,7 @@ import java.util.List;
 
 /**
  * 推理链 — 一组推理步骤的序列.
+ * @author lanxia39@163.com
  */
 public class ReasoningChain {
 

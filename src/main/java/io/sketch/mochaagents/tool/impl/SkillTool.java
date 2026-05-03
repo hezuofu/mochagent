@@ -26,6 +26,7 @@ import java.util.Map;
  *   <li>checkPermissions: 内置技能自动允许，其他需确认</li>
  *   <li>call: 调用 skill.getPromptForCommand(args)，将 prompt 作为 newMessages 注入</li>
  * </ol>
+ * @author lanxia39@163.com
  */
 public class SkillTool extends AbstractTool {
 

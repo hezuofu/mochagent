@@ -7,6 +7,7 @@ import java.util.Map;
 
 /**
  * 规划请求.
+ * @author lanxia39@163.com
  */
 public final class PlanningRequest<T> {
 

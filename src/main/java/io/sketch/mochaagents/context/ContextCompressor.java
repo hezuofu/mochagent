@@ -4,6 +4,7 @@ import java.util.List;
 
 /**
  * 上下文压缩器接口 — 当上下文超过限制时进行压缩.
+ * @author lanxia39@163.com
  */
 public interface ContextCompressor {
 

@@ -4,6 +4,7 @@ import java.util.List;
 
 /**
  * 内容过滤器 — 检测和过滤不安全、不当的内容.
+ * @author lanxia39@163.com
  */
 public class ContentFilter {
 

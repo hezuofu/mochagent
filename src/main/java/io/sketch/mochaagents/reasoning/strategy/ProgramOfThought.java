@@ -6,6 +6,7 @@ import io.sketch.mochaagents.reasoning.ReasoningStrategy;
 
 /**
  * Program of Thought 策略 — 程序化推理.
+ * @author lanxia39@163.com
  */
 public class ProgramOfThought implements ReasoningStrategy {
 

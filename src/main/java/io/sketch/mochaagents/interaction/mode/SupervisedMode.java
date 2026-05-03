@@ -11,6 +11,7 @@ import java.util.function.Supplier;
 
 /**
  * 监督模式 — 所有关键操作需人工审核批准，提供完整操作日志.
+ * @author lanxia39@163.com
  */
 public class SupervisedMode implements Interactor {
 

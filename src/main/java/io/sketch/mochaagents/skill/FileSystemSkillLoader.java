@@ -50,6 +50,7 @@ import java.util.stream.Stream;
  *   <li>User home (~/.mocha/skills/)</li>
  *   <li>Project root (.mocha/skills/)</li>
  * </ol>
+ * @author lanxia39@163.com
  */
 public class FileSystemSkillLoader {
 

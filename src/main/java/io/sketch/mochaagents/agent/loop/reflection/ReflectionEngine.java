@@ -6,6 +6,7 @@ import io.sketch.mochaagents.agent.loop.StepResult;
  * 反思引擎接口 — 评估单步执行结果，生成改进计划.
  */
 @FunctionalInterface
+/** @author lanxia39@163.com */
 public interface ReflectionEngine {
 
     /**

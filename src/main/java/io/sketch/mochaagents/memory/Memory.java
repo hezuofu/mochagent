@@ -10,6 +10,7 @@ import java.util.Set;
  *
  * <p>实现类可以是内存驻留（{@link MemoryEntry}）、数据库行、向量存储文档等。
  * 统一记忆类型用字符串区分: {@code "working"} / {@code "episodic"} / {@code "semantic"}.
+ * @author lanxia39@163.com
  */
 public interface Memory {
 

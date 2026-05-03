@@ -19,6 +19,7 @@ import java.util.Map;
  * 文件写入工具 — 对齐 claude-code 的 FileWriteTool.
  *
  * <p>支持创建新文件和覆盖已有文件。破坏性操作，需要权限控制。
+ * @author lanxia39@163.com
  */
 public class FileWriteTool extends AbstractTool {
 

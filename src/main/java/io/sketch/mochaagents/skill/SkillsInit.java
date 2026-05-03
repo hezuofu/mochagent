@@ -22,6 +22,7 @@ import java.util.List;
  * SkillsInit init = SkillsInit.bootstrap(toolRegistry);
  * // 后续可通过 init.skillRegistry() 查找技能
  * }</pre>
+ * @author lanxia39@163.com
  */
 public class SkillsInit {
 

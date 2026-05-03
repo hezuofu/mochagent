@@ -6,6 +6,7 @@ import java.util.Map;
 
 /**
  * 文件系统工具.
+ * @author lanxia39@163.com
  */
 public class FileSystemTool implements Tool {
     @Override public String getName() { return "filesystem"; }

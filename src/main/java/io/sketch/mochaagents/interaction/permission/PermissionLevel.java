@@ -2,6 +2,7 @@ package io.sketch.mochaagents.interaction.permission;
 
 /**
  * 权限级别 — 定义操作的风险等级.
+ * @author lanxia39@163.com
  */
 public enum PermissionLevel {
 

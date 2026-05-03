@@ -21,6 +21,7 @@ import java.util.List;
  *   <tr><td>{@code mocha doctor}</td><td>→ DoctorHandler (stub)</td></tr>
  *   <tr><td>{@code mocha ...}</td><td>→ Interactive REPL</td></tr>
  * </table>
+ * @author lanxia39@163.com
  */
 public final class CliMain {
 

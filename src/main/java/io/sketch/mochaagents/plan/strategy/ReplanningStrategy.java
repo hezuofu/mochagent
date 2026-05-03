@@ -6,6 +6,7 @@ import io.sketch.mochaagents.plan.PlanningStrategy;
 
 /**
  * 重规划策略 — 失败时完全重新规划.
+ * @author lanxia39@163.com
  */
 public class ReplanningStrategy implements PlanningStrategy {
 

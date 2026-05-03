@@ -4,6 +4,7 @@ package io.sketch.mochaagents.agent.loop;
  * 终止条件 — 函数式接口，判定循环是否应结束.
  */
 @FunctionalInterface
+/** @author lanxia39@163.com */
 public interface TerminationCondition {
 
     /**

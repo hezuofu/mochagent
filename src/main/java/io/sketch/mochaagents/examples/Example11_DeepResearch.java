@@ -25,6 +25,7 @@ import java.util.Map;
  *     manager_agent = CodeAgent(tools=[visualizer, ...], managed_agents=[text_webbrowser_agent])
  *     answer = manager_agent.run(question)
  * </pre>
+ * @author lanxia39@163.com
  */
 public final class Example11_DeepResearch {
 

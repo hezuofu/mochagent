@@ -7,6 +7,7 @@ import java.util.*;
 
 /**
  * 自动评判 — 综合多维指标自动评估 Agent 输出.
+ * @author lanxia39@163.com
  */
 public class AutomatedJudge {
 

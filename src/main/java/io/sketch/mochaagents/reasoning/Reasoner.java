@@ -2,6 +2,7 @@ package io.sketch.mochaagents.reasoning;
 
 /**
  * 推理器接口 — 统一推理入口，策略可插拔.
+ * @author lanxia39@163.com
  */
 public interface Reasoner {
 

@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
  *
  * <p>使用 ProcessBuilder 执行系统命令，含超时控制、输出截断、
  * 危险命令检测和只读命令判断。
+ * @author lanxia39@163.com
  */
 public class BashTool extends AbstractTool {
 

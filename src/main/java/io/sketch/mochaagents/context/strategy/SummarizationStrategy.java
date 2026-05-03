@@ -7,6 +7,7 @@ import java.util.List;
 
 /**
  * 摘要策略 — 保留系统提示和最近消息，中间用摘要替代.
+ * @author lanxia39@163.com
  */
 public class SummarizationStrategy implements ContextStrategy {
 

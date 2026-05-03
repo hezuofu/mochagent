@@ -2,6 +2,7 @@ package io.sketch.mochaagents.safety.policy;
 
 /**
  * 策略执行器 — 强制执行安全策略，拦截违规操作.
+ * @author lanxia39@163.com
  */
 public class PolicyEnforcer {
 

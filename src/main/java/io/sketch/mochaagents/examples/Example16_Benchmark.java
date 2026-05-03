@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *         futures = [exe.submit(answer_single_question, ...) for example in examples_todo]
  *     append_answer(annotated_example, answers_file)
  * </pre>
+ * @author lanxia39@163.com
  */
 public final class Example16_Benchmark {
 

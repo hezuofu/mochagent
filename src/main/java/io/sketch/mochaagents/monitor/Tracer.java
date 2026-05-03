@@ -4,6 +4,7 @@ import java.util.*;
 
 /**
  * 链路追踪器 — 追踪 Agent 操作的完整调用链.
+ * @author lanxia39@163.com
  */
 public class Tracer {
 

@@ -4,6 +4,7 @@ package io.sketch.mochaagents.orchestration;
  * 任务通知 XML 格式 — 对齐 claude-code 的 &lt;task-notification&gt;.
  *
  * <p>Worker 完成后生成的通知消息，由 Coordinator 解析。
+ * @author lanxia39@163.com
  */
 public final class TaskNotification {
 

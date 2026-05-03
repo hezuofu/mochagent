@@ -2,6 +2,7 @@ package io.sketch.mochaagents.tool;
 
 /**
  * 工具输入参数描述.
+ * @author lanxia39@163.com
  */
 public final class ToolInput {
     private final String type;

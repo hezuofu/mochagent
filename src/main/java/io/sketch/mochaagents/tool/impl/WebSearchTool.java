@@ -23,6 +23,7 @@ import java.util.Map;
  *
  * <p>使用 DuckDuckGo Instant Answer API（免 API Key）或可配置搜索引擎。
  * 只读、并发安全。
+ * @author lanxia39@163.com
  */
 public class WebSearchTool extends AbstractTool {
 

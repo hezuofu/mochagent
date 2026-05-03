@@ -4,6 +4,7 @@ import java.util.*;
 
 /**
  * LLM 请求 — 封装 prompt、参数与配置.
+ * @author lanxia39@163.com
  */
 public class LLMRequest {
 

@@ -4,6 +4,7 @@ import java.util.List;
 
 /**
  * 代码验证器 — 对 AI 生成的代码进行安全和质量验证.
+ * @author lanxia39@163.com
  */
 public class CodeValidator {
 

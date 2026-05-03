@@ -8,6 +8,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * 文件系统感知器 — 感知文件内容与结构.
+ * @author lanxia39@163.com
  */
 public class FileSystemPerceptor implements Perceptor<String, Observation> {
 

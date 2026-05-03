@@ -5,6 +5,7 @@ import java.util.Set;
 
 /**
  * Agent 元数据 — 名称、版本、能力集等静态描述信息.
+ * @author lanxia39@163.com
  */
 public final class AgentMetadata {
 

@@ -6,6 +6,7 @@ import java.util.List;
 
 /**
  * 语义分解器 — 基于语义理解将任务分解为子步骤.
+ * @author lanxia39@163.com
  */
 public class SemanticDecomposer implements TaskDecomposer {
 

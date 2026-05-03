@@ -13,6 +13,7 @@ import java.util.Map;
  *
  * <p>演示多种代码执行器后端（本地、模拟远程沙箱）的可插拔切换.
  * 通过自定义 CodeAgent builder 注入不同的 executor 策略.
+ * @author lanxia39@163.com
  */
 public final class Example07_SandboxedExecution {
 

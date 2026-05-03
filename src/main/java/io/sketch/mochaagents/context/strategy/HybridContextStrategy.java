@@ -8,6 +8,7 @@ import java.util.List;
 
 /**
  * 混合上下文策略 — 结合滑动窗口与摘要.
+ * @author lanxia39@163.com
  */
 public class HybridContextStrategy implements ContextStrategy {
 

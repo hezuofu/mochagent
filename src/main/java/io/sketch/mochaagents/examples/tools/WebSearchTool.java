@@ -7,6 +7,7 @@ import java.util.Map;
 
 /**
  * 模拟网页搜索工具 — 返回模拟搜索结果.
+ * @author lanxia39@163.com
  */
 public final class WebSearchTool implements Tool {
 

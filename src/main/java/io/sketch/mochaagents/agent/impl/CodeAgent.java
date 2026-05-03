@@ -30,6 +30,7 @@ import java.util.regex.Pattern;
  * </ol>
  *
  * <p>对应 smolagents 的 {@code CodeAgent}.
+ * @author lanxia39@163.com
  */
 public final class CodeAgent extends MultiStepAgent {
 
@@ -292,27 +293,30 @@ public final class CodeAgent extends MultiStepAgent {
     }
 
     /**
-     * 带工具注入的代码执行.
-     * <p>将 ToolRegistry 中的工具以同名函数暴露给代码执行上下文.
+     * Execute code with tool injection.
+     *
+     * <p>Primary path: regex-based tool call extraction and direct Java invocation.
+     * Falls back to ScriptEngine if GraalJS is on the classpath.
      */
     private String evaluateCodeWithTools(String code, List<String> printOutputs) {
         log.debug("CodeAgent evaluating code with tools, injectable tools: {}",
                 toolRegistry != null ? toolRegistry.all().size() : 0);
-        // 先去重 final_answer 调用行
-        String cleanCode = code.replaceAll("final_answer\\s*\\([^)]*\\)", "");
-        cleanCode = cleanCode.trim();
+
+        String cleanCode = code.replaceAll("final_answer\\s*\\([^)]*\\)", "").trim();
 
         if (cleanCode.isEmpty()) {
             return "";
         }
 
-        // 尝试 ScriptEngine
-        try {
-            ScriptEngineManager manager = new ScriptEngineManager();
-            ScriptEngine engine = manager.getEngineByName("nashorn");
-            if (engine == null) engine = manager.getEngineByName("graal.js");
-            if (engine == null) engine = manager.getEngineByName("JavaScript");
+        // Primary: tool simulation (works on all Java versions)
+        String simulated = simulateToolExecution(cleanCode, printOutputs);
+        if (simulated != null && !simulated.isBlank()) {
+            return simulated;
+        }
 
+        // Fallback: ScriptEngine (requires GraalJS on classpath for Java 15+)
+        try {
+            ScriptEngine engine = findScriptEngine();
             if (engine != null) {
                 injectTools(engine, printOutputs);
                 Object result = engine.eval(cleanCode);
@@ -323,19 +327,22 @@ public final class CodeAgent extends MultiStepAgent {
                 return resultStr;
             }
         } catch (Exception e) {
-            printOutputs.add("[JS eval error: " + e.getMessage() + "]");
+            log.warn("ScriptEngine eval failed, falling back: {}", e.getMessage());
         }
 
-        // ScriptEngine 不可用或出错 — 使用模拟工具执行
-        String simulated = simulateToolExecution(cleanCode, printOutputs);
-        if (simulated != null && !simulated.isBlank()) {
-            return simulated;
-        }
-
-        // 降级: 返回代码作为输出
+        // Last resort: return code representation
         return "[Code]:\n" + (cleanCode.length() > maxPrintOutputLength
                 ? cleanCode.substring(0, maxPrintOutputLength) + "...(truncated)"
                 : cleanCode);
+    }
+
+    private static ScriptEngine findScriptEngine() {
+        ScriptEngineManager manager = new ScriptEngineManager();
+        ScriptEngine engine = manager.getEngineByName("graal.js");
+        if (engine != null) return engine;
+        engine = manager.getEngineByName("nashorn");
+        if (engine != null) return engine;
+        return manager.getEngineByName("JavaScript");
     }
 
     /** 将 ToolRegistry 中的工具注入 ScriptEngine. */

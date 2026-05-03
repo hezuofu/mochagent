@@ -2,6 +2,7 @@ package io.sketch.mochaagents.interaction;
 
 /**
  * 交互器接口 — Agent 与外部世界（用户、系统、其他 Agent）的交互通道.
+ * @author lanxia39@163.com
  */
 public interface Interactor {
 

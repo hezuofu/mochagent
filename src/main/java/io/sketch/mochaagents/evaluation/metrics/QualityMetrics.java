@@ -4,6 +4,7 @@ import java.util.Map;
 
 /**
  * 质量指标 — 评估输出的准确性、相关性、完整性.
+ * @author lanxia39@163.com
  */
 public class QualityMetrics {
 

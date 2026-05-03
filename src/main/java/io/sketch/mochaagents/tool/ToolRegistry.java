@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
  *   <li>按搜索提示匹配</li>
  *   <li>安全分类（只读/可写）</li>
  * </ul>
+ * @author lanxia39@163.com
  */
 public class ToolRegistry {
     private static final Logger log = LoggerFactory.getLogger(ToolRegistry.class);

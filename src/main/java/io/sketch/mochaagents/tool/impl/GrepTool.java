@@ -27,6 +27,7 @@ import java.util.stream.Stream;
  *
  * <p>使用 Java Regex 实现文件内容搜索，支持 content/files_with_matches/count 三种模式，
  * 上下文行、大小写不敏感、glob 过滤、分页。
+ * @author lanxia39@163.com
  */
 public class GrepTool extends AbstractTool {
 

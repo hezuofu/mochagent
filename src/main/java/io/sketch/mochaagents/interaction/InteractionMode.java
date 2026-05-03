@@ -2,6 +2,7 @@ package io.sketch.mochaagents.interaction;
 
 /**
  * 交互模式 — 定义 Agent 与用户之间的交互层级.
+ * @author lanxia39@163.com
  */
 public enum InteractionMode {
 

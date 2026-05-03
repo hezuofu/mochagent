@@ -5,6 +5,7 @@ import java.util.List;
 
 /**
  * 任务分解器接口.
+ * @author lanxia39@163.com
  */
 public interface TaskDecomposer {
     List<PlanStep> decompose(String task, int maxSteps);

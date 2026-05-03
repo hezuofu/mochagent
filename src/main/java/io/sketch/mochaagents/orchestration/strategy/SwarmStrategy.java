@@ -7,6 +7,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * 群体策略 — 多个 Agent 并行处理同一任务，投票/择优产生最终结果.
+ * @author lanxia39@163.com
  */
 public class SwarmStrategy implements OrchestrationStrategy {
 

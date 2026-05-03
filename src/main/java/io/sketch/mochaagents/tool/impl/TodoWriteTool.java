@@ -15,6 +15,7 @@ import java.util.UUID;
  *
  * <p>管理 Agent 会话级任务清单，追踪 oldTodos→newTodos 状态变更。
  * 非只读（修改内部状态），低安全级别。
+ * @author lanxia39@163.com
  */
 public class TodoWriteTool extends AbstractTool {
 

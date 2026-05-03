@@ -9,6 +9,7 @@ import java.util.*;
  * SQL 查询工具 — 对应 smolagents 的 sql_engine.
  *
  * <p>维护一个内存中的 receipts 表，支持 SELECT 查询.
+ * @author lanxia39@163.com
  */
 public final class SQLTool implements Tool {
 

@@ -15,6 +15,7 @@ package io.sketch.mochaagents.llm.provider;
  *         .endpoint("http://localhost:8000/v1")
  *         .build();
  * }</pre>
+ * @author lanxia39@163.com
  */
 public class LocalLLM extends OpenAICompatibleLLM {
 

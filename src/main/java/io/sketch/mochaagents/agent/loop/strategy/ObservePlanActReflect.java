@@ -10,6 +10,7 @@ import io.sketch.mochaagents.agent.loop.TerminationCondition;
  * Observe-Plan-Act-Reflect 策略 — 四阶段认知循环.
  *
  * <p>观察 → 规划 → 执行 → 反思，每步后评估是否继续.
+ * @author lanxia39@163.com
  */
 public class ObservePlanActReflect<I, O> implements AgenticLoop<I, O> {
 

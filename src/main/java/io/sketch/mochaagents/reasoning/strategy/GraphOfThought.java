@@ -6,6 +6,7 @@ import io.sketch.mochaagents.reasoning.ReasoningStrategy;
 
 /**
  * Graph of Thought 策略 — 图结构推理.
+ * @author lanxia39@163.com
  */
 public class GraphOfThought implements ReasoningStrategy {
 

@@ -21,6 +21,7 @@ import java.util.Map;
  *         humidity: int
  *     def get_weather_info(city: str) -> WeatherInfo
  * </pre>
+ * @author lanxia39@163.com
  */
 public final class Example06_StructuredOutput {
 

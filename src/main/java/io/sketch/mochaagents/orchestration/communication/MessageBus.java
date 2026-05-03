@@ -9,6 +9,7 @@ import java.util.function.Consumer;
 
 /**
  * 消息总线 — Agent 间的异步消息传递中枢，支持发布-订阅模式.
+ * @author lanxia39@163.com
  */
 public class MessageBus {
 

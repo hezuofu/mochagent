@@ -7,6 +7,7 @@ import java.util.Map;
 
 /**
  * 搜索检索工具 — 模拟文档检索，用于 RAG 示例.
+ * @author lanxia39@163.com
  */
 public final class RetrieverTool implements Tool {
 

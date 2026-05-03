@@ -4,6 +4,7 @@ import java.util.*;
 
 /**
  * 评估结果 — 多维度评估得分与综合评级.
+ * @author lanxia39@163.com
  */
 public class EvaluationResult {
 

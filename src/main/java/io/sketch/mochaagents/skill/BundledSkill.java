@@ -15,6 +15,7 @@ import java.util.function.Function;
  *     .prompt(args -> List.of(ContentBlock.text("Review the following: " + args)))
  *     .build();
  * }</pre>
+ * @author lanxia39@163.com
  */
 public final class BundledSkill implements Skill {
 

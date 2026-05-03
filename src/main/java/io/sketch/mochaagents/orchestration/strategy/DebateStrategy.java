@@ -6,6 +6,7 @@ import java.util.*;
 
 /**
  * 辩论策略 — 多个 Agent 各自提出方案，通过辩论达成共识.
+ * @author lanxia39@163.com
  */
 public class DebateStrategy implements OrchestrationStrategy {
 

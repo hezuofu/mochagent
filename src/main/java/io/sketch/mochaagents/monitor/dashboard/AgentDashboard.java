@@ -5,6 +5,7 @@ import java.util.Map;
 
 /**
  * Agent 仪表板 — 可视化展示 Agent 运行状态与关键指标.
+ * @author lanxia39@163.com
  */
 public class AgentDashboard {
 

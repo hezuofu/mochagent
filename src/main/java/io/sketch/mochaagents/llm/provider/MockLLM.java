@@ -14,6 +14,7 @@ import java.util.function.Function;
  *
  * <p>支持自定义响应生成器，可注入 {@code responseFn} 控制每次调用的输出.
  * 不依赖外部 API，适合本地运行示例.
+ * @author lanxia39@163.com
  */
 public class MockLLM implements LLM {
 

@@ -2,6 +2,7 @@ package io.sketch.mochaagents.monitor;
 
 /**
  * 遥测接口 — Agent 运行时的可观测性数据收集.
+ * @author lanxia39@163.com
  */
 public interface Telemetry {
 

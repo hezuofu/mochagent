@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 指标收集器 — 收集 Agent 运行时的各项指标 (调用次数、成功率、延迟等).
+ * @author lanxia39@163.com
  */
 public class MetricsCollector {
 

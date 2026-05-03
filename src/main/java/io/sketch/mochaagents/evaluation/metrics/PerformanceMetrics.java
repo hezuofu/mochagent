@@ -2,6 +2,7 @@ package io.sketch.mochaagents.evaluation.metrics;
 
 /**
  * 性能指标 — 评估响应的延迟、token 消耗、吞吐量.
+ * @author lanxia39@163.com
  */
 public class PerformanceMetrics {
 

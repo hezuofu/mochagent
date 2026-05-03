@@ -10,6 +10,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * 动态规划器 — 运行时可根据反馈动态调整计划.
+ * @author lanxia39@163.com
  */
 public class DynamicPlanner<T> implements Planner<T> {
 

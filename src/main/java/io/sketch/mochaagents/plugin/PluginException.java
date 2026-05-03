@@ -3,6 +3,7 @@ package io.sketch.mochaagents.plugin;
 /**
  * 插件异常 — 对齐 claude-code 的 PluginError discriminated union.
  * 简化版，涵盖常见错误类型。
+ * @author lanxia39@163.com
  */
 public class PluginException extends RuntimeException {
 

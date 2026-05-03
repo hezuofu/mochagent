@@ -8,6 +8,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * 终端感知器 — 感知终端命令输出.
+ * @author lanxia39@163.com
  */
 public class TerminalPerceptor implements Perceptor<String, Observation> {
 

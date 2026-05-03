@@ -6,6 +6,7 @@ import java.util.List;
 
 /**
  * 审计日志 — 记录所有 Agent 操作，支持追溯与合规审查.
+ * @author lanxia39@163.com
  */
 public class AuditLogger {
 

@@ -13,7 +13,9 @@ import okhttp3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +39,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * <h3>限流</h3>
  * 通过 {@code requestsPerMinute} 控制请求频率, 使用 Semaphore + 最小间隔.
+ * @author lanxia39@163.com
  */
 public abstract class BaseApiLLM implements LLM {
 
@@ -170,21 +173,96 @@ public abstract class BaseApiLLM implements LLM {
 
     @Override
     public StreamingResponse stream(LLMRequest request) {
-        // 默认实现: 非流式调用后模拟流式
         StreamingResponse response = new StreamingResponse();
-        new Thread(() -> {
-            try {
-                LLMResponse result = complete(request);
-                for (String word : result.content().split("\\s+")) {
-                    response.push(word + " ");
+        String body = buildStreamRequestBody(request);
+        Request httpReq = new Request.Builder()
+                .url(apiUrl())
+                .post(RequestBody.create(body, MEDIA_JSON))
+                .build();
+
+        Thread streamThread = new Thread(() -> {
+            try (okhttp3.Response resp = httpClient.newCall(httpReq).execute()) {
+                if (!resp.isSuccessful()) {
+                    String errorBody = resp.body() != null ? resp.body().string() : "";
+                    response.error(new LLMException("Stream error " + resp.code() + ": " + errorBody, resp.code()));
+                    return;
                 }
+                parseSseStream(resp, response);
                 response.complete();
+            } catch (IOException e) {
+                response.error(new LLMException("Stream network error: " + e.getMessage(), e));
             } catch (Exception e) {
-                response.push("[Error: " + e.getMessage() + "]");
-                response.complete();
+                response.error(e);
             }
-        }).start();
+        });
+        streamThread.setDaemon(true);
+        streamThread.start();
         return response;
+    }
+
+    /**
+     * Build the streaming request body. Default adds {@code "stream": true} to
+     * the completion request body. Providers with different streaming APIs
+     * (e.g. Anthropic) should override this.
+     */
+    protected String buildStreamRequestBody(LLMRequest request) {
+        return buildRequestBody(request);
+    }
+
+    /**
+     * Parse SSE (Server-Sent Events) lines from the HTTP response.
+     *
+     * <p>OpenAI-compatible format:
+     * <pre>{@code
+     * data: {"choices":[{"delta":{"content":"token"}}]}
+     *
+     * data: [DONE]
+     * }</pre>
+     *
+     * <p>Providers with different SSE shapes should override
+     * {@link #parseSseData(String, StreamingResponse)}.
+     */
+    protected void parseSseStream(okhttp3.Response resp, StreamingResponse response) throws IOException {
+        String data = "";
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(resp.body().byteStream()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.startsWith("data: ")) {
+                    data = line.substring(6);
+                } else if (line.isEmpty() && !data.isEmpty()) {
+                    if (!"[DONE]".equals(data)) {
+                        parseSseData(data, response);
+                    }
+                    data = "";
+                }
+            }
+        }
+    }
+
+    /**
+     * Parse a single SSE data payload into tokens.
+     *
+     * <p>Default implementation handles OpenAI format:
+     * {@code {"choices":[{"delta":{"content":"token"}}]}}.
+     * Override for providers with different payload shapes.
+     */
+    protected void parseSseData(String jsonData, StreamingResponse response) {
+        try {
+            JsonNode root = JSON.readTree(jsonData);
+            JsonNode choices = root.get("choices");
+            if (choices != null && choices.isArray() && !choices.isEmpty()) {
+                JsonNode delta = choices.get(0).get("delta");
+                if (delta != null) {
+                    JsonNode content = delta.get("content");
+                    if (content != null && !content.isNull()) {
+                        response.push(content.asText());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Failed to parse SSE data: {}", e.getMessage());
+        }
     }
 
     @Override

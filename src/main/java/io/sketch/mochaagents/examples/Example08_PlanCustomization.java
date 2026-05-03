@@ -21,6 +21,7 @@ import java.util.Scanner;
  *             display_plan(memory_step.plan)
  *             choice = get_user_choice()  # 1=批准 2=修改 3=取消
  * </pre>
+ * @author lanxia39@163.com
  */
 public final class Example08_PlanCustomization {
 

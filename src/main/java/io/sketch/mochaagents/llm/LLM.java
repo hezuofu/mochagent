@@ -4,6 +4,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * LLM 接口 — 大语言模型的核心抽象，统一同步与异步调用.
+ * @author lanxia39@163.com
  */
 public interface LLM {
 

@@ -8,6 +8,7 @@ import java.util.*;
  *
  * @param <I> 输入类型
  * @param <O> 输出类型
+ * @author lanxia39@163.com
  */
 public class CurriculumLearner<I, O> implements Learner<I, O> {
 

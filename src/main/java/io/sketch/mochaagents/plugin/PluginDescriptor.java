@@ -18,6 +18,7 @@ import java.util.function.Supplier;
  * </ul>
  *
  * <p>插件 ID 格式: {@code name@builtin}，与 marketplace 插件 {@code name@marketplace} 区分。
+ * @author lanxia39@163.com
  */
 public final class PluginDescriptor {
 

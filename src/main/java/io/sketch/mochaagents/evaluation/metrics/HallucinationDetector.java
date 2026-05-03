@@ -4,6 +4,7 @@ import java.util.List;
 
 /**
  * 幻觉检测器 — 检测 AI 输出中的虚构内容和事实性错误.
+ * @author lanxia39@163.com
  */
 public class HallucinationDetector {
 

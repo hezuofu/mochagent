@@ -6,6 +6,7 @@ import io.sketch.mochaagents.plan.PlanningStrategy;
 
 /**
  * 层次规划策略 — 将目标逐层分解为子目标.
+ * @author lanxia39@163.com
  */
 public class HierarchicalPlanner implements PlanningStrategy {
 

@@ -14,6 +14,7 @@ import java.util.concurrent.CompletableFuture;
  *   <li>default 方法提供安全 fail-closed 默认值，子类可按需覆盖</li>
  *   <li>validateInput / checkPermissions 管道化校验链路</li>
  * </ul>
+ * @author lanxia39@163.com
  */
 public interface Tool {
 

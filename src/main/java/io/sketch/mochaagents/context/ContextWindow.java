@@ -5,6 +5,7 @@ import java.util.List;
 
 /**
  * 上下文窗口 — 管理上下文块的容量与 Token 计数.
+ * @author lanxia39@163.com
  */
 public class ContextWindow {
 

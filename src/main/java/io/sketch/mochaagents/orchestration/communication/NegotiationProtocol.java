@@ -5,6 +5,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 协商协议 — Agent 之间的任务协商与冲突解决协议.
+ * @author lanxia39@163.com
  */
 public class NegotiationProtocol {
 

@@ -6,6 +6,7 @@ import io.sketch.mochaagents.reasoning.ReasoningStrategy;
 
 /**
  * Tree of Thought 策略 — 分支探索推理.
+ * @author lanxia39@163.com
  */
 public class TreeOfThought implements ReasoningStrategy {
 

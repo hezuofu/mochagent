@@ -2,6 +2,7 @@ package io.sketch.mochaagents.perception;
 
 /**
  * 环境抽象 — Agent 所处环境的状态快照.
+ * @author lanxia39@163.com
  */
 public final class Environment {
 

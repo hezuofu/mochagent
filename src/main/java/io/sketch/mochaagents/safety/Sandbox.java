@@ -1,31 +1,26 @@
 package io.sketch.mochaagents.safety;
 
 /**
- * 沙箱环境 — 隔离执行不可信代码，防止系统损害.
+ * Code execution sandbox — isolates untrusted code from the host system.
+ *
+ * <p>Implementations range from no-op (no isolation) to process-level to
+ * full container (Docker / gVisor). Choose based on your threat model.
+ * @author lanxia39@163.com
  */
-public class Sandbox {
-
-    private final long timeoutMs;
-    private final boolean networkDisabled;
-    private final boolean fileSystemRestricted;
-
-    public Sandbox(long timeoutMs, boolean networkDisabled, boolean fileSystemRestricted) {
-        this.timeoutMs = timeoutMs;
-        this.networkDisabled = networkDisabled;
-        this.fileSystemRestricted = fileSystemRestricted;
-    }
-
-    public Sandbox() {
-        this(30000, true, true);
-    }
+public interface Sandbox {
 
     /**
-     * 在沙箱中执行代码.
-     * 当前为模拟实现，实际需集成 Docker/gVisor 等容器技术.
+     * Execute code in the sandbox.
+     *
+     * @param code     source code to execute
+     * @param language programming language (python, javascript, etc.)
+     * @return execution output
+     * @throws SandboxException if execution fails or is blocked
      */
-    public String execute(String code, String language) {
-        return "[Sandbox] Code executed safely in " + language + " sandbox. " +
-               "Timeout: " + timeoutMs + "ms, Network: " + (networkDisabled ? "disabled" : "enabled") +
-               ", FS: " + (fileSystemRestricted ? "restricted" : "full");
+    String execute(String code, String language);
+
+    /** Human-readable name of this sandbox backend. */
+    default String backendName() {
+        return getClass().getSimpleName();
     }
 }

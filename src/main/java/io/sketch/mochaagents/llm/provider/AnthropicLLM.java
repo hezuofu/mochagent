@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.sketch.mochaagents.llm.LLMRequest;
+import io.sketch.mochaagents.llm.StreamingResponse;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 
@@ -19,6 +20,7 @@ import java.util.Map;
  *         .apiKey(System.getenv("ANTHROPIC_API_KEY"))
  *         .build();
  * }</pre>
+ * @author lanxia39@163.com
  */
 public class AnthropicLLM extends BaseApiLLM {
 
@@ -56,24 +58,34 @@ public class AnthropicLLM extends BaseApiLLM {
 
     @Override
     protected String buildRequestBody(LLMRequest request) {
+        return buildRequestBody(request, false);
+    }
+
+    @Override
+    protected String buildStreamRequestBody(LLMRequest request) {
+        return buildRequestBody(request, true);
+    }
+
+    private String buildRequestBody(LLMRequest request, boolean stream) {
         ObjectNode body = JSON.createObjectNode();
         body.put("model", modelId);
         body.put("max_tokens", request.maxTokens() > 0 ? request.maxTokens() : 4096);
 
-        // Anthropic 不支持 temperature 为 0, 最小 0.0001
+        if (stream) {
+            body.put("stream", true);
+        }
+
         double temp = request.temperature() >= 0 ? request.temperature() : 1.0;
         body.put("temperature", Math.max(temp, 0.0001));
 
         if (request.topP() >= 0) body.put("top_p", request.topP());
 
-        // stop sequences
         if (!request.stopSequences().isEmpty()) {
             ArrayNode stops = JSON.createArrayNode();
             request.stopSequences().forEach(stops::add);
             body.set("stop_sequences", stops);
         }
 
-        // 构造 Anthropic 消息格式 + 提取 system
         List<Map<String, String>> messages = request.messages();
         ArrayNode anthropicMessages = JSON.createArrayNode();
         String systemPrompt = null;
@@ -89,9 +101,7 @@ public class AnthropicLLM extends BaseApiLLM {
                 am.put("role", role);
                 am.put("content", content);
                 anthropicMessages.add(am);
-            }
-            // tool-call / tool-response 转换为 user/assistant
-            else if ("tool-call".equals(role)) {
+            } else if ("tool-call".equals(role)) {
                 ObjectNode am = JSON.createObjectNode();
                 am.put("role", "assistant");
                 am.put("content", content);
@@ -104,7 +114,6 @@ public class AnthropicLLM extends BaseApiLLM {
             }
         }
 
-        // fallback: prompt 作为 user 消息
         if (anthropicMessages.isEmpty() && request.prompt() != null && !request.prompt().isEmpty()) {
             ObjectNode am = JSON.createObjectNode();
             am.put("role", "user");
@@ -118,12 +127,31 @@ public class AnthropicLLM extends BaseApiLLM {
             body.put("system", systemPrompt);
         }
 
-        // extra params
         for (var entry : request.extraParams().entrySet()) {
             body.putPOJO(entry.getKey(), entry.getValue());
         }
 
         return body.toString();
+    }
+
+    /**
+     * Anthropic SSE format uses named events. Text tokens arrive as
+     * {@code event: content_block_delta} with {@code delta.text}.
+     */
+    @Override
+    protected void parseSseData(String jsonData, StreamingResponse response) {
+        try {
+            JsonNode root = JSON.readTree(jsonData);
+            JsonNode delta = root.get("delta");
+            if (delta != null) {
+                JsonNode text = delta.get("text");
+                if (text != null && !text.isNull()) {
+                    response.push(text.asText());
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Failed to parse Anthropic SSE data: {}", e.getMessage());
+        }
     }
 
     @Override

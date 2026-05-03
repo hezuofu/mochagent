@@ -5,6 +5,7 @@ import io.sketch.mochaagents.interaction.permission.PermissionRequest;
 
 /**
  * 权限控制 — Agent 操作权限的授权与管控.
+ * @author lanxia39@163.com
  */
 public class Permission {
 

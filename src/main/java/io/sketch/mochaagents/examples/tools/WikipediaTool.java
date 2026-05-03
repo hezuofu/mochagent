@@ -7,6 +7,7 @@ import java.util.Map;
 
 /**
  * Wikipedia 搜索工具 — 对应 smolagents 的 search_wikipedia.
+ * @author lanxia39@163.com
  */
 public final class WikipediaTool implements Tool {
     @Override public String getName() { return "search_wikipedia"; }

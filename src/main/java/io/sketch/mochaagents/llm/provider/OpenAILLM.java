@@ -27,6 +27,7 @@ import java.util.Map;
  *         .baseUrl("https://api.openai.com/v1")
  *         .build();
  * }</pre>
+ * @author lanxia39@163.com
  */
 public class OpenAILLM extends BaseApiLLM {
 
@@ -70,13 +71,25 @@ public class OpenAILLM extends BaseApiLLM {
 
     @Override
     protected String buildRequestBody(LLMRequest request) {
+        return buildRequestBody(request, false);
+    }
+
+    @Override
+    protected String buildStreamRequestBody(LLMRequest request) {
+        return buildRequestBody(request, true);
+    }
+
+    private String buildRequestBody(LLMRequest request, boolean stream) {
         ObjectNode body = JSON.createObjectNode();
         body.put("model", modelId);
+
+        if (stream) {
+            body.put("stream", true);
+        }
 
         // 消息
         ArrayNode messages = messagesToJson(request.messages());
         if (messages.isEmpty()) {
-            // fallback: prompt 作为单条 user 消息
             ObjectNode userMsg = JSON.createObjectNode();
             userMsg.put("role", "user");
             userMsg.put("content", request.prompt() != null ? request.prompt() : "");

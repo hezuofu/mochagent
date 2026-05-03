@@ -33,6 +33,7 @@ package io.sketch.mochaagents.llm.provider;
  *         .apiKey("sk-litellm-key")
  *         .build();
  * }</pre>
+ * @author lanxia39@163.com
  */
 public class OpenAICompatibleLLM extends OpenAILLM {
 

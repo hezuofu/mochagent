@@ -3,6 +3,7 @@ package io.sketch.mochaagents.skill;
 /**
  * Skill prompt 输出块 — 对齐 claude-code 的 ContentBlockParam.
  * 技能执行后返回 prompt 内容，由 SkillTool 注入 LLM 上下文。
+ * @author lanxia39@163.com
  */
 public record ContentBlock(String type, String text) {
 

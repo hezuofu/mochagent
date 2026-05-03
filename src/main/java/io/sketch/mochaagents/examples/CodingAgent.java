@@ -6,6 +6,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * 编程 Agent — 示例：专注于代码生成与修改的 Agent.
+ * @author lanxia39@163.com
  */
 public class CodingAgent extends BaseAgent<String, String> {
 

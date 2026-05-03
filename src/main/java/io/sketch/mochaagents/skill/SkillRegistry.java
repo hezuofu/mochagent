@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
  *   <li>按来源 / 启用状态分类</li>
  *   <li>批量注册（如从文件系统加载后合并）</li>
  * </ul>
+ * @author lanxia39@163.com
  */
 public class SkillRegistry {
 

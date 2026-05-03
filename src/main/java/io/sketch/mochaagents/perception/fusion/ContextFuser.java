@@ -8,6 +8,7 @@ import java.util.List;
 
 /**
  * 上下文融合器 — 合并多个感知源的结果.
+ * @author lanxia39@163.com
  */
 public class ContextFuser {
 

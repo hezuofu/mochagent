@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Agent 记忆 — 所有 Agent 的通用执行轨迹记录器.
@@ -19,11 +20,12 @@ import java.util.Set;
  * </ul>
  *
  * <p>对应 smolagents 的 {@code AgentMemory}.
+ * @author lanxia39@163.com
  */
 public class AgentMemory {
 
-    private String systemPrompt;
-    private final List<MemoryStep> steps = new ArrayList<>();
+    private volatile String systemPrompt;
+    private final List<MemoryStep> steps = new CopyOnWriteArrayList<>();
 
     /** 设置系统提示（内部使用，不追加为独立步骤）. */
     public void setSystemPrompt(String prompt) {

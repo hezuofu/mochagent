@@ -10,6 +10,7 @@ import java.util.function.Supplier;
 
 /**
  * 协作模式 — Agent 与用户协作，高风险操作需要用户确认.
+ * @author lanxia39@163.com
  */
 public class CollaborativeMode implements Interactor {
 

@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
  * <p>The {@code : never} return type from TypeScript is emulated by declaring
  * these methods as returning {@code void} with a guaranteed {@code System.exit}
  * call, which prevents the JVM from executing any code after the call site.
+ * @author lanxia39@163.com
  */
 public final class CliExit {
 

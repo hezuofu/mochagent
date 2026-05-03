@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Agent 团队 — 管理一组协作 Agent，按角色组织.
+ * @author lanxia39@163.com
  */
 public class AgentTeam {
 

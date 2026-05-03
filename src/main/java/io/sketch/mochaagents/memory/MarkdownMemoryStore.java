@@ -30,6 +30,7 @@ import java.util.stream.Stream;
  *
  * Memory content here.
  * }</pre>
+ * @author lanxia39@163.com
  */
 public class MarkdownMemoryStore implements MemoryStore {
 

@@ -5,6 +5,7 @@ import java.util.List;
 
 /**
  * 降级策略 — 主 LLM 不可用时自动切换到备用 LLM.
+ * @author lanxia39@163.com
  */
 public class FallbackStrategy {
 

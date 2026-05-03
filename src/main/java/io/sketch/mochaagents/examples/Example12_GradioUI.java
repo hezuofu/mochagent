@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
  *     agent = CodeAgent(tools=[WebSearchTool()], model=model)
  *     GradioUI(agent, file_upload_folder="./data").launch()
  * </pre>
+ * @author lanxia39@163.com
  */
 public final class Example12_GradioUI {
 

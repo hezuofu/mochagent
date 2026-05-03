@@ -4,6 +4,7 @@ import java.util.Map;
 
 /**
  * LLM 响应 — 封装模型返回的文本、token 统计等信息.
+ * @author lanxia39@163.com
  */
 public class LLMResponse {
 

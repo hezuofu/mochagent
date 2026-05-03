@@ -28,6 +28,7 @@ import java.util.regex.Pattern;
  * </ol>
  *
  * <p>对应 smolagents 的 {@code ToolCallingAgent}.
+ * @author lanxia39@163.com
  */
 public final class ToolCallingAgent extends MultiStepAgent {
 

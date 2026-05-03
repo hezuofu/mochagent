@@ -7,6 +7,7 @@ import java.util.Map;
 
 /**
  * 工作台接口 — 多工具协同工作空间，支持工具组合与管道执行.
+ * @author lanxia39@163.com
  */
 public interface Workbench {
 

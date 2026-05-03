@@ -1,5 +1,7 @@
 package io.sketch.mochaagents.agent.impl;
 
+import io.sketch.mochaagents.agent.loop.MemoryProvider;
+import io.sketch.mochaagents.agent.loop.SystemPromptProvider;
 import io.sketch.mochaagents.agent.loop.TerminationCondition;
 import io.sketch.mochaagents.agent.loop.strategy.ReActLoop;
 import io.sketch.mochaagents.llm.LLM;
@@ -28,8 +30,10 @@ import java.util.*;
  *   <li>{@link ToolCallingAgent} — 使用 LLM 原生 tool-calling API</li>
  *   <li>{@link CodeAgent} — 解析并执行 LLM 输出的代码块</li>
  * </ul>
+ * @author lanxia39@163.com
  */
-public abstract class MultiStepAgent extends CapableAgent<String, String> {
+public abstract class MultiStepAgent extends CapableAgent<String, String>
+        implements MemoryProvider, SystemPromptProvider {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
 

@@ -19,6 +19,7 @@ package io.sketch.mochaagents.llm.provider;
  * // 或使用快捷工厂
  * DeepSeekLLM llm = DeepSeekLLM.create();
  * }</pre>
+ * @author lanxia39@163.com
  */
 public class DeepSeekLLM extends OpenAICompatibleLLM {
 

@@ -20,6 +20,7 @@ import java.util.regex.Pattern;
  *
  * <p>获取 URL 内容并转换为 Markdown，支持 prompt 引导的内容提取。
  * 处理重定向和错误状态码。
+ * @author lanxia39@163.com
  */
 public class WebFetchTool extends AbstractTool {
 

@@ -30,6 +30,7 @@ import java.util.regex.Pattern;
  * </ul>
  *
  * <p>安全等级：HIGH。所有写入/破坏性命令需要权限确认。
+ * @author lanxia39@163.com
  */
 public class PowerShellTool extends AbstractTool {
 

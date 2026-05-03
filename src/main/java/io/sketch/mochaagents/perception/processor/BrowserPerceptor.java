@@ -8,6 +8,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * 浏览器感知器 — 感知网页内容和 DOM.
+ * @author lanxia39@163.com
  */
 public class BrowserPerceptor implements Perceptor<String, Observation> {
 

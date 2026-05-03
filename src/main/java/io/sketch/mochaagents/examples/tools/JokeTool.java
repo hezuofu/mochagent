@@ -7,6 +7,7 @@ import java.util.Map;
 
 /**
  * 笑话工具 — 对应 smolagents 的 get_joke.
+ * @author lanxia39@163.com
  */
 public final class JokeTool implements Tool {
     @Override public String getName() { return "get_joke"; }

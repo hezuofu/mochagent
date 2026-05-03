@@ -8,6 +8,7 @@ import java.util.Map;
  * 工具 Schema 描述 — 对齐 claude-code 的 Zod schema / JSON Schema.
  *
  * 描述工具的输入参数结构和输出结构，供 LLM 理解工具契约。
+ * @author lanxia39@163.com
  */
 public final class ToolSchema {
 

@@ -13,6 +13,7 @@ import java.util.function.Function;
 
 /**
  * 工具编排器 — 智能编排多工具调用，支持顺序/并行/条件执行策略.
+ * @author lanxia39@163.com
  */
 public class ToolOrchestrator {
 

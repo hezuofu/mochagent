@@ -22,6 +22,7 @@ import io.sketch.mochaagents.examples.tools.*;
  *     agent.run("Tell me a Random Fact")
  *     agent.run("who is Elon Musk?")
  * </pre>
+ * @author lanxia39@163.com
  */
 public final class Example02_MultipleTools {
 

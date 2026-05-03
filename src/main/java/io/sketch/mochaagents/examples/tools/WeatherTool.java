@@ -7,6 +7,7 @@ import java.util.Map;
 
 /**
  * 天气工具 — 对应 smolagents 的 get_weather.
+ * @author lanxia39@163.com
  */
 public final class WeatherTool implements Tool {
     @Override public String getName() { return "get_weather"; }

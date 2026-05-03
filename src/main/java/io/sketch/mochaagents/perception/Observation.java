@@ -2,6 +2,7 @@ package io.sketch.mochaagents.perception;
 
 /**
  * 观察结果 — 对环境的感知快照.
+ * @author lanxia39@163.com
  */
 public final class Observation {
 

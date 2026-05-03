@@ -4,6 +4,7 @@ import io.sketch.mochaagents.tool.Tool;
 import io.sketch.mochaagents.tool.ToolInput;
 import java.util.Map;
 
+/** @author lanxia39@163.com */
 public class BrowserTool implements Tool {
     @Override public String getName() { return "browser"; }
     @Override public String getDescription() { return "Browser automation"; }

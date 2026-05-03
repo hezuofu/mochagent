@@ -2,7 +2,9 @@ package io.sketch.mochaagents.agent.loop.strategy;
 
 import io.sketch.mochaagents.agent.Agent;
 import io.sketch.mochaagents.agent.loop.AgenticLoop;
+import io.sketch.mochaagents.agent.loop.MemoryProvider;
 import io.sketch.mochaagents.agent.loop.StepResult;
+import io.sketch.mochaagents.agent.loop.SystemPromptProvider;
 import io.sketch.mochaagents.agent.loop.TerminationCondition;
 import io.sketch.mochaagents.memory.AgentMemory;
 import org.slf4j.Logger;
@@ -28,6 +30,7 @@ import org.slf4j.LoggerFactory;
  *
  * @param <I> 输入类型
  * @param <O> 输出类型
+ * @author lanxia39@163.com
  */
 public class ReActLoop<I, O> implements AgenticLoop<I, O> {
 
@@ -131,36 +134,25 @@ public class ReActLoop<I, O> implements AgenticLoop<I, O> {
 
     // ============ 辅助方法 ============
 
-    @SuppressWarnings("unchecked")
-    private AgentMemory getMemory(Agent<I, O> agent) {
-        try {
-            var method = agent.getClass().getMethod("memory");
-            return (AgentMemory) method.invoke(agent);
-        } catch (Exception e) {
-            return null;
+    private static AgentMemory getMemory(Agent<?, ?> agent) {
+        if (agent instanceof MemoryProvider mp) {
+            return mp.memory();
         }
+        return null;
     }
 
-    @SuppressWarnings("unchecked")
-    private String buildSystemPrompt(Agent<I, O> agent) {
-        try {
-            var method = agent.getClass().getMethod("buildSystemPrompt");
-            return (String) method.invoke(agent);
-        } catch (Exception e) {
-            return "";
+    private static String buildSystemPrompt(Agent<?, ?> agent) {
+        if (agent instanceof SystemPromptProvider spp) {
+            return spp.buildSystemPrompt();
         }
+        return "";
     }
 
-    private boolean isFinalAnswer(AgentMemory memory) {
+    private static boolean isFinalAnswer(AgentMemory memory) {
         return memory != null && memory.hasFinalAnswer();
     }
 
-    @SuppressWarnings("unchecked")
-    private String agentName(Agent<I, O> agent) {
-        try {
-            return agent.metadata().name();
-        } catch (Exception e) {
-            return agent.getClass().getSimpleName();
-        }
+    private static String agentName(Agent<?, ?> agent) {
+        return agent.metadata().name();
     }
 }

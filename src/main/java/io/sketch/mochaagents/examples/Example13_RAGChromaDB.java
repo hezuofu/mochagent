@@ -27,6 +27,7 @@ import java.util.*;
  *     retriever_tool = RetrieverTool(vector_store)
  *     agent = CodeAgent(tools=[retriever_tool], model=model)
  * </pre>
+ * @author lanxia39@163.com
  */
 public final class Example13_RAGChromaDB {
 

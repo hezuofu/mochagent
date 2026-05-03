@@ -2,6 +2,7 @@ package io.sketch.mochaagents.agent.loop;
 
 /**
  * 单步执行结果 — 记录每一步的状态、动作与产出.
+ * @author lanxia39@163.com
  */
 public final class StepResult {
 

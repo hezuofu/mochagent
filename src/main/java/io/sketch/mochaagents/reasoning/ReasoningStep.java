@@ -2,6 +2,7 @@ package io.sketch.mochaagents.reasoning;
 
 /**
  * 推理步骤 — 记录单步推理.
+ * @author lanxia39@163.com
  */
 public final class ReasoningStep {
 

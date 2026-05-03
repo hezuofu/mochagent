@@ -9,6 +9,7 @@ import java.util.function.Consumer;
 
 /**
  * 流式响应 — 支持逐 token 消费的 LLM 响应流.
+ * @author lanxia39@163.com
  */
 public class StreamingResponse implements Iterable<String> {
 

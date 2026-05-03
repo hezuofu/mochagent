@@ -15,6 +15,7 @@ import java.util.concurrent.CompletableFuture;
  *
  * @param <I> 输入类型
  * @param <O> 输出类型
+ * @author lanxia39@163.com
  */
 public class CompositeAgent<I, O> implements Agent<I, List<O>> {
 

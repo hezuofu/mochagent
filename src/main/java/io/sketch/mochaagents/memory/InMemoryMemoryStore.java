@@ -9,6 +9,7 @@ import java.util.stream.Stream;
  *
  * <p>线程安全，进程退出后数据丢失。作为默认存储后端，
  * 由 {@link MemoryManager} 无参构造时自动创建.
+ * @author lanxia39@163.com
  */
 public class InMemoryMemoryStore implements MemoryStore {
 

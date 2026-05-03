@@ -4,6 +4,7 @@ import java.util.*;
 
 /**
  * 执行追踪器 — 追踪每一步操作的输入、输出、耗时与状态.
+ * @author lanxia39@163.com
  */
 public class ExecutionTracer {
 

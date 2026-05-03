@@ -8,6 +8,7 @@ import java.util.Map;
 
 /**
  * MCP (Model Context Protocol) 客户端 — 连接外部 MCP 服务，将远程工具映射为本地 Tool.
+ * @author lanxia39@163.com
  */
 public interface McpClient {
 

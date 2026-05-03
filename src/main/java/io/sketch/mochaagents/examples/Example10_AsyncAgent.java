@@ -18,6 +18,7 @@ import java.util.concurrent.CompletableFuture;
  *     result = await anyio.to_thread.run_sync(agent.run, task)
  *     # Starlette endpoint: async def run_agent_endpoint(request)
  * </pre>
+ * @author lanxia39@163.com
  */
 public final class Example10_AsyncAgent {
 

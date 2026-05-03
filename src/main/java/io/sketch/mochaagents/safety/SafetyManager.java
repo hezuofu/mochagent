@@ -8,6 +8,7 @@ import java.util.List;
 
 /**
  * 安全管理器 — 统一管理 Agent 操作的安全检查、内容过滤与审计.
+ * @author lanxia39@163.com
  */
 public class SafetyManager {
 
@@ -26,7 +27,7 @@ public class SafetyManager {
     }
 
     public SafetyManager() {
-        this(new ContentFilter(), new CodeValidator(), new Sandbox());
+        this(new ContentFilter(), new CodeValidator(), new NoopSandbox());
     }
 
     /** 内容安全检查 */

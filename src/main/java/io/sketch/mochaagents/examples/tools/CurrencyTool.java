@@ -7,6 +7,7 @@ import java.util.Map;
 
 /**
  * 货币转换工具 — 对应 smolagents 的 convert_currency.
+ * @author lanxia39@163.com
  */
 public final class CurrencyTool implements Tool {
     @Override public String getName() { return "convert_currency"; }

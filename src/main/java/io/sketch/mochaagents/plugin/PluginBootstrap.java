@@ -23,6 +23,7 @@ import java.util.List;
  * PluginBootstrap pluginBootstrap = PluginBootstrap.bootstrap(skillRegistry);
  * // 后续可通过 pluginBootstrap.pluginManager() 管理插件
  * }</pre>
+ * @author lanxia39@163.com
  */
 public class PluginBootstrap {
 

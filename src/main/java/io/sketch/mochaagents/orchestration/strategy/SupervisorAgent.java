@@ -9,6 +9,7 @@ import java.util.List;
 
 /**
  * 监督 Agent 策略 — 一个监督 Agent 分配任务给工作 Agent，审查结果.
+ * @author lanxia39@163.com
  */
 public class SupervisorAgent implements OrchestrationStrategy {
 

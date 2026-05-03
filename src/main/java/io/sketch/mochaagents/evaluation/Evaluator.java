@@ -2,6 +2,7 @@ package io.sketch.mochaagents.evaluation;
 
 /**
  * 评估器接口 — Agent 输出质量评估的核心抽象.
+ * @author lanxia39@163.com
  */
 public interface Evaluator {
 

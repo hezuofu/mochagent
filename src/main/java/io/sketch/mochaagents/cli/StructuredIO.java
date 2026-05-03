@@ -40,6 +40,7 @@ import java.util.function.Consumer;
  *   <li>{@code control_cancel_request} — cancel an outstanding request</li>
  *   <li>{@code keep_alive} — silently ignored heartbeat</li>
  * </ul>
+ * @author lanxia39@163.com
  */
 public final class StructuredIO implements AutoCloseable {
 

@@ -23,6 +23,7 @@ import java.util.stream.Stream;
  *   <li>容量控制与淘汰策略</li>
  *   <li>可选 MEMORY.md 索引管理（通过 {@link MemoryIndex}）</li>
  * </ul>
+ * @author lanxia39@163.com
  */
 public class MemoryManager {
 

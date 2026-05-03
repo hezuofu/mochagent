@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *     app = Starlette(routes=[Route("/", homepage), Route("/chat", chat, methods=["POST"])])
  *     app.on_shutdown = [shutdown]
  * </pre>
+ * @author lanxia39@163.com
  */
 public final class Example15_Server {
 

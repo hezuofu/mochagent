@@ -21,6 +21,7 @@ import java.util.List;
  *
  * <p>Feature flags (BRIDGE_MODE, DAEMON, BG_SESSIONS, TEMPLATES, etc.)
  * are intentionally excluded — these are Anthropic internal paths.
+ * @author lanxia39@163.com
  */
 public final class CliBootstrap {
 

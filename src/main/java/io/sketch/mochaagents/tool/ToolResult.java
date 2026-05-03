@@ -14,6 +14,7 @@ import java.util.Map;
  *   <li>工具产生的附加消息（newMessages）</li>
  *   <li>Builder 模式构建</li>
  * </ul>
+ * @author lanxia39@163.com
  */
 public final class ToolResult {
     private final String toolName;

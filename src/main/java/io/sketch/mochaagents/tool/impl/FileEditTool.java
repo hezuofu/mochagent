@@ -19,6 +19,7 @@ import java.util.Map;
  *
  * <p>通过精确字符串匹配实现文件局部修改，支持 replace_all 批量替换。
  * 智能处理引号风格匹配和多重出现校验。
+ * @author lanxia39@163.com
  */
 public class FileEditTool extends AbstractTool {
 

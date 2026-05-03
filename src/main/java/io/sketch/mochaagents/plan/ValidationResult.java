@@ -2,6 +2,7 @@ package io.sketch.mochaagents.plan;
 
 /**
  * 验证结果.
+ * @author lanxia39@163.com
  */
 public final class ValidationResult {
     private final boolean valid;

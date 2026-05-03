@@ -6,6 +6,7 @@ import java.util.concurrent.CompletableFuture;
  * 规划器接口 — 负责任务分解与计划生成.
  *
  * @param <T> 目标类型
+ * @author lanxia39@163.com
  */
 public interface Planner<T> {
 

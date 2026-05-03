@@ -7,6 +7,7 @@ import java.util.Map;
 
 /**
  * 随机事实工具 — 对应 smolagents 的 get_random_fact.
+ * @author lanxia39@163.com
  */
 public final class FactTool implements Tool {
     @Override public String getName() { return "get_random_fact"; }

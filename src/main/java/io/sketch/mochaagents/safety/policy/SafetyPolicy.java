@@ -4,6 +4,7 @@ import java.util.List;
 
 /**
  * 安全策略 — 定义 Agent 可执行操作的安全边界.
+ * @author lanxia39@163.com
  */
 public class SafetyPolicy {
 

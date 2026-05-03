@@ -40,6 +40,7 @@ import java.util.concurrent.TimeUnit;
  *   <li>stopTask() — 停止运行中的 worker</li>
  *   <li>TaskResult — 含 usage 统计的完成结果</li>
  * </ul>
+ * @author lanxia39@163.com
  */
 public class AgentTool extends AbstractTool {
 

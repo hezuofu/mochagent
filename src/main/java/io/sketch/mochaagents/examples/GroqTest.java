@@ -9,6 +9,7 @@ import io.sketch.mochaagents.llm.provider.OpenAICompatibleLLM;
  * <p>前置条件: 注册 <a href="https://console.groq.com">console.groq.com</a> 获取免费 API Key,
  * 设置环境变量 {@code GROQ_API_KEY}.
  * <p>免费模型: llama-3.3-70b-versatile, mixtral-8x7b-32768, gemma2-9b-it, llama-3.1-8b-instant
+ * @author lanxia39@163.com
  */
 public class GroqTest {
 

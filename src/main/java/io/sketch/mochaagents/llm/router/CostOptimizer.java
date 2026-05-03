@@ -7,6 +7,7 @@ import java.util.List;
 
 /**
  * 成本优化器 — 根据 token 用量和任务复杂度选择最具性价比的 LLM.
+ * @author lanxia39@163.com
  */
 public class CostOptimizer {
 
