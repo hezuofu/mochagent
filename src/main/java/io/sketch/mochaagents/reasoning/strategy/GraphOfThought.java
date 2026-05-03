@@ -26,12 +26,23 @@ public class GraphOfThought implements ReasoningStrategy {
         ReasoningChain chain = new ReasoningChain();
 
         String prompt = """
-                Decompose into 3-5 atomic thought nodes.
-                ID: <N1, N2, ...>
-                Thought: <the idea>
-                DependsOn: <prerequisite IDs or "none">
-                Confidence: <0.0-1.0>
+                Decompose into atomic thought nodes. Each node gets an ID, thought, dependencies, confidence.
+                DependsOn lists prerequisite node IDs (or "none" for independent ideas).
 
+                Example:
+                Question: Should I bring an umbrella today?
+
+                ID: N1
+                Thought: Check weather forecast for rain probability
+                DependsOn: none
+                Confidence: 1.0
+
+                ID: N2
+                Thought: If rain > 50%%, umbrella is needed
+                DependsOn: N1
+                Confidence: 0.9
+
+                ---
                 Question: %s""".formatted(question);
 
         String response = llm.complete(LLMRequest.builder()

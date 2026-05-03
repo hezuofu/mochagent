@@ -31,19 +31,24 @@ public class ChainOfThought implements ReasoningStrategy {
     @Override
     public ReasoningChain reason(String question) {
         String prompt = """
-                You are a reasoning engine. For the question below, break down your thinking into
-                numbered steps. For each step, provide:
-                Step N: <your reasoning>
-                Confidence: <0.0 to 1.0>
+                You are a reasoning engine. For the question, break down your analysis into
+                numbered steps with confidence scores (0.0-1.0).
 
-                Question: %s
+                Example:
+                Question: What is 15%% of 200?
 
-                Output format:
-                Step 1: <analysis>
-                Confidence: 0.9
-                Step 2: <deduction>
-                Confidence: 0.85
-                ...""".formatted(question);
+                Step 1: Convert 15%% to decimal: 15/100 = 0.15
+                Confidence: 0.95
+
+                Step 2: Multiply: 200 * 0.15 = 30
+                Confidence: 0.95
+
+                Step 3: The answer is 30
+                Confidence: 0.95
+
+                ---
+                Now answer this question:
+                %s""".formatted(question);
 
         LLMRequest request = LLMRequest.builder()
                 .addMessage("user", prompt)
