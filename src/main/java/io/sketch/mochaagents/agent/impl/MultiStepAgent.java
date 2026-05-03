@@ -48,6 +48,8 @@ public abstract class MultiStepAgent extends BaseAgent<String, String>
 
     protected final LLM llm;
     protected final io.sketch.mochaagents.llm.router.LLMRouter router;
+    protected final io.sketch.mochaagents.llm.OptimizationConfig optimization;
+    protected final io.sketch.mochaagents.llm.CostTracker costTracker;
     protected final AgentMemory memory = new AgentMemory();
     protected final int maxSteps;
     protected final int planningInterval;
@@ -71,7 +73,15 @@ public abstract class MultiStepAgent extends BaseAgent<String, String>
 
     protected MultiStepAgent(Builder<?> builder) {
         super(builder);
-        this.llm = builder.llm;
+        this.optimization = builder.optimization;
+        this.costTracker = new io.sketch.mochaagents.llm.CostTracker();
+
+        // Auto-wrap LLM with caching if cache is enabled
+        LLM rawLlm = builder.llm;
+        if (rawLlm != null && optimization.cacheMaxEntries() > 0) {
+            rawLlm = new io.sketch.mochaagents.llm.CachingLLM(rawLlm, costTracker, optimization.cacheMaxEntries());
+        }
+        this.llm = rawLlm;
         this.router = builder.router;
         this.orchestrator = builder.orchestrator;
         this.maxSteps = builder.maxSteps;
