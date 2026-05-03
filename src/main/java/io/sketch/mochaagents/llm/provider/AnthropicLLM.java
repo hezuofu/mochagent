@@ -27,12 +27,14 @@ public class AnthropicLLM extends BaseApiLLM {
     private final String apiKey;
     private final String baseUrl;
     private final String anthropicVersion;
+    private final boolean usePromptCaching;
 
     protected AnthropicLLM(AnthropicBuilder builder) {
         super(builder);
         this.apiKey = builder.apiKey;
         this.baseUrl = builder.baseUrl;
         this.anthropicVersion = builder.anthropicVersion;
+        this.usePromptCaching = builder.usePromptCaching;
 
         if (apiKey == null || apiKey.isBlank()) {
             log.warn("Anthropic API key not set. Set ANTHROPIC_API_KEY or pass apiKey to builder.");
@@ -124,7 +126,19 @@ public class AnthropicLLM extends BaseApiLLM {
         body.set("messages", anthropicMessages);
 
         if (systemPrompt != null && !systemPrompt.isEmpty()) {
-            body.put("system", systemPrompt);
+            // Use cache_control for ~90% cost reduction on cached system prompts
+            if (usePromptCaching) {
+                ObjectNode cachedSystem = JSON.createObjectNode();
+                cachedSystem.put("type", "text");
+                cachedSystem.put("text", systemPrompt);
+                ObjectNode cacheControl = cachedSystem.putObject("cache_control");
+                cacheControl.put("type", "ephemeral");
+                ArrayNode systemArray = JSON.createArrayNode();
+                systemArray.add(cachedSystem);
+                body.set("system", systemArray);
+            } else {
+                body.put("system", systemPrompt);
+            }
         }
 
         for (var entry : request.extraParams().entrySet()) {
@@ -191,10 +205,12 @@ public class AnthropicLLM extends BaseApiLLM {
         private String apiKey = System.getenv("ANTHROPIC_API_KEY");
         private String baseUrl = "https://api.anthropic.com/v1";
         private String anthropicVersion = "2023-06-01";
+        private boolean usePromptCaching = true; // default on — 90% cost reduction on system prompts
 
         public AnthropicBuilder apiKey(String key) { this.apiKey = key; return this; }
         public AnthropicBuilder baseUrl(String url) { this.baseUrl = url; return this; }
         public AnthropicBuilder anthropicVersion(String ver) { this.anthropicVersion = ver; return this; }
+        public AnthropicBuilder promptCaching(boolean v) { this.usePromptCaching = v; return this; }
 
         public AnthropicLLM build() {
             if (modelId == null) modelId = "claude-sonnet-4-20250514";
