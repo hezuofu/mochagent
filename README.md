@@ -1,169 +1,156 @@
 # MochaAgents
 
-A Java-based AI agent framework — a pure Java reimplementation of [smolagents](https://github.com/huggingface/smolagents), designed for production-grade multi-agent systems.
-
-## Architecture
-
-```
-Agent<I,O>                    # Unified agent interface (sync / async / composable)
-├── CapableAgent              # Agent with tools, memory, and LLM integration
-│   ├── MultiStepAgent        # ReAct loop base (Think → Act → Observe)
-│   │   ├── ToolCallingAgent  # Tool-calling via structured output or JSON
-│   │   └── CodeAgent         # Code-execution agent with sandboxed runtime
-│   └── CompositeAgent        # Composite pattern — chain multiple agents
-```
-
-## Features
-
-### Agent Layer
-- **Unified `Agent<I,O>` interface** — sync/async execution, functional composition (`before`, `after`, `condition`)
-- **ReAct loop engine** — multi-step reasoning with Think-Act-Observe, spanning `SystemPromptStep → TaskStep → PlanningStep → ActionStep → FinalAnswerStep`
-- **Three loop strategies**: `ReAct`, `ThinkActObserve`, `ObservePlanActReflect`
-- **Termination control** — configurable max steps, `final_answer()` barrier, and custom conditions
-- **Reflection** — built-in self-critique and improvement plan generation
-
-### LLM Integration
-- **Provider-agnostic `LLM` interface** — sync, async, and streaming
-- **7 providers**: OpenAI, Anthropic Claude, DeepSeek, Qwen (通义千问), Ollama-compatible local models, generic OpenAI-compatible API, Mock (testing)
-- **LLM Router** — fallback strategy and cost optimization
-- **`BaseApiLLM`** — shared OkHttp + Jackson transport layer for custom providers
-
-### Tools & Execution
-- **`Tool` interface** — name, description, typed inputs, security level (LOW/MEDIUM/HIGH/CRITICAL)
-- **6 built-in tool categories**: Browser, CodeExecution, FileSystem, Git, Search, Terminal
-- **Tool pipeline & workbench** — chain and orchestrate tools
-- **MCP (Model Context Protocol) client**
-- **Janino runtime compiler** — compile and execute generated Java code at runtime
-- **Jython integration** — execute Python code blocks within the sandbox
-
-### Memory & Context
-- **`AgentMemory`** — step-level execution trace with planning, action, and observation entries
-- **Pluggable stores**: `InMemoryMemoryStore`, `MarkdownMemoryStore`
-- **`MemoryManager`** — retrieval-augmented memory with metadata filtering
-- **Context window management** — sliding window, summarization, and hybrid strategies
-
-### Planning
-- **`Planner` + `PlanningStrategy`** — hierarchical, adaptive, and replanning strategies
-- **Task decomposition** — semantic decomposition via `SemanticDecomposer`
-- **Dependency graph** — model step interdependencies
-- **Validation** — plan verification before execution
-
-### Reasoning
-- **4 reasoning strategies**: Chain-of-Thought, Tree-of-Thought, Graph-of-Thought, Program-of-Thought
-- **Verifiers**: consistency checker, logic verifier
-- **Structured `ReasoningChain`** — traceable reasoning with intermediate steps
-
-### Multi-Agent Orchestration
-- **`AgentTeam`** — role-based agent teams with leader/worker/specialist roles
-- **3 orchestration strategies**: Debate, Supervisor, Swarm
-- **Negotiation protocol** — inter-agent messaging with structured `AgentMessage`
-- **Message bus** — asynchronous message passing between agents
-
-### Safety & Perception
-- **`SafetyManager`** — multi-layered safety with configurable policies
-- **Code validator** — static analysis of generated code
-- **Content filter** — input/output content filtering
-- **Sandbox** — isolated execution environment
-- **Audit logging** — full execution trace with `ExecutionTracer`
-- **Perception** — browser, codebase, filesystem, and terminal environment sensors
-
-### Learning
-- **`Learner<I,O>` interface** — agents that improve from experience
-- **Three strategies**: Few-Shot, Curriculum, Feedback-based
-- **Experience replay buffer** — store and replay execution histories
-
-### Monitoring
-- **`Tracer` + `TraceSpan`** — distributed tracing for agent execution
-- **`MetricsCollector`** — collect and aggregate runtime metrics
-- **Agent dashboard** — live execution viewer
+Java AI agent framework — reimplementation of [smolagents](https://github.com/huggingface/smolagents) with production-grade multi-agent capabilities.
 
 ## Quick Start
-
-### Prerequisites
-
-- Java 17+
-- Maven 3.9+
-
-### Build
 
 ```bash
 mvn clean compile
 ```
 
-### Example: ToolCallingAgent
-
 ```java
-import io.sketch.mochaagents.agent.impl.ToolCallingAgent;
-import io.sketch.mochaagents.llm.provider.OpenAILLM;
-
-var model = new OpenAILLM("gpt-4o", System.getenv("OPENAI_API_KEY"));
+// ToolCallingAgent with any LLM provider
+var llm = DeepSeekLLM.builder().apiKey(System.getenv("DEEPSEEK_API_KEY")).build();
 
 var agent = ToolCallingAgent.builder()
-        .llm(model)
-        .maxSteps(15)
+        .llm(llm)
+        .maxSteps(10)
         .build();
 
 String answer = agent.run("What is the capital of France?");
 ```
 
-### Example: CodeAgent
-
 ```java
-import io.sketch.mochaagents.agent.impl.CodeAgent;
-import io.sketch.mochaagents.llm.provider.OpenAILLM;
-
-var model = new OpenAILLM("gpt-4o", System.getenv("OPENAI_API_KEY"));
-
+// CodeAgent — LLM writes code, agent executes it
 var agent = CodeAgent.builder()
-        .llm(model)
-        .maxSteps(20)
+        .llm(llm)
+        .maxSteps(15)
         .build();
 
 String answer = agent.run("Calculate the 20th Fibonacci number");
 ```
 
-### Example: CompositeAgent
-
 ```java
-import io.sketch.mochaagents.agent.impl.CompositeAgent;
+// AgentContext — session, user, conversation history in one parameter
+AgentContext ctx = AgentContext.builder()
+        .sessionId("sess-001")
+        .userId("user-42")
+        .userMessage("What's the weather?")
+        .conversationHistory("User: hello\nAssistant: Hi!")
+        .metadata("instructions", "Answer concisely")
+        .build();
 
-var composite = new CompositeAgent<>(List.of(agent1, agent2, agent3));
-List<String> results = composite.execute("Analyze this codebase");
-// 或使用静态工厂: var composite = CompositeAgent.of(agent1, agent2, agent3);
+agent.run(ctx);
 ```
 
-## Module Overview
+## Architecture
 
-| Module | Package | Description |
-|--------|---------|-------------|
-| **agent** | `io.sketch.mochaagents.agent` | Core agent interfaces, ReAct loop, step types, builders |
-| **llm** | `io.sketch.mochaagents.llm` | LLM abstraction, providers, request/response, router |
-| **tool** | `io.sketch.mochaagents.tool` | Tool interface, registry, executor, pipeline, MCP client |
-| **memory** | `io.sketch.mochaagents.memory` | Agent memory, storage backends, memory manager |
-| **context** | `io.sketch.mochaagents.context` | Context window strategies, compression |
-| **plan** | `io.sketch.mochaagents.plan` | Planner, task decomposition, dependency graphs |
-| **reasoning** | `io.sketch.mochaagents.reasoning` | CoT/ToT/GoT/PoT strategies, verifiers |
-| **orchestration** | `io.sketch.mochaagents.orchestration` | Agent teams, negotiation, supervisor, debate, swarm |
-| **safety** | `io.sketch.mochaagents.safety` | Safety manager, code validator, content filter, sandbox, audit |
-| **perception** | `io.sketch.mochaagents.perception` | Environment sensors and fusion |
-| **learn** | `io.sketch.mochaagents.learn` | Learning strategies, experience replay |
-| **interaction** | `io.sketch.mochaagents.interaction` | Autonomous, collaborative, supervised modes |
-| **monitor** | `io.sketch.mochaagents.monitor` | Tracing, metrics, dashboard |
-| **evaluation** | `io.sketch.mochaagents.evaluation` | Agent evaluation criteria and results |
-| **prompt** | `io.sketch.mochaagents.prompt` | YAML-based prompt templates |
+```
+Agent<I,O>  (interface — sync/async, functional composition)
+  └── BaseAgent<I,O>  (Template Method + 9 optional capability fields)
+       └── MultiStepAgent  (ReAct loop + LLM + tools)
+            ├── ToolCallingAgent  (tool-calling via structured output)
+            └── CodeAgent         (code-execution via ScriptEngine)
+```
 
-## Supported LLM Providers
+Key inheritance chain is 4 levels — lean and modular.
 
-| Provider | Class | Notes |
-|----------|-------|-------|
-| OpenAI | `OpenAILLM` | GPT-4o, GPT-4, GPT-3.5 |
-| Anthropic | `AnthropicLLM` | Claude 3 Opus/Sonnet/Haiku |
-| DeepSeek | `DeepSeekLLM` | DeepSeek-V2/V3, DeepSeek-R1 |
-| Qwen | `QwenLLM` | Tongyi Qianwen (通义千问) |
-| Local | `LocalLLM` | Ollama, LM Studio via `/v1` |
-| Generic | `OpenAICompatibleLLM` | Any OpenAI-compatible endpoint |
-| Mock | `MockLLM` | Deterministic responses for testing |
+## Modules
+
+| Module | Status | Description |
+|--------|--------|-------------|
+| **agent** | ACTIVE | Core Agent, BaseAgent, MultiStepAgent, CodeAgent, ToolCallingAgent, CompositeAgent |
+| **agent/loop** | ACTIVE | ReActLoop, ThinkActObserve, ObservePlanActReflect, Step types, Termination |
+| **llm** | ACTIVE | LLM interface, OpenAI, Anthropic, DeepSeek, Qwen, Groq, Ollama, Mock, Router |
+| **tool** | ACTIVE | Tool interface, Registry, Bash, PowerShell, File I/O, WebSearch, WebFetch, Grep, Glob |
+| **memory** | ACTIVE | AgentMemory, MemoryManager, InMemoryStore, MarkdownStore (file-persisted) |
+| **context** | ACTIVE | ContextManager, SlidingWindow, Summarization (LLM), Hybrid (LLM), LLMContextCompressor |
+| **reasoning** | ACTIVE | ChainOfThought, TreeOfThought, ProgramOfThought, GraphOfThought (all LLM-powered) |
+| **plan** | ACTIVE | DynamicPlanner, AdaptivePlanner, HierarchicalPlanner, ReplanningStrategy, SemanticDecomposer |
+| **perception** | ACTIVE | CodebasePerceptor, FileSystemPerceptor, BrowserPerceptor, TerminalPerceptor, CompositePerceptor |
+| **evaluation** | ACTIVE | CompositeEvaluator, AutomatedJudge, LLMJudge, HumanJudge, Quality/Safety/Hallucination metrics |
+| **learn** | ACTIVE | ExperienceBuffer, ExperienceReplay, FewShotLearner, CurriculumLearner, FeedbackLearner |
+| **orchestration** | ACTIVE | DefaultOrchestrator, AgentTeam, DebateStrategy, SwarmStrategy, SupervisorAgent, MessageBus |
+| **safety** | ACTIVE | SafetyManager, CodeValidator, ContentFilter, Sandbox, PolicyEnforcer, AuditLogger |
+| **interaction** | ACTIVE | AutonomousMode (message queue), CollaborativeMode, SupervisedMode, PermissionManager |
+| **skill** | ACTIVE | SkillRegistry, SkillsInit, BundledSkill (commit/review/explain/bug-check), FileSystemSkillLoader |
+| **plugin** | ACTIVE | PluginManager, PluginBootstrap (git-utilities plugin), PluginDescriptor |
+| **monitor** | ACTIVE | Tracer, MetricsCollector, Telemetry |
+| **cli** | ACTIVE | CLI Bootstrap, REPL (real agent execution), AgentBootstrap startup chain |
+| **prompt** | UTILITY | PromptTemplate (placeholder rendering) |
+
+## LLM Providers
+
+| Provider | Class | Free Tier |
+|----------|-------|-----------|
+| OpenAI | `OpenAILLM` | — |
+| Anthropic | `AnthropicLLM` | — |
+| **DeepSeek** | `DeepSeekLLM` | Free quota |
+| **Groq** | `OpenAICompatibleLLM` | Free tier (fast) |
+| **Google Gemini** | `OpenAICompatibleLLM` | Free quota |
+| **Ollama** | `OpenAICompatibleLLM.forOllama()` | Local, free |
+| Qwen | `QwenLLM` | — |
+| Generic | `OpenAICompatibleLLM` | Any OpenAI-compatible |
+| Mock | `MockLLM` | Testing |
+
+## Strategy + Composite Pattern
+
+All capability modules follow the same pattern:
+
+```java
+// Reasoning — composite fallback chain
+Reasoner r = new DefaultReasoner(List.of(
+    new ChainOfThought(llm),
+    new TreeOfThought(llm)));
+
+// Evaluation — weighted judge chain  
+Evaluator e = CompositeEvaluator.defaults(new LLMJudge(llm));
+
+// Perception — multi-sensor fusion
+Perceptor p = new CompositePerceptor<>(
+    new CodebasePerceptor(),
+    new FileSystemPerceptor(),
+    new BrowserPerceptor());
+
+// Planning — strategy with feedback
+AdaptivePlanner planner = new AdaptivePlanner(llm);
+planner.recordFeedback(feedback);
+```
+
+## Quality
+
+```bash
+mvn test                # 165 tests, 22 test files
+mvn spotbugs:check      # bytecode bug detection (Medium+)
+mvn pmd:check           # static analysis (bestpractices + errorprone)
+mvn checkstyle:check    # Sun coding standards
+mvn test jacoco:report  # coverage report → target/site/jacoco/
+```
+
+## CLI
+
+```bash
+mvn exec:java -Dexec.mainClass="io.sketch.mochaagents.cli.CliBootstrap"
+
+> What is 2 + 2?
+[Agent] Processing: "What is 2 + 2?"
+[Agent] Result: 4
+
+> status
+Agent 'repl-agent' ready. 4 tools loaded.
+```
+
+## Project Stats
+
+| Metric | Value |
+|--------|-------|
+| Source files | 228 (core) |
+| Test files | 22 |
+| Tests | 165 |
+| Build | PASS |
+| Stubs | 0 |
+| Unimplemented interfaces | 0 |
 
 ## License
 
-Apache License
+Apache License 2.0
