@@ -66,4 +66,29 @@ public class DependencyGraph {
         }
         return order;
     }
+
+
+    /** Critical path analysis — finds bottleneck in plan execution. */
+    public Map.Entry<List<String>, Integer> criticalPath(Map<String, Integer> durations) {
+        List<String> topo = topologicalSort();
+        Map<String, Integer> longestTo = new HashMap<>();
+        Map<String, String> prev = new HashMap<>();
+        int globalMax = 0; String endNode = null;
+        for (String node : topo) {
+            int maxPred = 0; String bestPred = null;
+            for (String dep : getDependencies(node)) {
+                int val = longestTo.getOrDefault(dep, 0);
+                if (val > maxPred) { maxPred = val; bestPred = dep; }
+            }
+            int total = maxPred + durations.getOrDefault(node, 1);
+            longestTo.put(node, total); prev.put(node, bestPred);
+            if (total > globalMax) { globalMax = total; endNode = node; }
+        }
+        List<String> path = new ArrayList<>();
+        for (String cur = endNode; cur != null; cur = prev.get(cur)) path.add(0, cur);
+        return new AbstractMap.SimpleEntry<>(path, globalMax);
+    }
+    public int nodeCount() { return adjacency.size(); }
+    public int edgeCount() { return adjacency.values().stream().mapToInt(List::size).sum(); }
+
 }
