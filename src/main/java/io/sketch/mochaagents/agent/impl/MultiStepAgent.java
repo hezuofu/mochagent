@@ -123,9 +123,43 @@ public abstract class MultiStepAgent extends BaseAgent<String, String>
     // ============ 执行入口 ============
 
     /** 运行 ReAct 循环完成任务（向后兼容）. */
-    public String run(String task) {
-        return run(AgentContext.of(task), maxSteps);
+    public String run(String task) { return run(AgentContext.of(task), maxSteps); }
+
+    /** 运行并返回完整执行报告（步骤/耗时/费用/错误）. */
+    public io.sketch.mochaagents.agent.ExecutionReport runAndReport(String task) {
+        return runAndReport(AgentContext.of(task));
     }
+
+    /** 运行并返回带上下文的执行报告. */
+    public io.sketch.mochaagents.agent.ExecutionReport runAndReport(io.sketch.mochaagents.agent.AgentContext ctx) {
+        long start = System.currentTimeMillis();
+        java.util.List<String> errors = new java.util.ArrayList<>();
+        String result;
+        try {
+            result = run(ctx);
+        } catch (Exception e) {
+            result = "Error: " + e.getMessage();
+            errors.add(e.getClass().getSimpleName() + ": " + e.getMessage());
+        }
+        long elapsed = System.currentTimeMillis() - start;
+
+        int steps = memory.steps().size();
+        String summary = String.format("[%s] %d steps, %dms, $%.4f, %d in + %d out tokens",
+                name, steps, elapsed,
+                costTracker.estimatedTotalCost(),
+                costTracker.totalInputTokens(),
+                costTracker.totalOutputTokens());
+
+        return new io.sketch.mochaagents.agent.ExecutionReport(
+                result, steps, elapsed,
+                costTracker.estimatedTotalCost(),
+                costTracker.totalInputTokens(),
+                costTracker.totalOutputTokens(),
+                errors, summary);
+    }
+
+    /** 获取成本追踪器（供外部查询费用）. */
+    public io.sketch.mochaagents.llm.CostTracker costTracker() { return costTracker; }
 
     /** 运行 ReAct 循环，指定最大步数（向后兼容）. */
     public String run(String task, int maxSteps) {
