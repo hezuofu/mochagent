@@ -3,7 +3,9 @@ package io.sketch.mochaagents.evaluation.judge;
 import io.sketch.mochaagents.llm.LLM;
 import io.sketch.mochaagents.llm.LLMRequest;
 import io.sketch.mochaagents.llm.LLMResponse;
+import io.sketch.mochaagents.evaluation.EvaluationCriteria;
 import io.sketch.mochaagents.evaluation.EvaluationResult;
+import io.sketch.mochaagents.evaluation.Evaluator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,12 +15,22 @@ import java.util.*;
  * LLM 评判 — 用 LLM 对输出评分并解析 JSON 响应提取真实分数.
  * @author lanxia39@163.com
  */
-public class LLMJudge {
+public class LLMJudge implements Evaluator {
 
     private static final Logger log = LoggerFactory.getLogger(LLMJudge.class);
     private final LLM judgeModel;
 
     public LLMJudge(LLM judgeModel) { this.judgeModel = judgeModel; }
+
+    @Override
+    public EvaluationResult evaluate(String input, String output, String expected) {
+        return judge(input, output, expected);
+    }
+
+    @Override
+    public EvaluationCriteria getCriteria() {
+        return EvaluationCriteria.defaultCriteria();
+    }
 
     public EvaluationResult judge(String input, String output, String expected) {
         String prompt = String.format("""
