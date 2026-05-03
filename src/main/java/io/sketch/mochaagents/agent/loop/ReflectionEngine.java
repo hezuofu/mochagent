@@ -1,7 +1,5 @@
 package io.sketch.mochaagents.agent.loop;
 
-import io.sketch.mochaagents.agent.loop.StepResult;
-
 /**
  * 反思引擎接口 — 评估单步执行结果，生成改进计划.
  */

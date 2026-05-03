@@ -1,6 +1,7 @@
 package io.sketch.mochaagents.agent.loop.strategy;
 
 import io.sketch.mochaagents.agent.Agent;
+import java.util.function.Predicate;
 import io.sketch.mochaagents.agent.MemoryProvider;
 import io.sketch.mochaagents.agent.loop.*;
 import io.sketch.mochaagents.memory.AgentMemory;
@@ -37,7 +38,7 @@ public class ThinkActObserve<I, O> implements AgenticLoop<I, O> {
     }
 
     @Override
-    public O run(Agent<I, O> agent, I input, TerminationCondition condition) {
+    public O run(Agent<I, O> agent, I input, Predicate<StepResult> condition) {
         String agentName = agent.metadata().name();
         AgentMemory memory = getMemory(agent);
         log.info("[{}] TAO loop starting", agentName);
@@ -63,7 +64,7 @@ public class ThinkActObserve<I, O> implements AgenticLoop<I, O> {
                     result != null ? result.state() : "?", stepMs);
             step++;
 
-        } while (!condition.shouldTerminate(result) && (memory == null || !memory.hasFinalAnswer()));
+        } while (!condition.test(result) && (memory == null || !memory.hasFinalAnswer()));
 
         @SuppressWarnings("unchecked")
         O output = result != null ? (O) result.output() : null;

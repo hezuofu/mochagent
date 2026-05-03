@@ -5,7 +5,7 @@ import io.sketch.mochaagents.agent.loop.AgenticLoop;
 import io.sketch.mochaagents.agent.MemoryProvider;
 import io.sketch.mochaagents.agent.loop.StepResult;
 import io.sketch.mochaagents.agent.SystemPromptProvider;
-import io.sketch.mochaagents.agent.loop.TerminationCondition;
+import java.util.function.Predicate;
 import io.sketch.mochaagents.memory.AgentMemory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,7 +76,7 @@ public class ReActLoop<I, O> implements AgenticLoop<I, O> {
     }
 
     @Override
-    public O run(Agent<I, O> agent, I input, TerminationCondition condition) {
+    public O run(Agent<I, O> agent, I input, Predicate<StepResult> condition) {
         long loopStart = System.currentTimeMillis();
         String agentName = agentName(agent);
         log.info("[{}] ReAct loop starting", agentName);
@@ -113,13 +113,13 @@ public class ReActLoop<I, O> implements AgenticLoop<I, O> {
                     stepMs);
             step++;
 
-        } while (!condition.shouldTerminate(result) && !isFinalAnswer(memory));
+        } while (!condition.test(result) && !isFinalAnswer(memory));
 
         long loopMs = System.currentTimeMillis() - loopStart;
         log.info("[{}] loop finished: {} steps in {}ms, final_state={}, terminated={}",
                 agentName, totalSteps, loopMs,
                 result != null ? result.state() : "null",
-                condition.shouldTerminate(result));
+                condition.test(result));
 
         @SuppressWarnings("unchecked")
         O output = (O) result.output();

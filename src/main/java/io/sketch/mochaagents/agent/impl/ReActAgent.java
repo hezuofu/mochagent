@@ -2,9 +2,11 @@ package io.sketch.mochaagents.agent.impl;
 
 import io.sketch.mochaagents.agent.AgentContext;
 import io.sketch.mochaagents.agent.AgentEvents;
+import java.util.function.Predicate;
 import io.sketch.mochaagents.agent.MemoryProvider;
 import io.sketch.mochaagents.agent.SystemPromptProvider;
-import io.sketch.mochaagents.agent.loop.TerminationCondition;
+import io.sketch.mochaagents.agent.loop.StepResult;
+import io.sketch.mochaagents.agent.loop.Termination;
 import io.sketch.mochaagents.agent.loop.strategy.ReActLoop;
 import io.sketch.mochaagents.context.ContextManager;
 import io.sketch.mochaagents.evaluation.EvaluationResult;
@@ -202,8 +204,8 @@ public abstract class ReActAgent extends BaseAgent<String, String>
                         executeReActStepStreaming(step, input, mem, onToken),
                 planningInterval);
 
-        TerminationCondition condition = TerminationCondition.maxSteps(maxSteps)
-                .or(TerminationCondition.onError());
+        Predicate<StepResult> condition = Termination.maxSteps(maxSteps)
+                .or(Termination.onError());
         String result = loop.run(this, task, condition);
 
         if (!memory.hasFinalAnswer()) {
@@ -265,8 +267,8 @@ public abstract class ReActAgent extends BaseAgent<String, String>
                 planningInterval
         );
 
-        TerminationCondition condition = TerminationCondition.maxSteps(maxSteps)
-                .or(TerminationCondition.onError());
+        Predicate<StepResult> condition = Termination.maxSteps(maxSteps)
+                .or(Termination.onError());
 
         String result = loop.run(this, task, condition);
 
