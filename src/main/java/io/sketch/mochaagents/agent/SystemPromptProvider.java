@@ -1,4 +1,4 @@
-package io.sketch.mochaagents.agent.loop;
+package io.sketch.mochaagents.agent;
 
 /**
  * Contract for agents that generate their own system prompt.

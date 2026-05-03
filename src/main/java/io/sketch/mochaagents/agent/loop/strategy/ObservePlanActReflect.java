@@ -1,6 +1,7 @@
 package io.sketch.mochaagents.agent.loop.strategy;
 
 import io.sketch.mochaagents.agent.Agent;
+import io.sketch.mochaagents.agent.MemoryProvider;
 import io.sketch.mochaagents.agent.loop.*;
 import io.sketch.mochaagents.agent.loop.reflection.ReflectionEngine;
 import io.sketch.mochaagents.agent.loop.reflection.SelfCritique;

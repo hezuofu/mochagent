@@ -1,8 +1,8 @@
 package io.sketch.mochaagents.agent.impl;
 
 import io.sketch.mochaagents.agent.AgentContext;
-import io.sketch.mochaagents.agent.loop.MemoryProvider;
-import io.sketch.mochaagents.agent.loop.SystemPromptProvider;
+import io.sketch.mochaagents.agent.MemoryProvider;
+import io.sketch.mochaagents.agent.SystemPromptProvider;
 import io.sketch.mochaagents.agent.loop.TerminationCondition;
 import io.sketch.mochaagents.agent.loop.strategy.ReActLoop;
 import io.sketch.mochaagents.context.ContextChunk;

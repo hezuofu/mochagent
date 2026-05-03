@@ -1,4 +1,4 @@
-package io.sketch.mochaagents.agent.loop;
+package io.sketch.mochaagents.agent;
 
 import io.sketch.mochaagents.memory.AgentMemory;
 
