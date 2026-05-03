@@ -24,6 +24,22 @@ public final class AgentBootstrap {
         this.toolRegistry = new ToolRegistry();
         this.skillManager = SkillManager.bootstrap(toolRegistry);
         this.pluginBootstrap = PluginBootstrap.bootstrap(skillManager.skillRegistry());
+
+        // Auto-load MCP tools from MCP_SERVERS env var (comma-separated commands)
+        String mcpServers = System.getenv("MCP_SERVERS");
+        if (mcpServers != null && !mcpServers.isEmpty()) {
+            io.sketch.mochaagents.tool.mcp.StdioMcpClient mcp = new io.sketch.mochaagents.tool.mcp.StdioMcpClient();
+            for (String cmd : mcpServers.split(",")) {
+                cmd = cmd.trim();
+                if (!cmd.isEmpty()) {
+                    mcp.connect(cmd);
+                    if (mcp.isConnected()) {
+                        for (var tool : mcp.discoverTools()) toolRegistry.register(tool);
+                    }
+                }
+            }
+        }
+
         log.info("Agent framework bootstrapped: {} tools, {} skills, {} plugins",
                 toolRegistry.size(), skillManager.skillRegistry().size(),
                 pluginBootstrap.pluginManager().size());
