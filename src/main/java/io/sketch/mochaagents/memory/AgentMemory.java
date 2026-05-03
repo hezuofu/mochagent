@@ -62,14 +62,15 @@ public class AgentMemory {
         return steps.size();
     }
 
-    /** 获取最后一步. */
-    public MemoryStep lastStep() {
-        return steps.isEmpty() ? null : steps.get(steps.size() - 1);
+    /** 获取最后一步（函数式安全 — Optional 替代 null）. */
+    public java.util.Optional<MemoryStep> lastStep() {
+        return steps.isEmpty() ? java.util.Optional.empty()
+                : java.util.Optional.of(steps.get(steps.size() - 1));
     }
 
     /** 是否以最终答案步结束. */
     public boolean hasFinalAnswer() {
-        return lastStep() instanceof ContentStep cs && cs.isFinalAnswer();
+        return lastStep().filter(s -> s instanceof ContentStep cs && cs.isFinalAnswer()).isPresent();
     }
 
     // ============ 便捷追加方法 ============
@@ -106,13 +107,13 @@ public class AgentMemory {
             if (s instanceof ActionStep act) {
                 String content = "[Step " + act.stepNumber() + "] "
                         + (act.observation() != null ? act.observation() : act.modelOutput());
-                MemoryEntry entry = MemoryEntry.episodic(content, null);
-                entry.setImportance(act.hasError() ? 0.2 : 0.6);
-                entries.add(entry);
+                entries.add(MemoryEntry.builder()
+                        .content(content).type(Memory.TYPE_EPISODIC)
+                        .importance(act.hasError() ? 0.2 : 0.6).build());
             } else if (s instanceof ContentStep cs && cs.isFinalAnswer()) {
-                entries.add(MemoryEntry.semantic(
-                        "Task result: " + cs.payload(),
-                        Set.of("final", "output")));
+                entries.add(MemoryEntry.builder()
+                        .content("Task result: " + cs.payload()).type(Memory.TYPE_SEMANTIC)
+                        .concepts(Set.of("final", "output")).build());
             }
         }
         return entries;

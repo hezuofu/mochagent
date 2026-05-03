@@ -13,7 +13,7 @@ class AgentMemoryEdgeTest {
     @Test
     void lastStepOnEmptyMemoryReturnsNull() {
         AgentMemory mem = new AgentMemory();
-        assertNull(mem.lastStep());
+        assertTrue(mem.lastStep().isEmpty());
     }
 
     @Test
@@ -60,7 +60,7 @@ class AgentMemoryEdgeTest {
         AgentMemory mem = new AgentMemory();
         mem.appendAction(new ActionStep(1, "", "", "tool", "obs", "error occurred", 1, 1, false));
         assertEquals(1, mem.size());
-        assertNotNull(mem.lastStep());
+        assertTrue(mem.lastStep().isPresent());
     }
 
     @Test

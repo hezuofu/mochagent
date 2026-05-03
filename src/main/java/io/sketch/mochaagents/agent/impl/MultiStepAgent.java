@@ -58,14 +58,9 @@ public abstract class MultiStepAgent extends BaseAgent<String, String>
 
     // ============ Context ============
 
-    private ContextManager contextManager;
-
-    protected ContextManager contextManager() {
-        if (contextManager == null) {
-            contextManager = new ContextManager(8192,
-                    (chunks, maxT) -> chunks, null);
-        }
-        return contextManager;
+    /** Create a fresh ContextManager for each run — avoids stale state leakage. */
+    protected ContextManager newContextManager() {
+        return new ContextManager(8192, (chunks, maxT) -> chunks, null);
     }
 
     // ============ Prompt 模板 ============
@@ -151,7 +146,7 @@ public abstract class MultiStepAgent extends BaseAgent<String, String>
         injectConversationHistory(ctx);
 
         // ===== Pre-loop hooks =====
-        ContextManager ctxMgr = contextManager();
+        ContextManager ctxMgr = newContextManager();
         injectMemories(task, ctxMgr);
         perceiveAndRemember(task, ctxMgr);
         ReasoningChain chain = reason(task, ctxMgr);
@@ -359,7 +354,7 @@ public abstract class MultiStepAgent extends BaseAgent<String, String>
             } else if (step instanceof PlanningStep ps) {
                 messages.add(Map.of("role", "assistant", "content", "Plan:\n" + ps.plan()));
             } else if (step instanceof ActionStep as) {
-                if (as.modelInput() != null && !as.modelInput().isEmpty()) {
+                if (as.modelOutput() != null && !as.modelOutput().isEmpty()) {
                     messages.add(Map.of("role", "assistant", "content", as.modelOutput()));
                 }
                 if (as.observation() != null && !as.observation().isEmpty()) {

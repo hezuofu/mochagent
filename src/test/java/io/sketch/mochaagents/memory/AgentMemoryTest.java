@@ -31,7 +31,7 @@ class AgentMemoryTest {
     @Test
     void initialStateIsEmpty() {
         assertEquals(0, memory.size());
-        assertNull(memory.lastStep());
+        assertTrue(memory.lastStep().isEmpty());
         assertFalse(memory.hasFinalAnswer());
     }
 
@@ -69,21 +69,21 @@ class AgentMemoryTest {
     void appendTask() {
         memory.appendTask("do something");
         assertEquals(1, memory.size());
-        assertTrue(memory.lastStep() instanceof ContentStep cs && cs.isTask());
+        assertTrue(memory.lastStep().filter(s -> s instanceof ContentStep cs && cs.isTask()).isPresent());
     }
 
     @Test
     void appendSystemPrompt() {
         memory.appendSystemPrompt("you are helpful");
         assertEquals(1, memory.size());
-        assertTrue(memory.lastStep() instanceof ContentStep cs && cs.isSystemPrompt());
+        assertTrue(memory.lastStep().filter(s -> s instanceof ContentStep cs && cs.isSystemPrompt()).isPresent());
     }
 
     @Test
     void appendPlanning() {
         memory.appendPlanning("step 1: do X", "model output", 100, 50);
         assertEquals(1, memory.size());
-        assertTrue(memory.lastStep() instanceof PlanningStep);
+        assertTrue(memory.lastStep().filter(s -> s instanceof PlanningStep).isPresent());
     }
 
     @Test
@@ -91,7 +91,7 @@ class AgentMemoryTest {
         ActionStep step = new ActionStep(1, "", "", "tool_call", "result", null, 100, 50, false);
         memory.appendAction(step);
         assertEquals(1, memory.size());
-        assertSame(step, memory.lastStep());
+        assertEquals(step, memory.lastStep().orElse(null));
     }
 
     @Test
