@@ -1,6 +1,7 @@
 package io.sketch.mochaagents.agent.impl;
 
 import io.sketch.mochaagents.agent.Agent;
+import io.sketch.mochaagents.agent.AgentContext;
 import io.sketch.mochaagents.agent.AgentListener;
 import io.sketch.mochaagents.agent.AgentMetadata;
 
@@ -32,19 +33,19 @@ public class CompositeAgent<I, O> implements Agent<I, List<O>> {
     }
 
     @Override
-    public List<O> execute(I input) {
+    public List<O> execute(I input, AgentContext ctx) {
         List<O> results = new ArrayList<>();
         for (Agent<I, O> agent : agents) {
-            results.add(agent.execute(input));
+            results.add(agent.execute(input, ctx));
         }
         return results;
     }
 
     @Override
-    public CompletableFuture<List<O>> executeAsync(I input) {
+    public CompletableFuture<List<O>> executeAsync(I input, AgentContext ctx) {
         List<CompletableFuture<O>> futures = new ArrayList<>();
         for (Agent<I, O> agent : agents) {
-            futures.add(agent.executeAsync(input));
+            futures.add(agent.executeAsync(input, ctx));
         }
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
                 .thenApply(v -> {

@@ -1,5 +1,6 @@
 package io.sketch.mochaagents.examples;
 
+import io.sketch.mochaagents.agent.AgentContext;
 import io.sketch.mochaagents.agent.impl.BaseAgent;
 
 import java.util.concurrent.CompletableFuture;
@@ -15,13 +16,13 @@ public class DevOpsAgent extends BaseAgent<String, String> {
     }
 
     @Override
-    protected String doExecute(String input) {
+    protected String doExecute(String input, AgentContext ctx) {
         return "[DevOpsAgent] DevOps operation executed: " + input;
     }
 
     @Override
-    public CompletableFuture<String> executeAsync(String input) {
-        return CompletableFuture.completedFuture(doExecute(input));
+    public CompletableFuture<String> executeAsync(String input, AgentContext ctx) {
+        return CompletableFuture.completedFuture(doExecute(input, ctx));
     }
 
     public static DevOpsAgent create(String name) {

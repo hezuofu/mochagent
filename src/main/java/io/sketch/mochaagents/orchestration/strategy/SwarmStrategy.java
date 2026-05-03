@@ -4,9 +4,11 @@ import io.sketch.mochaagents.agent.Agent;
 import io.sketch.mochaagents.orchestration.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
- * 群体策略 — 多个 Agent 并行处理同一任务，投票/择优产生最终结果.
+ * 群体策略 — 多个 Agent 并行处理，投票/择优产生最终结果.
  * @author lanxia39@163.com
  */
 public class SwarmStrategy implements OrchestrationStrategy {
@@ -17,37 +19,28 @@ public class SwarmStrategy implements OrchestrationStrategy {
     public enum SwarmConsensus { MAJORITY, BEST, FIRST, AGGREGATE }
 
     public SwarmStrategy(int swarmSize, SwarmConsensus consensus) {
-        this.swarmSize = swarmSize;
-        this.consensus = consensus;
+        this.swarmSize = swarmSize; this.consensus = consensus;
     }
 
-    public SwarmStrategy() {
-        this(5, SwarmConsensus.BEST);
-    }
+    public SwarmStrategy() { this(5, SwarmConsensus.BEST); }
 
     @Override
     @SuppressWarnings("unchecked")
     public <I, O> O execute(AgentTeam team, I input) {
-        Collection<Agent<?, ?>> allAgents = team.getAgents();
-        List<Agent<?, ?>> participants = allAgents.stream()
-                .limit(swarmSize)
-                .toList();
+        List<Agent<?, ?>> participants = team.getAgents().stream()
+                .limit(swarmSize).toList();
 
-        // 并行执行
         List<CompletableFuture<Object>> futures = participants.stream()
-                .map(a -> CompletableFuture.supplyAsync(() -> ((Agent<I, Object>) (Object) a).execute(input)))
+                .map(a -> CompletableFuture.supplyAsync(
+                        () -> ((Agent<I, Object>) (Object) a).execute(input)))
                 .toList();
 
         List<Object> results = futures.stream()
-                .map(CompletableFuture::join)
-                .toList();
+                .map(CompletableFuture::join).toList();
 
         return (O) switch (consensus) {
             case FIRST -> results.isEmpty() ? null : results.get(0);
-            case BEST -> results.stream()
-                    .filter(Objects::nonNull)
-                    .findFirst()
-                    .orElse(null);
+            case BEST -> results.stream().filter(Objects::nonNull).findFirst().orElse(null);
             case AGGREGATE -> (Object) results;
             case MAJORITY -> mostFrequent(results);
         };
@@ -56,7 +49,11 @@ public class SwarmStrategy implements OrchestrationStrategy {
     private Object mostFrequent(List<Object> results) {
         return results.stream()
                 .filter(Objects::nonNull)
-                .reduce((a, b) -> new HashMap<>() {{ put(a, 1); put(b, 1); }})
+                .map(Object::toString)
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+                .entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
                 .orElse(null);
     }
 }

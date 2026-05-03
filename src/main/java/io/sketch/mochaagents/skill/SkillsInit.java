@@ -74,11 +74,35 @@ public class SkillsInit {
      * 新增内置技能在此方法中添加。
      */
     private void registerBundledSkills() {
-        // 预留：后续可添加内置技能
-        // registerSkill(BundledSkill.builder("commit", "...", SkillSource.BUNDLED)...build());
-        // registerSkill(BundledSkill.builder("review-pr", "...", SkillSource.BUNDLED)...build());
+        registerSkill(BundledSkill.builder("commit",
+                "Generate a concise git commit message for staged changes",
+                SkillSource.BUNDLED)
+                .prompt(args -> List.of(ContentBlock.text(
+                        "Analyze the git diff and write a concise, "
+                        + "conventional commit message (type: description). "
+                        + "Focus on WHY, not WHAT. One-liner under 72 chars.")))
+                .build());
 
-        log.debug("Registered {} bundled skills", skillRegistry.filterBySource(SkillSource.BUNDLED).size());
+        registerSkill(BundledSkill.builder("review",
+                "Review code changes for bugs, style, and security issues",
+                SkillSource.BUNDLED)
+                .prompt(args -> List.of(ContentBlock.text(
+                        "Review the following code diff. Identify: "
+                        + "1) potential bugs or logic errors, "
+                        + "2) security vulnerabilities, "
+                        + "3) style/readability issues. Be specific and actionable.")))
+                .build());
+
+        registerSkill(BundledSkill.builder("explain",
+                "Explain what a piece of code does in plain language",
+                SkillSource.BUNDLED)
+                .prompt(args -> List.of(ContentBlock.text(
+                        "Explain the following code in clear, plain language. "
+                        + "Describe what it does, how it works, "
+                        + "and any notable patterns or edge cases.")))
+                .build());
+
+        log.info("Registered {} bundled skills", skillRegistry.filterBySource(SkillSource.BUNDLED).size());
     }
 
     /** 便捷注册单个技能. */

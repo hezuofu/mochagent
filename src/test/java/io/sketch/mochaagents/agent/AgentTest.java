@@ -24,14 +24,14 @@ class AgentTest {
 
         EchoAgent(String name) { this.meta = AgentMetadata.builder().name(name).build(); }
 
-        @Override public String execute(String input) {
-            listeners.forEach(l -> l.onStart(new AgentEvent<>(meta.name(), input)));
+        @Override public String execute(String input, AgentContext ctx) {
+            listeners.forEach(l -> l.onStart(new AgentEvent<>(meta.name(), input, ctx)));
             String result = input;
-            listeners.forEach(l -> l.onComplete(new AgentEvent<>(meta.name(), result)));
+            listeners.forEach(l -> l.onComplete(new AgentEvent<>(meta.name(), result, ctx)));
             return result;
         }
-        @Override public CompletableFuture<String> executeAsync(String input) {
-            return CompletableFuture.supplyAsync(() -> execute(input));
+        @Override public CompletableFuture<String> executeAsync(String input, AgentContext ctx) {
+            return CompletableFuture.supplyAsync(() -> execute(input, ctx));
         }
         @Override public AgentMetadata metadata() { return meta; }
         @Override public void addListener(AgentListener<String, String> l) { listeners.add(l); }
@@ -42,11 +42,11 @@ class AgentTest {
         private final AtomicBoolean called = new AtomicBoolean();
         FailingAgent() {}
 
-        @Override public String execute(String input) {
+        @Override public String execute(String input, AgentContext ctx) {
             called.set(true);
             throw new RuntimeException("intentional failure");
         }
-        @Override public CompletableFuture<String> executeAsync(String input) {
+        @Override public CompletableFuture<String> executeAsync(String input, AgentContext ctx) {
             return CompletableFuture.failedFuture(new RuntimeException("intentional failure"));
         }
         @Override public AgentMetadata metadata() { return AgentMetadata.builder().name("failing").build(); }
@@ -58,12 +58,12 @@ class AgentTest {
     static class SlowAgent implements Agent<String, String> {
         private final long delayMs;
         SlowAgent(long delayMs) { this.delayMs = delayMs; }
-        @Override public String execute(String input) {
+        @Override public String execute(String input, AgentContext ctx) {
             try { Thread.sleep(delayMs); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
             return input;
         }
-        @Override public CompletableFuture<String> executeAsync(String input) {
-            return CompletableFuture.supplyAsync(() -> execute(input));
+        @Override public CompletableFuture<String> executeAsync(String input, AgentContext ctx) {
+            return CompletableFuture.supplyAsync(() -> execute(input, ctx));
         }
         @Override public AgentMetadata metadata() { return AgentMetadata.builder().name("slow").build(); }
         @Override public void addListener(AgentListener<String, String> l) {}

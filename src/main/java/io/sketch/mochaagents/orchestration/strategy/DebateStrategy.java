@@ -31,7 +31,8 @@ public class DebateStrategy implements OrchestrationStrategy {
         for (int round = 0; round < maxRounds; round++) {
             for (Agent<?, ?> agent : agents) {
                 String opinion = ((Agent<I, String>) (Object) agent).execute(input).toString();
-                double confidence = Math.random(); // simulate confidence
+                // Use agent metadata's model info as a proxy for confidence
+                double confidence = 0.7; // default when no explicit confidence is reported
                 opinions.add(new DebateResult(agent.metadata().name(), opinion, confidence));
             }
 

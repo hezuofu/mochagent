@@ -1,15 +1,23 @@
 package io.sketch.mochaagents.agent.impl;
 
+import io.sketch.mochaagents.agent.AgentContext;
 import io.sketch.mochaagents.agent.loop.MemoryProvider;
 import io.sketch.mochaagents.agent.loop.SystemPromptProvider;
 import io.sketch.mochaagents.agent.loop.TerminationCondition;
 import io.sketch.mochaagents.agent.loop.strategy.ReActLoop;
+import io.sketch.mochaagents.context.ContextChunk;
+import io.sketch.mochaagents.context.ContextManager;
+import io.sketch.mochaagents.evaluation.EvaluationResult;
 import io.sketch.mochaagents.llm.LLM;
 import io.sketch.mochaagents.llm.LLMRequest;
 import io.sketch.mochaagents.llm.LLMResponse;
 import io.sketch.mochaagents.memory.AgentMemory;
 import io.sketch.mochaagents.agent.loop.step.*;
+import io.sketch.mochaagents.perception.PerceptionResult;
+import io.sketch.mochaagents.plan.Plan;
+import io.sketch.mochaagents.plan.PlanningRequest;
 import io.sketch.mochaagents.prompt.PromptTemplate;
+import io.sketch.mochaagents.reasoning.ReasoningChain;
 import io.sketch.mochaagents.tool.Tool;
 import io.sketch.mochaagents.tool.ToolInput;
 import org.slf4j.Logger;
@@ -45,6 +53,18 @@ public abstract class MultiStepAgent extends CapableAgent<String, String>
     protected final int planningInterval;
     protected final boolean addBaseTools;
     protected final Map<String, MultiStepAgent> managedAgents = new LinkedHashMap<>();
+
+    // ============ Context ============
+
+    private ContextManager contextManager;
+
+    protected ContextManager contextManager() {
+        if (contextManager == null) {
+            contextManager = new ContextManager(8192,
+                    (chunks, maxT) -> chunks, null);
+        }
+        return contextManager;
+    }
 
     // ============ Prompt 模板 ============
 
@@ -84,19 +104,48 @@ public abstract class MultiStepAgent extends CapableAgent<String, String>
         ));
     }
 
-    /** 运行 ReAct 循环完成任务. */
+    // ============ 执行入口 ============
+
+    /** 运行 ReAct 循环完成任务（向后兼容）. */
     public String run(String task) {
-        return run(task, maxSteps);
+        return run(AgentContext.of(task), maxSteps);
     }
 
-    /** 运行 ReAct 循环（指定最大步数）. */
+    /** 运行 ReAct 循环，指定最大步数（向后兼容）. */
     public String run(String task, int maxSteps) {
-        long startMs = System.currentTimeMillis();
-        log.info("Agent '{}' starting task, maxSteps={}, task={}", name, maxSteps, truncate(task, 120));
+        return run(AgentContext.of(task), maxSteps);
+    }
 
-        memory.reset(buildSystemPrompt());
+    /** 运行 ReAct 循环 — 以 AgentContext 承载会话/对话历史/元数据. */
+    public String run(AgentContext ctx) {
+        return run(ctx, maxSteps);
+    }
+
+    /** 运行 ReAct 循环 — AgentContext + 指定最大步数（主入口）. */
+    public String run(AgentContext ctx, int maxSteps) {
+        long startMs = System.currentTimeMillis();
+        String task = ctx.userMessage();
+        log.info("Agent '{}' starting, session={}, user={}, maxSteps={}, task={}",
+                name, ctx.sessionId(), ctx.userId(), maxSteps, truncate(task, 120));
+
+        // 构建系统提示（可被 ctx.metadata 覆盖）
+        String systemPrompt = buildSystemPrompt();
+        systemPrompt = enrichFromContext(systemPrompt, ctx);
+
+        memory.reset(systemPrompt);
         memory.appendTask(task);
 
+        // 注入对话历史到 AgentMemory
+        injectConversationHistory(ctx);
+
+        // ===== Pre-loop hooks =====
+        ContextManager ctxMgr = contextManager();
+        injectMemories(task, ctxMgr);
+        perceiveAndRemember(task, ctxMgr);
+        ReasoningChain chain = reason(task, ctxMgr);
+        planAndRemember(task, chain, ctxMgr);
+
+        // ===== Core ReAct loop =====
         ReActLoop<String, String> loop = new ReActLoop<>(
                 (ReActLoop.PlanningFn<String>) this::planStep,
                 (ReActLoop.StepExecutor<String>) this::executeReActStep,
@@ -108,12 +157,16 @@ public abstract class MultiStepAgent extends CapableAgent<String, String>
 
         String result = loop.run(this, task, condition);
 
-        // 超出步数时提供兜底答案
         if (!memory.hasFinalAnswer()) {
             log.warn("Agent '{}' exceeded max steps, providing fallback answer", name);
             result = provideFinalAnswer(task);
             memory.appendFinalAnswer(result);
         }
+
+        // ===== Post-loop hooks =====
+        EvaluationResult eval = evaluate(task, result, ctxMgr);
+        reflectAndLearn(task, result, eval, ctxMgr);
+        ctxMgr.compress();
 
         long elapsed = System.currentTimeMillis() - startMs;
         log.info("Agent '{}' completed in {}ms, steps={}, result={}",
@@ -123,12 +176,23 @@ public abstract class MultiStepAgent extends CapableAgent<String, String>
 
     // ============ 抽象方法（CapableAgent + 子类） ============
 
+    // ============ 实现 BaseAgent / CapableAgent 钩子 ============
+
     /**
-     * 实现 CapableAgent 的抽象方法 — 委托给 ReAct run().
+     * BaseAgent 主入口 — 直接委托给 {@link #run(AgentContext)}.
+     * 绕过 CapableAgent 的 8 步流水线，使用 ReAct 循环.
+     */
+    @Override
+    protected String doExecute(String input, AgentContext actx) {
+        return run(actx);
+    }
+
+    /**
+     * CapableAgent 流水线钩子 — 向后兼容.
      */
     @Override
     protected String doExecute(String input, io.sketch.mochaagents.context.ContextManager ctx) {
-        return run(input);
+        return run(AgentContext.of(input));
     }
 
     /**
@@ -171,6 +235,70 @@ public abstract class MultiStepAgent extends CapableAgent<String, String>
             log.error("Agent '{}' planning failed at step {}", name, stepNumber, e);
             return null;
         }
+    }
+
+    /** 感知环境并将结果写入 AgentMemory，使 LLM 可见. */
+    private void perceiveAndRemember(String input, ContextManager ctx) {
+        if (perceptor == null) return;
+        PerceptionResult<String> result = perceptor.perceive(input);
+        String data = result.data() != null ? result.data().toString() : "";
+        if (!data.isEmpty()) {
+            memory.append(ContentStep.systemPrompt("[Perception]:\n" + data));
+        }
+        ctx.addChunk(newChunk("perception", data));
+    }
+
+    /** 生成计划并将结果写入 AgentMemory 作为 PlanningStep. */
+    private void planAndRemember(String input, ReasoningChain chain, ContextManager ctx) {
+        if (planner == null) return;
+        Plan<String> plan = planner.generatePlan(
+                PlanningRequest.<String>builder()
+                        .goal(input)
+                        .context(chain != null ? chain.summarize() : "")
+                        .build());
+        if (plan != null && !plan.getSteps().isEmpty()) {
+            memory.appendPlanning(plan.serialize(), "", 0, 0);
+        }
+        ctx.addChunk(newChunk("plan", plan.serialize()));
+    }
+
+    /** 将 AgentContext 中的对话历史注入 AgentMemory. */
+    private void injectConversationHistory(AgentContext ctx) {
+        String history = ctx.conversationHistory();
+        if (history == null || history.isEmpty()) return;
+
+        // 尝试按行解析为 alternating user/assistant 消息
+        String[] lines = history.split("\n");
+        for (String line : lines) {
+            line = line.trim();
+            if (line.isEmpty()) continue;
+            if (line.startsWith("User: ") || line.startsWith("user: ")) {
+                memory.append(ContentStep.task(line.substring(line.indexOf(' ') + 1).trim()));
+            } else if (line.startsWith("Assistant: ") || line.startsWith("assistant: ")) {
+                memory.append(new ActionStep(memory.size() + 1, "",
+                        line.substring(line.indexOf(' ') + 1).trim(),
+                        "history", "", null, 0, 0, false));
+            }
+        }
+    }
+
+    /** 用 AgentContext.metadata 增强系统提示. */
+    private String enrichFromContext(String systemPrompt, AgentContext ctx) {
+        StringBuilder sb = new StringBuilder(systemPrompt);
+        Map<String, Object> meta = ctx.metadata();
+        if (meta != null) {
+            for (var entry : meta.entrySet()) {
+                if ("instructions".equals(entry.getKey())) {
+                    sb.append("\n\n[Instructions]: ").append(entry.getValue());
+                } else if ("role".equals(entry.getKey())) {
+                    sb.append("\n\n[Role]: ").append(entry.getValue());
+                }
+            }
+        }
+        if (ctx.sessionId() != null && !ctx.sessionId().isEmpty()) {
+            sb.append("\n[Session: ").append(ctx.sessionId()).append("]");
+        }
+        return sb.toString();
     }
 
     /** 超出最大步数时的兜底答案. */

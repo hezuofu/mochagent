@@ -43,6 +43,13 @@ public final class AgentContext {
         return new Builder();
     }
 
+    /**
+     * 从纯文本消息创建最小上下文（向后兼容 run(String)）.
+     */
+    public static AgentContext of(String userMessage) {
+        return builder().userMessage(userMessage).build();
+    }
+
     public static final class Builder {
         private String sessionId;
         private String userId;

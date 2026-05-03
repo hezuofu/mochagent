@@ -126,16 +126,16 @@ public class AgentTool extends AbstractTool {
                     .build();
 
             @Override
-            public String execute(Map<String, Object> input) {
+            public String execute(Map<String, Object> input, io.sketch.mochaagents.agent.AgentContext ctx) {
                 try {
-                    return executeAsync(input).get(DEFAULT_TIMEOUT_SEC, TimeUnit.SECONDS);
+                    return executeAsync(input, ctx).get(DEFAULT_TIMEOUT_SEC, TimeUnit.SECONDS);
                 } catch (Exception e) {
                     return "Sub-agent execution failed: " + e.getMessage();
                 }
             }
 
             @Override
-            public CompletableFuture<String> executeAsync(Map<String, Object> input) {
+            public CompletableFuture<String> executeAsync(Map<String, Object> input, io.sketch.mochaagents.agent.AgentContext ctx) {
                 String prompt = (String) input.getOrDefault("prompt", "");
                 String taskDesc = (String) input.getOrDefault("description", "task");
 

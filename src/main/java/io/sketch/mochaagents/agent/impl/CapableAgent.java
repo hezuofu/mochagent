@@ -1,5 +1,6 @@
 package io.sketch.mochaagents.agent.impl;
 
+import io.sketch.mochaagents.agent.AgentContext;
 import io.sketch.mochaagents.context.ContextChunk;
 import io.sketch.mochaagents.context.ContextManager;
 import io.sketch.mochaagents.agent.AgentState;
@@ -84,77 +85,67 @@ public abstract class CapableAgent<I, O> extends BaseAgent<I, O> {
         this.reflectionEngine = builder.reflectionEngine;
     }
 
-    // ============ 核心执行（Context 显式参数） ============
+    // ============ BaseAgent Template Method 桥接 ============
 
     /**
-     * 带 Context 的完整执行 — 编排感知→推理→规划→安全→工具→评估→反思 全流程.
+     * 桥接 BaseAgent 的 {@link #doExecute(Object, AgentContext)} 到 CapacableAgent 流水线.
+     *
+     * <p>子类（如 {@link MultiStepAgent}）可以覆写此方法以绕过 8 步流水线，
+     * 直接使用自己的执行策略.
      */
-    public O execute(I input, ContextManager ctx) {
-        state = AgentState.RUNNING;
-        fireStart(input);
+    @Override
+    protected O doExecute(I input, AgentContext actx) {
+        ContextManager ctx = new ContextManager(8192,
+                (chunks, maxT) -> chunks, null);
+        return executePipeline(input, ctx);
+    }
 
+    /**
+     * 8 步流水线 — 感知→推理→规划→执行→评估→反思.
+     *
+     * <p>子类可覆写 {@link #doExecute(Object, ContextManager)} 提供领域逻辑.
+     */
+    protected O executePipeline(I input, ContextManager ctx) {
         try {
-            // 1. 注入历史记忆
             injectMemories(input, ctx);
-
-            // 2. 感知
             perceive(input, ctx);
-
-            // 3. 推理
             ReasoningChain chain = reason(input, ctx);
-
-            // 4. 规划
             Plan<O> plan = plan(input, chain, ctx);
-
-            // 5. 执行计划步骤
             O output = executePlanSteps(plan, ctx);
-
-            // 6. 评估
             EvaluationResult eval = evaluate(input, output, ctx);
-
-            // 7. 反思 + 学习
             reflectAndLearn(input, output, eval, ctx);
-
-            // 8. 压缩上下文
             ctx.compress();
-
-            state = AgentState.COMPLETED;
-            fireComplete(output);
             return output;
-
         } catch (Exception e) {
-            state = AgentState.FAILED;
-            fireError(e);
             throw e;
         }
     }
 
-    /** 向后兼容 — 使用默认 ContextManager. */
-    @Override
-    public O execute(I input) {
-        return execute(input, new ContextManager(8192,
-                (chunks, maxT) -> chunks, null));
-    }
-
-    @Override
-    public CompletableFuture<O> executeAsync(I input) {
-        return CompletableFuture.supplyAsync(() -> execute(input));
+    /**
+     * 向后兼容 — 使用显式 ContextManager 执行流水线.
+     */
+    public O execute(I input, ContextManager ctx) {
+        state = AgentState.RUNNING;
+        fireStart(input, null);
+        try {
+            O result = executePipeline(input, ctx);
+            state = AgentState.COMPLETED;
+            fireComplete(result, null);
+            return result;
+        } catch (Exception e) {
+            state = AgentState.FAILED;
+            fireError(e, null);
+            throw e;
+        }
     }
 
     // ============ 子类钩子 ============
 
     /**
      * 子类实现核心领域逻辑.
-     * <p>在安全校验通过后、工具调用之后被调用.
+     * <p>在流水线的 executePlanSteps 中被调用.
      */
     protected abstract O doExecute(I input, ContextManager ctx);
-
-    /** 向后兼容钩子. */
-    @Override
-    protected O doExecute(I input) {
-        return doExecute(input, new ContextManager(8192,
-                (chunks, maxT) -> chunks, null));
-    }
 
     // ============ 流水线步骤（子类可覆写定制） ============
 
@@ -284,7 +275,7 @@ public abstract class CapableAgent<I, O> extends BaseAgent<I, O> {
     // ============ 内部工具方法 ============
 
     /** 创建 ContextChunk，token 数量按内容长度 / 4 估算. */
-    private static ContextChunk newChunk(String role, String content) {
+    protected static ContextChunk newChunk(String role, String content) {
         int tokens = content != null ? Math.max(1, content.length() / 4) : 1;
         return new ContextChunk(UUID.randomUUID().toString(), role, content, tokens);
     }
