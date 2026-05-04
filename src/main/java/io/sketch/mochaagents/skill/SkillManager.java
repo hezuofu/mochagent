@@ -118,6 +118,28 @@ public class SkillManager {
                         + "Report each issue with severity (LOW/MEDIUM/HIGH/CRITICAL), line number, and fix suggestion.")))
                 .build());
 
+        registerSkill(BundledSkill.builder("refactor",
+                "Refactor code for readability, performance, or design patterns",
+                SkillSource.BUNDLED)
+                .prompt(args -> List.of(ContentBlock.text(
+                        "Refactor the following code. Focus on: "
+                        + "1) readability and clarity, "
+                        + "2) performance improvements, "
+                        + "3) design pattern application, "
+                        + "4) reducing complexity. "
+                        + "Explain each change and why it improves the code.")))
+                .build());
+
+        registerSkill(BundledSkill.builder("test",
+                "Generate unit tests for the given code",
+                SkillSource.BUNDLED)
+                .prompt(args -> List.of(ContentBlock.text(
+                        "Generate comprehensive unit tests for the following code. "
+                        + "Cover: 1) happy path, 2) edge cases (null, empty, boundary), "
+                        + "3) error cases. Use JUnit 5 with AssertJ for assertions. "
+                        + "Include descriptive test method names.")))
+                .build());
+
         log.info("Registered {} bundled skills", skillRegistry.filterBySource(SkillSource.BUNDLED).size());
     }
 
