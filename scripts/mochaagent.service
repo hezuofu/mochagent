@@ -1,0 +1,25 @@
+[Unit]
+Description=MochaAgent — AI Agent Framework
+After=network.target
+
+[Service]
+Type=simple
+User=mochaagent
+WorkingDirectory=/opt/mochaagent
+ExecStart=/opt/mochaagent/scripts/start.sh
+ExecStop=/opt/mochaagent/scripts/stop.sh
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mochaagent
+
+# JVM tuning
+Environment="JAVA_OPTS=-Xmx1g -Xms256m -XX:+UseG1GC"
+
+# Limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target
