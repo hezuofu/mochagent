@@ -290,6 +290,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         }
 
         // ===== Post-loop hooks =====
+        autoCompact(); // check if compaction needed
         EvaluationResult eval = evaluate(task, result, ctxMgr);
         reflectAndLearn(task, result, eval, ctxMgr);
         ctxMgr.compress();

@@ -18,6 +18,8 @@ public class ToolExecutor {
     private final long timeoutMs;
     private final int maxRetries;
     private final long retryDelayMs;
+    private io.sketch.mochaagents.agent.react.Hooks hooks;
+    private io.sketch.mochaagents.interaction.permission.PermissionRules permissions;
 
     public ToolExecutor(ToolRegistry registry, long timeoutMs, int maxRetries, long retryDelayMs) {
         this.registry = registry;
@@ -28,6 +30,11 @@ public class ToolExecutor {
 
     public ToolExecutor(ToolRegistry registry) { this(registry, 60_000, 2, 500); }
 
+    /** Inject hooks for pre/post tool interception. */
+    public ToolExecutor withHooks(io.sketch.mochaagents.agent.react.Hooks hooks) { this.hooks = hooks; return this; }
+    /** Inject permission rules for tool gating. */
+    public ToolExecutor withPermissions(io.sketch.mochaagents.interaction.permission.PermissionRules permissions) { this.permissions = permissions; return this; }
+
     public ToolResult execute(String toolName, Map<String, Object> arguments) {
         Tool tool = registry.get(toolName);
         if (tool == null) {
@@ -35,16 +42,35 @@ public class ToolExecutor {
             return ToolResult.Builder.failure(toolName, "Tool not found: " + toolName, null);
         }
 
+        // Permission check
+        if (permissions != null) {
+            var perm = permissions.resolve(toolName);
+            if (perm == io.sketch.mochaagents.interaction.permission.PermissionRules.Behavior.DENY) {
+                return ToolResult.Builder.failure(toolName, "Permission denied: " + toolName, null);
+            }
+        }
+
+        // Pre-tool hooks
+        if (hooks != null) {
+            var decision = hooks.applyPreTool(tool, arguments);
+            if (decision.outcome() == io.sketch.mochaagents.agent.react.Hooks.HookDecision.Outcome.DENY)
+                return ToolResult.Builder.failure(toolName, "Hook denied: " + decision.reason(), null);
+            if (decision.modifiedArgs() != null) arguments = decision.modifiedArgs();
+        }
+
+        final Map<String, Object> finalArgs = arguments;
         RuntimeException lastError = null;
         for (int attempt = 1; attempt <= maxRetries + 1; attempt++) {
             try {
                 long start = System.currentTimeMillis();
                 CompletableFuture<Object> future = CompletableFuture.supplyAsync(
-                        () -> tool.call(arguments));
+                        () -> tool.call(finalArgs));
                 Object result = future.get(timeoutMs, TimeUnit.MILLISECONDS);
                 long elapsed = System.currentTimeMillis() - start;
 
                 log.info("[Tool] {} ({}ms) args={}", toolName, elapsed, summarizeArgs(arguments));
+                // Post-tool hooks
+                if (hooks != null) hooks.applyPostTool(tool, arguments, result, msg -> {});
                 return ToolResult.Builder.success(toolName, result, elapsed);
 
             } catch (TimeoutException e) {
