@@ -129,16 +129,16 @@ class LoopStrategyTest {
 
     @Test
     void terminationOnError() {
-        TerminationCondition cond = Termination.onError();
+        java.util.function.Predicate<StepResult> cond = Termination.onError();
         StepResult errorResult = StepResult.builder().state(LoopState.ERROR)
                 .error("something failed").build();
-        assertTrue(cond.shouldTerminate(errorResult));
+        assertTrue(cond.test(errorResult));
     }
 
     @Test
     void terminationOnMaxSteps() {
-        TerminationCondition cond = Termination.maxSteps(3);
-        assertFalse(cond.shouldTerminate(
+        java.util.function.Predicate<StepResult> cond = Termination.maxSteps(3);
+        assertFalse(cond.test(
                 StepResult.builder().state(LoopState.ACT).build()));
     }
 }
