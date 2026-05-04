@@ -29,18 +29,56 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 /**
- * ReActAgent — ReAct 循环的抽象基类.
+ * ReActAgent — ReAct (Reasoning + Acting) loop abstract base.
  *
- * <p>封装 "思考→行动→观察" 主循环，子类实现 {@link #executeReActStep(int, AgentMemory)}
- * 提供不同的动作执行策略。
+ * <h2>Quick Start</h2>
+ * <pre>{@code
+ * // ToolCallingAgent — LLM calls tools via Thought/Action format
+ * var agent = ToolCallingAgent.builder()
+ *     .name("my-agent").llm(llm).tools(tools).maxSteps(10).build();
+ * String answer = agent.run("What is 2+2?");
  *
- * <p>对应 smolagents 的 {@code ReActAgent}.
+ * // CodeAgent — LLM writes code, agent executes it
+ * var coder = CodeAgent.builder()
+ *     .name("coder").llm(llm).maxSteps(15).build();
+ * String code = coder.run("Calculate fibonacci(20)");
  *
- * <h3>子类</h3>
+ * // Run with context (session, user, history)
+ * AgentContext ctx = AgentContext.builder()
+ *     .sessionId("sess-1").userId("user-1")
+ *     .userMessage("task").build();
+ * agent.run(ctx);
+ *
+ * // Run and get full report (steps, cost, timing)
+ * ExecutionReport report = agent.runAndReport("task");
+ * System.out.println(report.summary());
+ *
+ * // Subscribe to real-time events
+ * agent.onEvent(e -> System.out.println(e.type() + ": " + e.data()));
+ *
+ * // Register hooks for tool interception
+ * agent.hooks().onPreTool((tool, args) -> {
+ *     if ("rm".equals(tool.getName())) return HookDecision.deny("blocked");
+ *     return HookDecision.allow(args);
+ * });
+ *
+ * // Delegate to managed agents via orchestrator
+ * agent.delegateToManagedAgent("reviewer", "Review this code");
+ * }</pre>
+ *
+ * <h2>Features</h2>
  * <ul>
- *   <li>{@link ToolCallingAgent} — 使用 LLM 原生 tool-calling API</li>
- *   <li>{@link CodeAgent} — 解析并执行 LLM 输出的代码块</li>
+ *   <li>Pre/post hooks (tool interception)</li>
+ *   <li>Permission rules (allow/deny/ask per tool)</li>
+ *   <li>Cost tracking (per-model token usage + pricing)</li>
+ *   <li>Auto-compaction (context window management)</li>
+ *   <li>Managed agent delegation (orchestrator integration)</li>
+ *   <li>Streaming execution (real-time token output)</li>
+ *   <li>Event system (STARTED/COST/COMPLETED/ERROR)</li>
  * </ul>
+ *
+ * @see ToolCallingAgent
+ * @see CodeAgent
  * @author lanxia39@163.com
  */
 public abstract class ReActAgent extends BaseAgent<String, String>
