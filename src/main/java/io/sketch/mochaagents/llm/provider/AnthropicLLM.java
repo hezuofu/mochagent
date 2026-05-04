@@ -5,8 +5,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.sketch.mochaagents.llm.LLMRequest;
 import io.sketch.mochaagents.llm.StreamingResponse;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
 
 import java.util.List;
 import java.util.Map;
@@ -42,15 +40,8 @@ public class AnthropicLLM extends BaseApiLLM {
     }
 
     @Override
-    protected void configureClient(OkHttpClient.Builder builder) {
-        builder.addInterceptor(chain -> {
-            Request original = chain.request();
-            Request req = original.newBuilder()
-                    .header("x-api-key", apiKey)
-                    .header("anthropic-version", anthropicVersion)
-                    .build();
-            return chain.proceed(req);
-        });
+    protected Map<String, String> authHeaders() {
+        return Map.of("x-api-key", apiKey, "anthropic-version", anthropicVersion);
     }
 
     @Override

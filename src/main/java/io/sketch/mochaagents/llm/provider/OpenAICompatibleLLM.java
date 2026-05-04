@@ -42,7 +42,6 @@ public class OpenAICompatibleLLM extends OpenAILLM {
                 .modelId(builder.modelId)
                 .maxContextTokens(builder.maxContextTokens)
                 .connectTimeout(builder.connectTimeoutSeconds)
-                .readTimeout(builder.readTimeoutSeconds)
                 .requestsPerMinute(builder.requestsPerMinute)
                 .apiKey(builder.apiKey)
                 .baseUrl(builder.baseUrl));

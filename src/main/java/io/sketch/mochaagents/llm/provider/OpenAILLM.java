@@ -5,8 +5,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.sketch.mochaagents.llm.LLMRequest;
 import io.sketch.mochaagents.llm.LLMResponse;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
 
 import java.util.Map;
 
@@ -49,19 +47,12 @@ public class OpenAILLM extends BaseApiLLM {
     }
 
     @Override
-    protected void configureClient(OkHttpClient.Builder builder) {
-        builder.addInterceptor(chain -> {
-            Request original = chain.request();
-            Request.Builder reqBuilder = original.newBuilder()
-                    .header("Authorization", "Bearer " + apiKey);
-            if (organization != null && !organization.isEmpty()) {
-                reqBuilder.header("OpenAI-Organization", organization);
-            }
-            if (project != null && !project.isEmpty()) {
-                reqBuilder.header("OpenAI-Project", project);
-            }
-            return chain.proceed(reqBuilder.build());
-        });
+    protected Map<String, String> authHeaders() {
+        Map<String, String> headers = new java.util.LinkedHashMap<>();
+        headers.put("Authorization", "Bearer " + apiKey);
+        if (organization != null && !organization.isEmpty()) headers.put("OpenAI-Organization", organization);
+        if (project != null && !project.isEmpty()) headers.put("OpenAI-Project", project);
+        return headers;
     }
 
     @Override
