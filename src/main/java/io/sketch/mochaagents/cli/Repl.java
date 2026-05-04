@@ -25,7 +25,9 @@ final class Repl implements CliCommand {
 
     @Override
     public int run(String[] args, PrintStream out, PrintStream err) {
-        out.println("MochaAgents " + VERSION + " — type a task, 'exit' to quit, 'help' for commands.\n");
+        out.println("MochaAgents " + VERSION + " — AI agent CLI");
+        out.println("Model: " + (modelCfg.hasModels() ? modelCfg.build().modelName() : "fallback (use --model flag)"));
+        out.println("Type a task, 'exit' to quit, 'help' for commands.\n");
         try (BufferedReader in = new BufferedReader(new InputStreamReader(System.in))) {
             for (;;) {
                 out.print("> ");
