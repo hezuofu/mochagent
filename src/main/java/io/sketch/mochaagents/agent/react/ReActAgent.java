@@ -539,6 +539,39 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         return sb.toString();
     }
 
+    /**
+     * Delegate a task to a managed agent via the orchestrator.
+     * Called when the LLM selects a managed agent as a tool.
+     *
+     * <p>Scenarios:
+     * <ul>
+     *   <li>Sequential pipeline: Engineer → Reviewer → DevOps</li>
+     *   <li>Parallel analysis: Multiple agents analyze same problem</li>
+     *   <li>Debate: Two agents argue and reach consensus</li>
+     *   <li>Swarm: N agents vote on best answer</li>
+     * </ul>
+     */
+    public String delegateToManagedAgent(String agentName, String task) {
+        ReActAgent sub = managedAgents.get(agentName);
+        if (sub == null) {
+            // Try orchestrator lookup
+            if (orchestrator != null && orchestrator.getTeam().getRole(agentName).isPresent()) {
+                log.info("Delegating '{}' via orchestrator to {}", task, agentName);
+                try {
+                    Object result = orchestrator.orchestrate(task,
+                            io.sketch.mochaagents.orchestration.OrchestrationStrategy.sequential());
+                    return result != null ? result.toString() : "No result from orchestrator";
+                } catch (Exception e) {
+                    log.error("Orchestrator delegation failed: {}", e.getMessage());
+                    return "Orchestrator error: " + e.getMessage();
+                }
+            }
+            return "Managed agent not found: " + agentName;
+        }
+        log.info("Delegating '{}' to managed agent '{}'", task, agentName);
+        return sub.run(AgentContext.of(task));
+    }
+
     // ============ FinalAnswerTool（内部工具） ============
 
     static final class FinalAnswerTool implements Tool {
