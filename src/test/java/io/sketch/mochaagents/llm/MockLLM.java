@@ -1,4 +1,4 @@
-package io.sketch.mochaagents.llm.provider;
+package io.sketch.mochaagents.llm;
 
 import io.sketch.mochaagents.llm.LLM;
 import io.sketch.mochaagents.llm.LLMRequest;

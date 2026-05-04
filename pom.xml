@@ -81,6 +81,9 @@
                 <version>3.11.0</version>
                 <configuration>
                     <release>17</release>
+                    <excludes>
+                        <exclude>**/examples/**</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
             

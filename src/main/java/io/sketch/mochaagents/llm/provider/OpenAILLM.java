@@ -92,6 +92,8 @@ public class OpenAILLM extends BaseApiLLM {
         if (request.maxTokens() > 0) body.put("max_tokens", request.maxTokens());
         if (request.temperature() >= 0) body.put("temperature", request.temperature());
         if (request.topP() >= 0) body.put("top_p", request.topP());
+        if (request.presencePenalty() != 0) body.put("presence_penalty", request.presencePenalty());
+        if (request.frequencyPenalty() != 0) body.put("frequency_penalty", request.frequencyPenalty());
 
         // stop sequences
         if (!request.stopSequences().isEmpty()) {

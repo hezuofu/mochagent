@@ -3,7 +3,7 @@ package io.sketch.mochaagents.cli;
 import io.sketch.mochaagents.AgentBootstrap;
 import io.sketch.mochaagents.agent.impl.ToolCallingAgent;
 import io.sketch.mochaagents.llm.LLM;
-import io.sketch.mochaagents.llm.provider.MockLLM;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

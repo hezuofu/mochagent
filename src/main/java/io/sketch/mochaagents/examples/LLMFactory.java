@@ -8,7 +8,22 @@ import io.sketch.mochaagents.llm.provider.*;
  *
  * <p>检测顺序:
  * <ol>
- *   <li>{@code OPENAI_API_KEY} → OpenAILLM</li>
+ *   <li>{@code OPENAI_API_KEY
+    private static io.sketch.mochaagents.llm.LLM createMockFallback() {
+        return new io.sketch.mochaagents.llm.LLM() {
+            @Override public io.sketch.mochaagents.llm.LLMResponse complete(io.sketch.mochaagents.llm.LLMRequest r) {
+                return io.sketch.mochaagents.llm.LLMResponse.of("mock response");
+            }
+            @Override public java.util.concurrent.CompletableFuture<io.sketch.mochaagents.llm.LLMResponse> completeAsync(io.sketch.mochaagents.llm.LLMRequest r) {
+                return java.util.concurrent.CompletableFuture.completedFuture(complete(r));
+            }
+            @Override public io.sketch.mochaagents.llm.StreamingResponse stream(io.sketch.mochaagents.llm.LLMRequest r) { throw new UnsupportedOperationException(); }
+            @Override public String modelName() { return "mock"; }
+            @Override public int maxContextTokens() { return 4096; }
+        };
+    }
+}
+ → OpenAILLM</li>
  *   <li>{@code ANTHROPIC_API_KEY} → AnthropicLLM</li>
  *   <li>{@code GROQ_API_KEY} → OpenAICompatibleLLM (Groq 免费层)</li>
  *   <li>{@code DEEPSEEK_API_KEY} → DeepSeekLLM</li>

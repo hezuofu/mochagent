@@ -15,6 +15,8 @@ public class LLMRequest {
     private final int maxTokens;
     private final double topP;
     private final List<String> stopSequences;
+    private final double presencePenalty;
+    private final double frequencyPenalty;
     private final Map<String, Object> extraParams;
 
     private LLMRequest(Builder builder) {
@@ -25,6 +27,8 @@ public class LLMRequest {
         this.maxTokens = builder.maxTokens;
         this.topP = builder.topP;
         this.stopSequences = List.copyOf(builder.stopSequences);
+        this.presencePenalty = builder.presencePenalty;
+        this.frequencyPenalty = builder.frequencyPenalty;
         this.extraParams = Map.copyOf(builder.extraParams);
     }
 
@@ -37,6 +41,8 @@ public class LLMRequest {
     public int maxTokens() { return maxTokens; }
     public double topP() { return topP; }
     public List<String> stopSequences() { return stopSequences; }
+    public double presencePenalty() { return presencePenalty; }
+    public double frequencyPenalty() { return frequencyPenalty; }
     public Map<String, Object> extraParams() { return extraParams; }
 
     public static Builder builder() { return new Builder(); }
@@ -49,6 +55,8 @@ public class LLMRequest {
         private int maxTokens = 4096;
         private double topP = 1.0;
         private List<String> stopSequences = new ArrayList<>();
+        private double presencePenalty;
+        private double frequencyPenalty;
         private Map<String, Object> extraParams = new HashMap<>();
 
         public Builder prompt(String prompt) { this.prompt = prompt; return this; }
@@ -65,6 +73,8 @@ public class LLMRequest {
         public Builder maxTokens(int maxTokens) { this.maxTokens = maxTokens; return this; }
         public Builder topP(double topP) { this.topP = topP; return this; }
         public Builder stopSequences(List<String> stop) { this.stopSequences = stop; return this; }
+        public Builder presencePenalty(double v) { this.presencePenalty = Math.max(-2, Math.min(2, v)); return this; }
+        public Builder frequencyPenalty(double v) { this.frequencyPenalty = Math.max(-2, Math.min(2, v)); return this; }
         public Builder extraParams(Map<String, Object> params) { this.extraParams = params; return this; }
 
         public LLMRequest build() { return new LLMRequest(this); }

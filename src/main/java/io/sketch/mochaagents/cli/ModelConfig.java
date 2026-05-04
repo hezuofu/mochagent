@@ -41,7 +41,7 @@ public class ModelConfig {
 
     /** Build LLM(s) from config. Single model → direct LLM. Multiple → LLMRouter. */
     public LLM build() {
-        if (models.isEmpty()) return MockLLM.create();
+        if (models.isEmpty()) return new io.sketch.mochaagents.llm.FallbackLLM();
 
         if (models.size() == 1) {
             return buildOne(models.get(0));

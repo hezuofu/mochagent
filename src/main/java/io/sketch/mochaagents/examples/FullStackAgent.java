@@ -6,7 +6,7 @@ import io.sketch.mochaagents.agent.impl.CompositeAgent;
 import io.sketch.mochaagents.agent.impl.CodeAgent;
 import io.sketch.mochaagents.agent.impl.ToolCallingAgent;
 import io.sketch.mochaagents.llm.LLM;
-import io.sketch.mochaagents.llm.provider.MockLLM;
+
 import io.sketch.mochaagents.tool.ToolRegistry;
 
 import java.util.List;
@@ -23,7 +23,7 @@ public class FullStackAgent extends BaseAgent<String, String> {
 
     protected FullStackAgent(Builder builder) {
         super(builder);
-        LLM llm = builder.llm != null ? builder.llm : MockLLM.create();
+        LLM llm = builder.llm != null ? builder.llm : LLMFactory.create();
         ToolRegistry tools = builder.toolRegistry != null ? builder.toolRegistry : new ToolRegistry();
 
         var coder = CodeAgent.builder().name("coder").llm(llm)

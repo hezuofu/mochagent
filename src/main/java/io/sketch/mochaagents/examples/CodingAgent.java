@@ -4,7 +4,7 @@ import io.sketch.mochaagents.agent.AgentContext;
 import io.sketch.mochaagents.agent.impl.BaseAgent;
 import io.sketch.mochaagents.agent.impl.CodeAgent;
 import io.sketch.mochaagents.llm.LLM;
-import io.sketch.mochaagents.llm.provider.MockLLM;
+
 import io.sketch.mochaagents.tool.ToolRegistry;
 
 import java.util.concurrent.CompletableFuture;
@@ -20,7 +20,7 @@ public class CodingAgent extends BaseAgent<String, String> {
 
     protected CodingAgent(Builder builder) {
         super(builder);
-        LLM llm = builder.llm != null ? builder.llm : MockLLM.create();
+        LLM llm = builder.llm != null ? builder.llm : LLMFactory.create();
         ToolRegistry tools = builder.toolRegistry != null ? builder.toolRegistry : new ToolRegistry();
         this.delegate = CodeAgent.builder().name(name).llm(llm)
                 .toolRegistry(tools).maxSteps(15).build();
