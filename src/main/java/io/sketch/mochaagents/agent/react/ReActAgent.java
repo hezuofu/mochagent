@@ -9,73 +9,58 @@ import io.sketch.mochaagents.agent.SystemPromptProvider;
 import io.sketch.mochaagents.agent.react.StepResult;
 import io.sketch.mochaagents.agent.react.Termination;
 import io.sketch.mochaagents.agent.react.strategy.ReActLoop;
+import io.sketch.mochaagents.context.ContextCompressor;
 import io.sketch.mochaagents.context.ContextManager;
+import io.sketch.mochaagents.context.LLMContextCompressor;
 import io.sketch.mochaagents.evaluation.EvaluationResult;
 import io.sketch.mochaagents.llm.LLM;
 import io.sketch.mochaagents.llm.LLMRequest;
 import io.sketch.mochaagents.llm.LLMResponse;
 import io.sketch.mochaagents.memory.AgentMemory;
 import io.sketch.mochaagents.agent.react.step.*;
+import io.sketch.mochaagents.perception.LayeredContextBuilder;
+import io.sketch.mochaagents.perception.PerceptionObserver;
 import io.sketch.mochaagents.perception.PerceptionResult;
 import io.sketch.mochaagents.plan.Plan;
+import io.sketch.mochaagents.plan.PlanStep;
 import io.sketch.mochaagents.plan.PlanningRequest;
+import io.sketch.mochaagents.plan.ExecutionFeedback;
 import io.sketch.mochaagents.prompt.PromptTemplate;
 import io.sketch.mochaagents.reasoning.ReasoningChain;
+import io.sketch.mochaagents.reasoning.ReasoningStep;
+import io.sketch.mochaagents.reasoning.RecoveryStateMachine;
+import io.sketch.mochaagents.reasoning.ThinkingConfig;
+import io.sketch.mochaagents.reasoning.EffortLevel;
 import io.sketch.mochaagents.tool.Tool;
 import io.sketch.mochaagents.tool.ToolInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Path;
 import java.util.*;
 
 /**
- * ReActAgent — ReAct (Reasoning + Acting) loop abstract base.
+ * ReActAgent — ReAct (Reasoning + Acting) loop with deep capability integration.
+ *
+ * <p>Perception, reasoning, and planning are woven into <em>every step</em> of the loop,
+ * not just called once before/after. This creates a continuous feedback cycle:
+ *
+ * <pre>
+ *   PERCEIVE → REASON → PLAN → ACT → OBSERVE → (loop)
+ *       ↑                                      ↓
+ *       └──────────── feedback ────────────────┘
+ * </pre>
  *
  * <h2>Quick Start</h2>
  * <pre>{@code
- * // ToolCallingAgent — LLM calls tools via Thought/Action format
  * var agent = ToolCallingAgent.builder()
- *     .name("my-agent").llm(llm).tools(tools).maxSteps(10).build();
- * String answer = agent.run("What is 2+2?");
- *
- * // CodeAgent — LLM writes code, agent executes it
- * var coder = CodeAgent.builder()
- *     .name("coder").llm(llm).maxSteps(15).build();
- * String code = coder.run("Calculate fibonacci(20)");
- *
- * // Run with context (session, user, history)
- * AgentContext ctx = AgentContext.builder()
- *     .sessionId("sess-1").userId("user-1")
- *     .userMessage("task").build();
- * agent.run(ctx);
- *
- * // Run and get full report (steps, cost, timing)
- * ExecutionReport report = agent.runAndReport("task");
- * System.out.println(report.summary());
- *
- * // Subscribe to real-time events
- * agent.onEvent(e -> System.out.println(e.type() + ": " + e.data()));
- *
- * // Register hooks for tool interception
- * agent.hooks().onPreTool((tool, args) -> {
- *     if ("rm".equals(tool.getName())) return HookDecision.deny("blocked");
- *     return HookDecision.allow(args);
- * });
- *
- * // Delegate to managed agents via orchestrator
- * agent.delegateToManagedAgent("reviewer", "Review this code");
+ *     .name("my-agent").llm(llm).tools(tools)
+ *     .reasoner(new DefaultReasoner(llm))       // per-step reasoning
+ *     .planner(new DynamicPlanner<>(strategy))   // per-step plan tracking
+ *     .perceptor(new CodebasePerceptor())        // continuous perception
+ *     .maxSteps(10).build();
+ * String answer = agent.run("Refactor the auth module");
  * }</pre>
- *
- * <h2>Features</h2>
- * <ul>
- *   <li>Pre/post hooks (tool interception)</li>
- *   <li>Permission rules (allow/deny/ask per tool)</li>
- *   <li>Cost tracking (per-model token usage + pricing)</li>
- *   <li>Auto-compaction (context window management)</li>
- *   <li>Managed agent delegation (orchestrator integration)</li>
- *   <li>Streaming execution (real-time token output)</li>
- *   <li>Event system (STARTED/COST/COMPLETED/ERROR)</li>
- * </ul>
  *
  * @see ToolCallingAgent
  * @see CodeAgent
@@ -86,7 +71,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
-    // ============ ReAct 核心组件 ============
+    // ============ ReAct core components ============
 
     protected final LLM llm;
     protected final io.sketch.mochaagents.llm.router.LLMRouter router;
@@ -100,27 +85,64 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     protected final io.sketch.mochaagents.orchestration.Orchestrator orchestrator;
     protected final io.sketch.mochaagents.agent.AgentEvents events = new io.sketch.mochaagents.agent.AgentEvents();
     protected final io.sketch.mochaagents.agent.react.Hooks hooks = new io.sketch.mochaagents.agent.react.Hooks();
+    protected final io.sketch.mochaagents.tool.ToolExecutor toolExecutor;
+
+    /** Pluggable execution paradigm — defaults to ReActLoop. */
+    protected final AgenticLoop<String, String> agenticLoop;
 
     public Runnable onEvent(io.sketch.mochaagents.agent.AgentEvents.Listener l) { return events.subscribe(l); }
     public Hooks hooks() { return hooks; }
+
+    /** Switch execution paradigm at runtime. */
+    public ReActAgent withAgenticLoop(AgenticLoop<String, String> loop) {
+        return new AgenticLoopSwitcher(this, loop);
+    }
+
+    /**
+     * Unified tool execution — permission check → pre-hooks → execute → post-hooks.
+     * Replaces the old direct tool.call() path in ToolCallingAgent/CodeAgent.
+     */
+    protected io.sketch.mochaagents.tool.ToolResult executeTool(String toolName,
+                                                                  Map<String, Object> arguments) {
+        return toolExecutor.execute(toolName, arguments);
+    }
+
+    /** Resolve the effective loop: configured loop, or default ReActLoop. */
+    private AgenticLoop<String, String> resolveLoop() {
+        if (agenticLoop != null) return agenticLoop;
+        // Default: classic ReAct loop
+        return new ReActLoop<>(
+                this::planStep,
+                this::executeIntegratedStep,
+                planningInterval);
+    }
+
+    // ============ Runtime capability state (updated per-step) ============
+
+    private Plan<String> activePlan;
+    private int planStepIndex;
+    private int planDeviations;
+    private ReasoningChain activeReasoning;
+    private final List<String> perceptionHistory = new ArrayList<>();
+    private static final int MAX_PLAN_DEVIATIONS = 3;
 
     // ============ Context ============
 
     private io.sketch.mochaagents.context.AutoCompactor autoCompactor;
 
-    /** Create a fresh ContextManager for each run — avoids stale state leakage. */
     protected ContextManager newContextManager() {
-        ContextManager cm = new ContextManager(8192, (chunks, maxT) -> chunks, null);
+        ContextCompressor compressor = new LLMContextCompressor(llm);
+        ContextManager cm = new ContextManager(8192, (chunks, maxT) -> chunks, compressor);
         if (autoCompactor == null) autoCompactor = new io.sketch.mochaagents.context.AutoCompactor(cm, 8192);
         return cm;
     }
 
-    /** Check and auto-compact context if approaching limit (claude-code pattern). */
-    protected void autoCompact() {
+    /** Public — allows REPL / users to trigger context compaction manually. */
+    public void autoCompact() {
         if (autoCompactor != null) autoCompactor.checkAndCompact();
     }
 
-    // ============ Prompt 模板 ============
+    // ============ Prompt templates ============
 
     protected PromptTemplate systemPromptTemplate;
     protected PromptTemplate planningPromptTemplate;
@@ -132,7 +154,6 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         this.optimization = builder.optimization;
         this.costTracker = new io.sketch.mochaagents.llm.CostTracker();
 
-        // Auto-wrap LLM with caching if cache is enabled
         LLM rawLlm = builder.llm;
         if (rawLlm != null && optimization.cacheMaxEntries() > 0) {
             rawLlm = new io.sketch.mochaagents.llm.CachingLLM(rawLlm, costTracker, optimization.cacheMaxEntries());
@@ -148,12 +169,22 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         this.planningPromptTemplate = builder.planningPromptTemplate;
         this.finalAnswerPreTemplate = builder.finalAnswerPreTemplate;
         this.finalAnswerPostTemplate = builder.finalAnswerPostTemplate;
+        this.agenticLoop = builder.agenticLoop;
+
+        // Wire ToolExecutor with hooks + permissions — unified tool execution pipeline
+        this.toolExecutor = new io.sketch.mochaagents.tool.ToolExecutor(
+                toolRegistry, 60_000, 2, 500);
+        this.toolExecutor.withHooks(hooks)
+                .withEvents(events);  // real-time diff display
+        if (builder.permissionRules != null) {
+            this.toolExecutor.withPermissions(builder.permissionRules);
+        }
+
         setupManagedAgents(builder.managedAgents);
         setupTools(builder.tools);
     }
 
-    /** Resolve the LLM to use — router if configured, otherwise direct LLM. */
-    protected LLM resolveLlm(io.sketch.mochaagents.llm.LLMRequest request) {
+    protected LLM resolveLlm(LLMRequest request) {
         if (router != null && !router.getProviders().isEmpty()) {
             return router.route(request);
         }
@@ -162,34 +193,29 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
     // ============ Public API ============
 
-    /** 获取 AgentMemory. */
-    public AgentMemory memory() {
-        return memory;
-    }
+    public AgentMemory memory() { return memory; }
 
-    /** 构建系统提示（子类覆写）. */
     public String buildSystemPrompt() {
-        return systemPromptTemplate.render(Map.of(
+        String base = systemPromptTemplate.render(Map.of(
                 "tools", formatTools(),
                 "managed_agents", formatManagedAgents(),
                 "instructions", description != null ? description : ""
         ));
+        // Use LayeredContextBuilder to add system context (git, platform)
+        return contextBuilder.buildFullContext(base, "");
     }
 
-    // ============ 执行入口 ============
+    // ============ Execution entry points ============
 
-    /** 运行 ReAct 循环完成任务（向后兼容）. */
     public String run(String task) { return run(AgentContext.of(task), maxSteps); }
 
-    /** 运行并返回完整执行报告（步骤/耗时/费用/错误）. */
     public io.sketch.mochaagents.agent.ExecutionReport runAndReport(String task) {
         return runAndReport(AgentContext.of(task));
     }
 
-    /** 运行并返回带上下文的执行报告. */
-    public io.sketch.mochaagents.agent.ExecutionReport runAndReport(io.sketch.mochaagents.agent.AgentContext ctx) {
+    public io.sketch.mochaagents.agent.ExecutionReport runAndReport(AgentContext ctx) {
         long start = System.currentTimeMillis();
-        java.util.List<String> errors = new java.util.ArrayList<>();
+        List<String> errors = new ArrayList<>();
         String result;
         try {
             result = run(ctx);
@@ -214,20 +240,16 @@ public abstract class ReActAgent extends BaseAgent<String, String>
                 errors, summary);
     }
 
-    /** 获取成本追踪器（供外部查询费用）. */
     public io.sketch.mochaagents.llm.CostTracker costTracker() { return costTracker; }
 
-    /** 运行 ReAct 循环，指定最大步数（向后兼容）. */
     public String run(String task, int maxSteps) {
         return run(AgentContext.of(task), maxSteps);
     }
 
-    /** 流式执行 — 实时推送每个 LLM 调用 token 到回调. */
     public String runStreaming(AgentContext ctx, java.util.function.Consumer<String> onToken) {
         return runStreaming(ctx, maxSteps, onToken);
     }
 
-    /** 流式执行 — 指定最大步数,实时推送 token. */
     public String runStreaming(AgentContext ctx, int maxSteps, java.util.function.Consumer<String> onToken) {
         long startMs = System.currentTimeMillis();
         String task = ctx.userMessage();
@@ -241,12 +263,11 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         injectConversationHistory(ctx);
 
         ContextManager ctxMgr = newContextManager();
-        injectMemories(task, ctxMgr);
-        perceiveAndRemember(task, ctxMgr);
-        ReasoningChain chain = reason(task, ctxMgr);
-        planAndRemember(task, chain, ctxMgr);
 
-        // Streaming ReAct loop
+        // Pre-loop: initialize capabilities
+        initializeCapabilities(task, ctxMgr);
+
+        // Streaming ReAct loop with integrated steps
         ReActLoop<String, String> loop = new ReActLoop<>(
                 (ReActLoop.PlanningFn<String>) this::planStep,
                 (ReActLoop.StepExecutor<String>) (step, input, mem) ->
@@ -272,19 +293,17 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         return result;
     }
 
-    /** Override in subclasses to add streaming. Default falls back to normal execution. */
-    protected io.sketch.mochaagents.agent.react.StepResult executeReActStepStreaming(
+    protected StepResult executeReActStepStreaming(
             int stepNumber, String input, AgentMemory memory,
             java.util.function.Consumer<String> onToken) {
         return executeReActStep(stepNumber, input, memory);
     }
 
-    /** 运行 ReAct 循环 — 以 AgentContext 承载会话/对话历史/元数据. */
     public String run(AgentContext ctx) {
         return run(ctx, maxSteps);
     }
 
-    /** 运行 ReAct 循环 — AgentContext + 指定最大步数（主入口）. */
+    /** Main entry: ReAct loop with deep capability integration woven into every step. */
     public String run(AgentContext ctx, int maxSteps) {
         long startMs = System.currentTimeMillis();
         String task = ctx.userMessage();
@@ -292,30 +311,19 @@ public abstract class ReActAgent extends BaseAgent<String, String>
                 name, ctx.sessionId(), ctx.userId(), maxSteps, truncate(task, 120));
         events.fire(new AgentEvents.Event(AgentEvents.STARTED, name, task, 0));
 
-        // 构建系统提示（可被 ctx.metadata 覆盖）
         String systemPrompt = buildSystemPrompt();
         systemPrompt = enrichFromContext(systemPrompt, ctx);
 
         memory.reset(systemPrompt);
         memory.appendTask(task);
-
-        // 注入对话历史到 AgentMemory
         injectConversationHistory(ctx);
 
-        // ===== Pre-loop hooks =====
+        // ===== Pre-loop: initialize capabilities (perceive, reason, plan) =====
         ContextManager ctxMgr = newContextManager();
-        injectMemories(task, ctxMgr);
-        perceiveAndRemember(task, ctxMgr);
-        ReasoningChain chain = reason(task, ctxMgr);
-        planAndRemember(task, chain, ctxMgr);
+        initializeCapabilities(task, ctxMgr);
 
-        // ===== Core ReAct loop =====
-        ReActLoop<String, String> loop = new ReActLoop<>(
-                this::planStep,
-                this::executeReActStep,
-                planningInterval
-        );
-
+        // ===== ReAct loop with integrated capability hooks per step =====
+        AgenticLoop<String, String> loop = resolveLoop();
         Predicate<StepResult> condition = Termination.maxSteps(maxSteps)
                 .or(Termination.onError());
 
@@ -327,17 +335,17 @@ public abstract class ReActAgent extends BaseAgent<String, String>
             memory.appendFinalAnswer(result);
         }
 
-        // ===== Post-loop hooks =====
-        autoCompact(); // check if compaction needed
+        // ===== Post-loop: final evaluation, memory storage, and learning =====
+        autoCompact();
         EvaluationResult eval = evaluate(task, result, ctxMgr);
+        storeMemories(task, result);
         reflectAndLearn(task, result, eval, ctxMgr);
         ctxMgr.compress();
 
         long elapsed = System.currentTimeMillis() - startMs;
-        log.info("Agent '{}' completed in {}ms, steps={}, result={}",
-                name, elapsed, memory.steps().size(), truncate(result, 300));
+        log.info("Agent '{}' completed in {}ms, steps={}, planDeviations={}, result={}",
+                name, elapsed, memory.steps().size(), planDeviations, truncate(result, 300));
 
-        // Fire completion events
         events.fire(new AgentEvents.Event(AgentEvents.COMPLETED, name, result, elapsed));
         events.fire(new AgentEvents.Event(AgentEvents.COST, name,
                 new double[]{costTracker.estimatedTotalCost(),
@@ -346,43 +354,252 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         return result;
     }
 
-    // ============ 抽象方法（CapableAgent + 子类） ============
-
-    // ============ 实现 BaseAgent 钩子 ============
+    // ============ Integrated step execution ============
 
     /**
-     * BaseAgent 主入口 — 直接委托给 {@link #run(AgentContext)}.
-     * 绕过 8 步流水线，使用 ReAct 循环.
+     * Execute one ReAct step with perception/reasoning/planning woven in.
+     *
+     * <p>Each step follows the integrated cycle:
+     * <ol>
+     *   <li><b>Pre-reason</b>: inject current reasoning/plan state into messages</li>
+     *   <li><b>Act</b>: LLM call + tool execution (delegated to subclass)</li>
+     *   <li><b>Perceive</b>: observe what changed after the action</li>
+     *   <li><b>Track plan</b>: check if action matches expected plan step</li>
+     *   <li><b>Adapt</b>: replan/re-reason if deviation detected</li>
+     * </ol>
      */
+    private StepResult executeIntegratedStep(int stepNumber, String input, AgentMemory memory) {
+        // 1. Pre-step: inject capability context into system prompt
+        injectCapabilityContext(stepNumber, memory);
+
+        // 2. Act: delegate to subclass (ToolCallingAgent / CodeAgent)
+        StepResult result = executeReActStep(stepNumber, input, memory);
+
+        // 3. Perceive: continuous environmental awareness after action
+        perceiveAfterAction(result);
+
+        // 4. Track plan: compare action to expected plan step
+        trackPlanProgress(stepNumber, result);
+
+        // 5. Adapt: trigger replanning if deviation threshold exceeded
+        if (planDeviations >= MAX_PLAN_DEVIATIONS) {
+            replanFromDeviation(input, result);
+            planDeviations = 0;
+        }
+
+        return result;
+    }
+
+    // ============ Capability initialization (pre-loop) ============
+
+    /** Initialize perception, reasoning, and planning before the loop starts. */
+    private void initializeCapabilities(String task, ContextManager ctx) {
+        // 1. Memory injection from past sessions
+        injectMemories(task, ctx);
+
+        // 2. Perception: initial environmental snapshot
+        perceiveAndRemember(task, ctx);
+
+        // 3. Reasoning: analyze the task
+        ReasoningChain chain = reason(task, ctx);
+        this.activeReasoning = chain;
+
+        // 4. Planning: generate execution blueprint
+        planAndRemember(task, chain, ctx);
+    }
+
+    // ============ Per-step capability hooks ============
+
+    /**
+     * Inject current reasoning state and plan progress into AgentMemory
+     * so the LLM sees them as part of the conversation context.
+     */
+    private void injectCapabilityContext(int stepNumber, AgentMemory memory) {
+        StringBuilder ctx = new StringBuilder();
+
+        // Reasoning context: where are we in the reasoning chain?
+        if (activeReasoning != null && !activeReasoning.steps().isEmpty()) {
+            ctx.append("[Reasoning State]\n");
+            int totalSteps = activeReasoning.steps().size();
+            int currentIdx = Math.min(stepNumber - 1, totalSteps - 1);
+            ReasoningStep current = activeReasoning.steps().get(currentIdx);
+            ctx.append("Step ").append(current.index()).append("/").append(totalSteps)
+                    .append(": ").append(current.thought()).append("\n");
+            ctx.append("Confidence: ").append(String.format("%.2f", current.confidence())).append("\n");
+        }
+
+        // Plan progress: which step are we on?
+        if (activePlan != null && !activePlan.getSteps().isEmpty()) {
+            ctx.append("\n[Plan Progress]\n");
+            ctx.append(planStepIndex).append("/").append(activePlan.getSteps().size())
+                    .append(" steps completed\n");
+            if (planDeviations > 0) {
+                ctx.append("Deviations: ").append(planDeviations)
+                        .append(" (replanning at ").append(MAX_PLAN_DEVIATIONS).append(")\n");
+            }
+
+            // Show current and upcoming plan steps
+            List<PlanStep> steps = activePlan.getSteps();
+            for (int i = planStepIndex; i < Math.min(planStepIndex + 3, steps.size()); i++) {
+                String marker = i == planStepIndex ? "→ " : "  ";
+                ctx.append(marker).append("Step ").append(i + 1).append(": ")
+                        .append(steps.get(i).description()).append("\n");
+            }
+        }
+
+        // Recent perception updates (last 3)
+        if (!perceptionHistory.isEmpty()) {
+            ctx.append("\n[Recent Perceptions]\n");
+            int start = Math.max(0, perceptionHistory.size() - 3);
+            for (int i = start; i < perceptionHistory.size(); i++) {
+                ctx.append("- ").append(perceptionHistory.get(i)).append("\n");
+            }
+        }
+
+        if (!ctx.isEmpty()) {
+            memory.append(ContentStep.systemPrompt(ctx.toString()));
+        }
+    }
+
+    /** Perceive the environment after an action — what changed? */
+    private void perceiveAfterAction(StepResult result) {
+        if (perceptor == null) return;
+
+        String observation = result.observation();
+        if (observation == null || observation.isEmpty()) return;
+
+        try {
+            // Use PerceptionObserver if available for continuous tracking
+            if (perceptionObserver != null) {
+                PerceptionResult<String> pr = perceptionObserver.observeAction(observation);
+                String data = pr.data() != null ? pr.data() : "";
+                if (!data.isEmpty()) {
+                    perceptionHistory.add(truncate(data, 200));
+                    memory.append(ContentStep.systemPrompt("[Perception Update]:\n" + data
+                            + "\n" + perceptionObserver.buildEnrichedContext()));
+                }
+            } else {
+                PerceptionResult<String> pr = perceptor.perceive(observation);
+                String data = pr.data() != null ? pr.data() : "";
+                if (!data.isEmpty()) {
+                    perceptionHistory.add(truncate(data, 200));
+                    memory.append(ContentStep.systemPrompt("[Perception Update]:\n" + data));
+                }
+            }
+            log.debug("Agent '{}' perception update: {}", name, truncate(observation, 100));
+        } catch (Exception e) {
+            log.debug("Agent '{}' perception step failed: {}", name, e.getMessage());
+        }
+    }
+
+    /** Track plan progress: compare executed action against expected plan step. */
+    private void trackPlanProgress(int stepNumber, StepResult result) {
+        if (activePlan == null || activePlan.getSteps().isEmpty()) return;
+
+        List<PlanStep> steps = activePlan.getSteps();
+        if (planStepIndex >= steps.size()) return;
+
+        PlanStep expected = steps.get(planStepIndex);
+        String action = result.action();
+        String observation = result.observation();
+
+        // Heuristic match: does the action relate to the expected step?
+        boolean matches = actionMatchesPlanStep(action, observation, expected);
+
+        if (matches) {
+            // Progress: mark current step complete, advance
+            expected.markSuccess(io.sketch.mochaagents.plan.ExecutionResult.success(observation));
+            planStepIndex++;
+            log.debug("Agent '{}' plan step {}/{} completed: {}",
+                    name, planStepIndex, steps.size(), truncate(expected.description(), 80));
+        } else if (result.state() == io.sketch.mochaagents.agent.react.LoopState.ERROR) {
+            expected.markFailed(io.sketch.mochaagents.plan.ExecutionResult.failure(result.error()));
+            planDeviations++;
+            log.debug("Agent '{}' plan step {} failed: {}", name, planStepIndex, result.error());
+        } else {
+            // Action doesn't match plan but isn't an error — minor deviation
+            planDeviations++;
+            log.debug("Agent '{}' plan deviation #{}: expected '{}', got '{}'",
+                    name, planDeviations, truncate(expected.description(), 60), action);
+        }
+    }
+
+    /** Simple heuristic: does the action semantically match the plan step? */
+    private boolean actionMatchesPlanStep(String action, String observation, PlanStep step) {
+        if (action == null) return false;
+        String desc = step.description().toLowerCase();
+        String act = action.toLowerCase();
+
+        // Direct keyword overlap
+        for (String word : desc.split("\\s+")) {
+            if (word.length() > 3 && act.contains(word)) return true;
+        }
+
+        // Observation contains expected output keywords from plan description
+        if (observation != null) {
+            String obs = observation.toLowerCase();
+            for (String word : desc.split("\\s+")) {
+                if (word.length() > 3 && obs.contains(word)) return true;
+            }
+        }
+
+        // Managed agent delegation matches agentId
+        if (step.agentId() != null && !step.agentId().isEmpty()
+                && act.contains(step.agentId().toLowerCase())) return true;
+
+        return false;
+    }
+
+    /** Trigger replanning when too many deviations occur. */
+    private void replanFromDeviation(String input, StepResult result) {
+        if (planner == null || activePlan == null) return;
+
+        log.info("Agent '{}' triggering replan after {} deviations", name, MAX_PLAN_DEVIATIONS);
+
+        ExecutionFeedback feedback = new ExecutionFeedback(
+                "step-" + planStepIndex,
+                io.sketch.mochaagents.plan.ExecutionFeedback.ExecutionStatus.FAILED,
+                null, result.error(), Map.of(), 0);
+
+        Plan<String> newPlan = planner.replan(activePlan, feedback);
+        if (newPlan != null && !newPlan.getSteps().isEmpty()) {
+            this.activePlan = newPlan;
+            this.planStepIndex = 0;
+            this.planDeviations = 0;
+
+            // Re-reason from current state
+            if (reasoner != null) {
+                this.activeReasoning = reasoner.reason(
+                        input + "\n(Replanning after deviations. New plan: "
+                                + newPlan.getSteps().size() + " steps)");
+            }
+
+            memory.appendPlanning(newPlan.serialize(), "[Replanned after deviations]", 0, 0);
+            log.info("Agent '{}' replan complete: {} new steps", name, newPlan.getSteps().size());
+        }
+    }
+
+    // ============ BaseAgent overrides ============
+
     @Override
     protected String doExecute(String input, AgentContext actx) {
         return run(actx);
     }
 
-    /**
-     * CapableAgent 流水线钩子 — 向后兼容.
-     */
     @Override
-    protected String doExecute(String input, io.sketch.mochaagents.context.ContextManager ctx) {
+    protected String doExecute(String input, ContextManager ctx) {
         return run(AgentContext.of(input));
     }
 
     /**
-     * 执行单次 ReAct 步骤.
-     *
-     * <p>子类（ToolCallingAgent / CodeAgent）实现具体的 LLM 调用与工具/代码执行逻辑。
-     *
-     * @param stepNumber 当前步号
-     * @param input      原始输入/任务
-     * @param memory     Agent 记忆
-     * @return StepResult 包含观察、输出和终止状态
+     * Execute a single ReAct step. Subclasses (ToolCallingAgent / CodeAgent)
+     * implement the actual LLM call and tool/code execution.
      */
-    protected abstract io.sketch.mochaagents.agent.react.StepResult executeReActStep(
+    protected abstract StepResult executeReActStep(
             int stepNumber, String input, AgentMemory memory);
 
-    // ============ 内部方法 ============
+    // ============ Internal methods ============
 
-    /** 规划步骤（可选）. */
     protected String planStep(int stepNumber, String input, AgentMemory memory) {
         if (planningPromptTemplate == null) return null;
 
@@ -397,6 +614,8 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         LLMRequest request = LLMRequest.builder()
                 .addMessage("user", prompt)
                 .maxTokens(1024)
+                .thinkingConfig(thinkingConfig)
+                .effort(effortLevel)
                 .build();
 
         try {
@@ -409,37 +628,57 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         }
     }
 
-    /** 感知环境并将结果写入 AgentMemory，使 LLM 可见. */
+    /** Auto-extract and persist memories after task completion. */
+    private void storeMemories(String task, String result) {
+        if (memoryManager == null) return;
+        try {
+            List<io.sketch.mochaagents.memory.Memory> snapshots = memory.snapshot();
+            for (var mem : snapshots) {
+                memoryManager.store(mem);
+            }
+            if (!snapshots.isEmpty()) {
+                log.debug("Agent '{}' stored {} memory entries", name, snapshots.size());
+            }
+        } catch (Exception e) {
+            log.debug("Agent '{}' memory storage failed: {}", name, e.getMessage());
+        }
+    }
+
+    /** Initial perception + memory injection (called once before loop). */
     private void perceiveAndRemember(String input, ContextManager ctx) {
         if (perceptor == null) return;
         PerceptionResult<String> result = perceptor.perceive(input);
         String data = result.data() != null ? result.data() : "";
         if (!data.isEmpty()) {
-            memory.append(ContentStep.systemPrompt("[Perception]:\n" + data));
+            memory.append(ContentStep.systemPrompt("[Initial Perception]:\n" + data));
+            perceptionHistory.add(truncate(data, 200));
         }
         ctx.addChunk(newChunk("perception", data));
     }
 
-    /** 生成计划并将结果写入 AgentMemory 作为 PlanningStep. */
+    /** Initial plan generation (called once before loop). */
     private void planAndRemember(String input, ReasoningChain chain, ContextManager ctx) {
         if (planner == null) return;
-        Plan<String> plan = planner.generatePlan(
+        @SuppressWarnings("unchecked")
+        Plan<String> plan = (Plan<String>) planner.generatePlan(
                 PlanningRequest.<String>builder()
                         .goal(input)
                         .context(chain != null ? chain.summarize() : "")
                         .build());
         if (plan != null && !plan.getSteps().isEmpty()) {
-            memory.appendPlanning(plan.serialize(), "", 0, 0);
+            this.activePlan = plan;
+            this.planStepIndex = 0;
+            this.planDeviations = 0;
+            memory.appendPlanning(plan.serialize(), "[Initial plan: " + plan.getSteps().size() + " steps]", 0, 0);
+            ctx.addChunk(newChunk("plan", plan.serialize()));
+            log.info("Agent '{}' initial plan: {} steps", name, plan.getSteps().size());
         }
-        ctx.addChunk(newChunk("plan", plan.serialize()));
     }
 
-    /** 将 AgentContext 中的对话历史注入 AgentMemory. */
     private void injectConversationHistory(AgentContext ctx) {
         String history = ctx.conversationHistory();
         if (history == null || history.isEmpty()) return;
 
-        // 尝试按行解析为 alternating user/assistant 消息
         String[] lines = history.split("\n");
         for (String line : lines) {
             line = line.trim();
@@ -454,7 +693,6 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         }
     }
 
-    /** 用 AgentContext.metadata 增强系统提示. */
     private String enrichFromContext(String systemPrompt, AgentContext ctx) {
         StringBuilder sb = new StringBuilder(systemPrompt);
         Map<String, Object> meta = ctx.metadata();
@@ -470,10 +708,11 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         if (ctx.sessionId() != null && !ctx.sessionId().isEmpty()) {
             sb.append("\n[Session: ").append(ctx.sessionId()).append("]");
         }
+        // Inject user context from LayeredContextBuilder (CLAUDE.md, date)
+        sb.append("\n").append(contextBuilder.buildUserContext());
         return sb.toString();
     }
 
-    /** 超出最大步数时的兜底答案. */
     protected String provideFinalAnswer(String task) {
         if (finalAnswerPreTemplate == null || finalAnswerPostTemplate == null) {
             log.debug("Agent '{}' no fallback templates configured", name);
@@ -488,6 +727,8 @@ public abstract class ReActAgent extends BaseAgent<String, String>
                 .addMessage("system", preMsg)
                 .addMessage("user", postMsg)
                 .maxTokens(512)
+                .thinkingConfig(thinkingConfig)
+                .effort(effortLevel)
                 .build();
 
         try {
@@ -500,16 +741,14 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         }
     }
 
-    /** 将记忆转换为 LLM 消息列表. */
+    /** Convert memory to LLM messages (used by subclasses). */
     protected List<Map<String, String>> writeMemoryToMessages() {
         List<Map<String, String>> messages = new ArrayList<>();
 
-        // System prompt
         if (memory.systemPrompt() != null && !memory.systemPrompt().isEmpty()) {
             messages.add(Map.of("role", "system", "content", memory.systemPrompt()));
         }
 
-        // 各步骤
         int stepCount = memory.steps().size();
         for (MemoryStep step : memory.steps()) {
             if (step instanceof ContentStep cs && cs.isSystemPrompt()) {
@@ -527,14 +766,13 @@ public abstract class ReActAgent extends BaseAgent<String, String>
                             "content", "Observation:\n" + as.observation()));
                 }
             }
-            // ContentStep(final_answer) — 不加入消息
         }
 
         log.debug("Agent '{}' built {} LLM messages from {} steps", name, messages.size(), stepCount);
         return messages;
     }
 
-    // ============ 初始化辅助 ============
+    // ============ Init helpers ============
 
     private void setupManagedAgents(List<ReActAgent> agents) {
         if (agents == null) return;
@@ -551,18 +789,25 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         if (tools != null) {
             tools.forEach(toolRegistry::register);
         }
-        // 始终注册 final_answer 工具
         if (!toolRegistry.has("final_answer")) {
             toolRegistry.register(new FinalAnswerTool());
         }
+        // Register managed agents as callable tools
+        for (var entry : managedAgents.entrySet()) {
+            String agentName = entry.getKey();
+            if (!toolRegistry.has("delegate_" + agentName)) {
+                toolRegistry.register(new ManagedAgentTool(agentName, entry.getValue().description));
+            }
+        }
     }
 
-    // ============ 格式化方法 ============
+    // ============ Formatting ============
 
     protected String formatTools() {
         if (toolRegistry == null) return "None";
         StringBuilder sb = new StringBuilder();
         for (Tool t : toolRegistry.all()) {
+            if (t instanceof ManagedAgentTool) continue; // shown separately
             sb.append("- ").append(t.getName()).append(": ").append(t.getDescription()).append("\n");
         }
         return sb.toString();
@@ -572,7 +817,8 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         if (managedAgents.isEmpty()) return "None";
         StringBuilder sb = new StringBuilder();
         for (var entry : managedAgents.entrySet()) {
-            sb.append("- ").append(entry.getKey()).append(": ").append(entry.getValue().description).append("\n");
+            sb.append("- delegate_").append(entry.getKey())
+                    .append(": ").append(entry.getValue().description).append("\n");
         }
         return sb.toString();
     }
@@ -580,19 +826,10 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     /**
      * Delegate a task to a managed agent via the orchestrator.
      * Called when the LLM selects a managed agent as a tool.
-     *
-     * <p>Scenarios:
-     * <ul>
-     *   <li>Sequential pipeline: Engineer → Reviewer → DevOps</li>
-     *   <li>Parallel analysis: Multiple agents analyze same problem</li>
-     *   <li>Debate: Two agents argue and reach consensus</li>
-     *   <li>Swarm: N agents vote on best answer</li>
-     * </ul>
      */
     public String delegateToManagedAgent(String agentName, String task) {
         ReActAgent sub = managedAgents.get(agentName);
         if (sub == null) {
-            // Try orchestrator lookup
             if (orchestrator != null && orchestrator.getTeam().getRole(agentName).isPresent()) {
                 log.info("Delegating '{}' via orchestrator to {}", task, agentName);
                 try {
@@ -610,7 +847,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         return sub.run(AgentContext.of(task));
     }
 
-    // ============ FinalAnswerTool（内部工具） ============
+    // ============ Inner tools ============
 
     static final class FinalAnswerTool implements Tool {
         @Override public String getName() { return "final_answer"; }
@@ -625,7 +862,32 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         @Override public SecurityLevel getSecurityLevel() { return SecurityLevel.LOW; }
     }
 
-    // ============ 工具方法 ============
+    /** Tool wrapper that exposes a managed agent as a callable tool. */
+    final class ManagedAgentTool implements Tool {
+        private final String agentName;
+        private final String agentDesc;
+
+        ManagedAgentTool(String agentName, String agentDesc) {
+            this.agentName = agentName;
+            this.agentDesc = agentDesc;
+        }
+
+        @Override public String getName() { return "delegate_" + agentName; }
+        @Override public String getDescription() {
+            return "Delegate a task to the '" + agentName + "' agent. " + agentDesc;
+        }
+        @Override public Map<String, ToolInput> getInputs() {
+            return Map.of("task", ToolInput.any("The task to delegate to " + agentName));
+        }
+        @Override public String getOutputType() { return "any"; }
+        @Override public Object call(Map<String, Object> arguments) {
+            String task = String.valueOf(arguments.getOrDefault("task", ""));
+            return delegateToManagedAgent(agentName, task);
+        }
+        @Override public SecurityLevel getSecurityLevel() { return SecurityLevel.MEDIUM; }
+    }
+
+    // ============ Utilities ============
 
     protected static String truncate(String s, int maxLen) {
         if (s == null) return "null";
@@ -652,6 +914,8 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         protected PromptTemplate finalAnswerPostTemplate;
         protected io.sketch.mochaagents.llm.OptimizationConfig optimization
                 = io.sketch.mochaagents.llm.OptimizationConfig.balanced();
+        protected AgenticLoop<String, String> agenticLoop;
+        protected io.sketch.mochaagents.interaction.permission.PermissionRules permissionRules;
 
         public T llm(LLM llm) { this.llm = llm; return (T) this; }
         public T optimization(io.sketch.mochaagents.llm.OptimizationConfig cfg) { this.optimization = cfg; return (T) this; }
@@ -666,5 +930,46 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         public T planningPromptTemplate(PromptTemplate t) { this.planningPromptTemplate = t; return (T) this; }
         public T finalAnswerPreTemplate(PromptTemplate t) { this.finalAnswerPreTemplate = t; return (T) this; }
         public T finalAnswerPostTemplate(PromptTemplate t) { this.finalAnswerPostTemplate = t; return (T) this; }
+
+        /** Set a custom execution paradigm (ReAct, Reflexion, ReWOO, TAO, OPAR). */
+        public T agenticLoop(AgenticLoop<String, String> loop) {
+            this.agenticLoop = loop; return (T) this;
+        }
+        public T permissionRules(io.sketch.mochaagents.interaction.permission.PermissionRules rules) {
+            this.permissionRules = rules; return (T) this;
+        }
+    }
+
+    // ============ AgenticLoopSwitcher ============
+
+    /**
+     * Wrapper that delegates to another agent but overrides the execution loop.
+     * Allows runtime paradigm switching without rebuilding.
+     */
+    private static final class AgenticLoopSwitcher extends ReActAgent {
+        private final ReActAgent delegate;
+        private final AgenticLoop<String, String> loop;
+
+        AgenticLoopSwitcher(ReActAgent delegate, AgenticLoop<String, String> loop) {
+            super(createBuilder(delegate, loop));
+            this.delegate = delegate;
+            this.loop = loop;
+        }
+
+        private static Builder<?> createBuilder(ReActAgent delegate, AgenticLoop<String, String> loop) {
+            io.sketch.mochaagents.agent.impl.ToolCallingAgent.Builder b
+                    = io.sketch.mochaagents.agent.impl.ToolCallingAgent.builder();
+            b.name(delegate.name);
+            b.description(delegate.description);
+            b.llm(delegate.llm);
+            b.maxSteps(delegate.maxSteps);
+            b.agenticLoop(loop);
+            return b;
+        }
+
+        @Override protected StepResult executeReActStep(int step, String input, AgentMemory mem) {
+            return delegate.executeReActStep(step, input, mem);
+        }
+        @Override public String buildSystemPrompt() { return delegate.buildSystemPrompt(); }
     }
 }

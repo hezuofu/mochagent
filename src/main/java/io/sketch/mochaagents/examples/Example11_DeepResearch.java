@@ -110,17 +110,7 @@ public final class Example11_DeepResearch {
 
         CodeAgent managerAgent = CodeAgent.builder()
                 .name("research_manager")
-                .llm(MockLLM.with(req -> {
-                    String msg = lastUserMsg(req);
-                    if (msg.toLowerCase().contains("observation:") || msg.toLowerCase().contains("execution logs:")) {
-                        return "<code>\nfinal_answer(\"Research completed. Results summarized.\")\n</code>";
-                    }
-                    return "<code>\n"
-                            + "result = search_agent(query=\"How many studio albums did Mercedes Sosa release before 2007?\")\n"
-                            + "print(result)\n"
-                            + "final_answer(result)\n"
-                            + "</code>";
-                }))
+                .llm(io.sketch.mochaagents.examples.LLMFactory.createNew())
                 .toolRegistry(managerRegistry)
                 .maxSteps(5)
                 .planningInterval(2)

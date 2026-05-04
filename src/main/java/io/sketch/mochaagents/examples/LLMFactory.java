@@ -112,9 +112,9 @@ public final class LLMFactory {
             return LocalLLM.create();
         }
 
-        // 8. 降级
-        System.out.println("[LLM] No real provider detected → falling back to MockLLM");
-        return MockLLM.create();
+        // 8. 降级 — FallbackLLM returns helpful "No LLM configured" message
+        System.out.println("[LLM] No real provider detected → using FallbackLLM");
+        return new io.sketch.mochaagents.llm.FallbackLLM();
     }
 
     // ============ 辅助方法 ============

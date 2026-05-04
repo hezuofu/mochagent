@@ -235,14 +235,7 @@ public final class Example14_InspectMultiAgentRun {
 
         CodeAgent managerAgent = CodeAgent.builder()
                 .name("manager_agent")
-                .llm(MockLLM.with(req -> {
-                    String lastMsg = lastUserMsg(req);
-                    return "<code>\n"
-                            + "result = search_agent(task=\"" + lastMsg + "\")\n"
-                            + "print(result)\n"
-                            + "final_answer(result)\n"
-                            + "</code>";
-                }))
+                .llm(io.sketch.mochaagents.examples.LLMFactory.createNew())
                 .toolRegistry(managerRegistry)
                 .maxSteps(3)
                 .build();

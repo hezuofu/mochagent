@@ -84,6 +84,8 @@ public final class ToolCallingAgent extends ReActAgent {
                     .messages(messages)
                     .maxTokens(2048)
                     .temperature(0.7)
+                    .thinkingConfig(thinkingConfig)
+                    .effort(effortLevel)
                     .build();
 
             long llmStart = System.currentTimeMillis();
@@ -102,15 +104,15 @@ public final class ToolCallingAgent extends ReActAgent {
             Object toolResult = null;
 
             if (action != null && toolRegistry != null && toolRegistry.has(action.name)) {
-                Tool tool = toolRegistry.get(action.name);
                 try {
-                    long toolStart = System.currentTimeMillis();
-                    toolResult = tool.call(action.arguments);
-                    long toolMs = System.currentTimeMillis() - toolStart;
-                    observation = String.valueOf(toolResult);
+                    var result = executeTool(action.name, action.arguments);
+                    toolResult = result.output();
+                    observation = result.isError()
+                            ? "Tool error: " + result.error()
+                            : String.valueOf(result.output());
                     isFinalAnswer = "final_answer".equals(action.name);
                     log.debug("ToolCallingAgent step {} executed tool '{}' in {}ms",
-                            stepNumber, action.name, toolMs);
+                            stepNumber, action.name, result.durationMs());
                 } catch (Exception e) {
                     log.warn("ToolCallingAgent step {} tool '{}' error: {}",
                             stepNumber, action.name, e.getMessage());

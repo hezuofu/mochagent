@@ -1,9 +1,12 @@
 package io.sketch.mochaagents.llm;
 
+import io.sketch.mochaagents.reasoning.ThinkingConfig;
+import io.sketch.mochaagents.reasoning.EffortLevel;
 import java.util.*;
 
 /**
  * LLM 请求 — 封装 prompt、参数与配置.
+ * ThinkingConfig and EffortLevel flow through to providers for API parameter mapping.
  * @author lanxia39@163.com
  */
 public class LLMRequest {
@@ -18,6 +21,8 @@ public class LLMRequest {
     private final double presencePenalty;
     private final double frequencyPenalty;
     private final Map<String, Object> extraParams;
+    private final ThinkingConfig thinkingConfig;
+    private final EffortLevel effort;
 
     private LLMRequest(Builder builder) {
         this.prompt = builder.prompt;
@@ -30,6 +35,8 @@ public class LLMRequest {
         this.presencePenalty = builder.presencePenalty;
         this.frequencyPenalty = builder.frequencyPenalty;
         this.extraParams = Map.copyOf(builder.extraParams);
+        this.thinkingConfig = builder.thinkingConfig;
+        this.effort = builder.effort;
     }
 
     public String prompt() { return prompt; }
@@ -44,6 +51,8 @@ public class LLMRequest {
     public double presencePenalty() { return presencePenalty; }
     public double frequencyPenalty() { return frequencyPenalty; }
     public Map<String, Object> extraParams() { return extraParams; }
+    public ThinkingConfig thinkingConfig() { return thinkingConfig; }
+    public EffortLevel effort() { return effort; }
 
     public static Builder builder() { return new Builder(); }
 
@@ -58,6 +67,8 @@ public class LLMRequest {
         private double presencePenalty;
         private double frequencyPenalty;
         private Map<String, Object> extraParams = new HashMap<>();
+        private ThinkingConfig thinkingConfig;
+        private EffortLevel effort;
 
         public Builder prompt(String prompt) { this.prompt = prompt; return this; }
         public Builder messages(List<Map<String, String>> messages) { this.messages = messages; return this; }
@@ -76,6 +87,8 @@ public class LLMRequest {
         public Builder presencePenalty(double v) { this.presencePenalty = Math.max(-2, Math.min(2, v)); return this; }
         public Builder frequencyPenalty(double v) { this.frequencyPenalty = Math.max(-2, Math.min(2, v)); return this; }
         public Builder extraParams(Map<String, Object> params) { this.extraParams = params; return this; }
+        public Builder thinkingConfig(ThinkingConfig config) { this.thinkingConfig = config; return this; }
+        public Builder effort(EffortLevel effort) { this.effort = effort; return this; }
 
         public LLMRequest build() { return new LLMRequest(this); }
     }

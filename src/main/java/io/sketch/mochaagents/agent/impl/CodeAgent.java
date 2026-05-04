@@ -118,6 +118,8 @@ public final class CodeAgent extends ReActAgent {
                     .messages(messages)
                     .maxTokens(4096)
                     .temperature(0.3)
+                    .thinkingConfig(thinkingConfig)
+                    .effort(effortLevel)
                     .build();
 
             long llmStart = System.currentTimeMillis();

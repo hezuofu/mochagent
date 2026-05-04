@@ -79,6 +79,19 @@ public class AnthropicLLM extends BaseApiLLM {
             body.set("stop_sequences", stops);
         }
 
+        // Apply ThinkingConfig — flows from Reasoner → ReActAgent → LLMRequest → Provider
+        var thinkingConfig = request.thinkingConfig();
+        if (thinkingConfig != null && thinkingConfig.type() != io.sketch.mochaagents.reasoning.ThinkingConfig.Type.DISABLED) {
+            ObjectNode thinking = JSON.createObjectNode();
+            if (thinkingConfig.type() == io.sketch.mochaagents.reasoning.ThinkingConfig.Type.ADAPTIVE) {
+                thinking.put("type", "adaptive");
+            } else if (thinkingConfig.type() == io.sketch.mochaagents.reasoning.ThinkingConfig.Type.ENABLED) {
+                thinking.put("type", "enabled");
+                thinking.put("budget_tokens", thinkingConfig.budgetTokens());
+            }
+            body.set("thinking", thinking);
+        }
+
         List<Map<String, String>> messages = request.messages();
         ArrayNode anthropicMessages = JSON.createArrayNode();
         String systemPrompt = null;

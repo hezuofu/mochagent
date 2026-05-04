@@ -50,14 +50,7 @@ public final class Example05_MultiAgent {
 
         CodeAgent managerAgent = CodeAgent.builder()
                 .name("manager_agent")
-                .llm(MockLLM.with(req -> {
-                    String lastMsg = lastUserMsg(req);
-                    return "<code>\n"
-                            + "result = search_agent(task=\"" + lastMsg + "\")\n"
-                            + "print(result)\n"
-                            + "final_answer(result)\n"
-                            + "</code>";
-                }))
+                .llm(LLMFactory.create())
                 .toolRegistry(managerRegistry)
                 .maxSteps(3)
                 .build();

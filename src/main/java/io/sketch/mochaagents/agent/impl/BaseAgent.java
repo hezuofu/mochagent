@@ -19,18 +19,24 @@ import io.sketch.mochaagents.learn.Learner;
 import io.sketch.mochaagents.memory.Memory;
 import io.sketch.mochaagents.memory.MemoryManager;
 import io.sketch.mochaagents.orchestration.Orchestrator;
+import io.sketch.mochaagents.perception.LayeredContextBuilder;
+import io.sketch.mochaagents.perception.PerceptionObserver;
 import io.sketch.mochaagents.perception.PerceptionResult;
 import io.sketch.mochaagents.perception.Perceptor;
 import io.sketch.mochaagents.plan.Plan;
 import io.sketch.mochaagents.plan.PlanStep;
 import io.sketch.mochaagents.plan.Planner;
 import io.sketch.mochaagents.plan.PlanningRequest;
+import io.sketch.mochaagents.reasoning.EffortLevel;
 import io.sketch.mochaagents.reasoning.Reasoner;
 import io.sketch.mochaagents.reasoning.ReasoningChain;
+import io.sketch.mochaagents.reasoning.RecoveryStateMachine;
+import io.sketch.mochaagents.reasoning.ThinkingConfig;
 import io.sketch.mochaagents.safety.SafetyManager;
 import io.sketch.mochaagents.tool.Tool;
 import io.sketch.mochaagents.tool.ToolRegistry;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -69,6 +75,19 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
 
     protected final ReflectionEngine reflectionEngine;
 
+    // ============ 集成能力组件 (所有 Agent 自动获得) ============
+
+    /** 恢复状态机 — 处理 prompt-too-long / max_tokens / model error. */
+    protected final RecoveryStateMachine recovery;
+    /** 分层上下文构建器 — 3 层上下文 + 记忆化. */
+    protected final LayeredContextBuilder contextBuilder;
+    /** 感知观察器 — 每步环境感知. */
+    protected PerceptionObserver perceptionObserver;
+    /** 当前 ThinkingConfig — 从 Reasoner 或模型默认解析. */
+    protected ThinkingConfig thinkingConfig;
+    /** 当前 EffortLevel — 从设置或模型默认解析. */
+    protected EffortLevel effortLevel;
+
     protected BaseAgent(Builder<I, O, ?> builder) {
         this.name = builder.name;
         this.description = builder.description;
@@ -83,6 +102,19 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
         this.orchestrator = builder.orchestrator;
         this.reflectionEngine = builder.reflectionEngine != null
                 ? builder.reflectionEngine : ReflectionEngine.noop();
+
+        // Init integrated components — all agents get these for free
+        this.recovery = new RecoveryStateMachine();
+        this.contextBuilder = new LayeredContextBuilder(
+                Path.of(System.getProperty("user.dir", ".")));
+        this.thinkingConfig = builder.thinkingConfig != null
+                ? builder.thinkingConfig : ThinkingConfig.adaptive();
+        this.effortLevel = builder.effortLevel != null
+                ? builder.effortLevel : EffortLevel.HIGH;
+
+        if (perceptor != null) {
+            this.perceptionObserver = new PerceptionObserver(contextBuilder, perceptor);
+        }
     }
 
     // ============ Template Method ============
@@ -282,6 +314,10 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
         protected Orchestrator orchestrator;
         protected ReflectionEngine reflectionEngine;
 
+        // Integrated component config (all agents inherit)
+        protected ThinkingConfig thinkingConfig;
+        protected EffortLevel effortLevel;
+
         public T name(String n) { this.name = n; return (T) this; }
         public T description(String d) { this.description = d; return (T) this; }
         public T perceptor(Perceptor<I, O> p) { this.perceptor = p; return (T) this; }
@@ -294,6 +330,8 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
         public T learner(Learner<I, O> l) { this.learner = l; return (T) this; }
         public T orchestrator(Orchestrator l) { this.orchestrator = l; return (T) this; }
         public T reflectionEngine(ReflectionEngine r) { this.reflectionEngine = r; return (T) this; }
+        public T thinkingConfig(ThinkingConfig c) { this.thinkingConfig = c; return (T) this; }
+        public T effortLevel(EffortLevel e) { this.effortLevel = e; return (T) this; }
 
         public abstract BaseAgent<I, O> build();
     }

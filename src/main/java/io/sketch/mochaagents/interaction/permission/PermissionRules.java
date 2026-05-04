@@ -39,7 +39,13 @@ public final class PermissionRules {
     }
 
     private static String wildcardToRegex(String pattern) {
-        return "^" + Pattern.quote(pattern).replace("\\*", ".*") + "$";
+        StringBuilder sb = new StringBuilder("^");
+        for (String part : pattern.split("\\*", -1)) {
+            sb.append(Pattern.quote(part));
+            sb.append(".*");
+        }
+        sb.setLength(sb.length() - 2); // remove trailing ".*"
+        return sb.append("$").toString();
     }
 
     private record Rule(Pattern pattern, Behavior behavior, Source source) {}

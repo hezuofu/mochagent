@@ -54,13 +54,7 @@ public final class Example07_SandboxedExecution {
             var registry = new ToolRegistry();
             CodeExecutor executor = executors[i];
 
-            var llm = MockLLM.with(req -> {
-                String msg = lastUserMsg(req);
-                if (msg.toLowerCase().contains("observation:") || msg.toLowerCase().contains("execution logs:")) {
-                    return "<code>\nfinal_answer(\"Complete\")\n</code>";
-                }
-                return "<code>\nimport math\nresult = math.sqrt(125)\nfinal_answer(str(result))\n</code>";
-            });
+            var llm = LLMFactory.create();
 
             // 使用 CodeAgent + 自定义 executor
             var agent = CodeAgent.builder()

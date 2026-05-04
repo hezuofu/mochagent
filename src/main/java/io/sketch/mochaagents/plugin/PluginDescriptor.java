@@ -26,6 +26,7 @@ public final class PluginDescriptor {
     private final String description;
     private final String version;
     private final List<Skill> skills;
+    private final List<ExtensionPoint<?>> extensionPoints;
     private final boolean defaultEnabled;
     private final Supplier<Boolean> isAvailable;
 
@@ -34,6 +35,7 @@ public final class PluginDescriptor {
         this.description = Objects.requireNonNull(builder.description, "description must not be null");
         this.version = builder.version;
         this.skills = List.copyOf(builder.skills);
+        this.extensionPoints = List.copyOf(builder.extensionPoints);
         this.defaultEnabled = builder.defaultEnabled;
         this.isAvailable = builder.isAvailable;
     }
@@ -44,6 +46,7 @@ public final class PluginDescriptor {
     public String description() { return description; }
     public String version() { return version; }
     public List<Skill> skills() { return skills; }
+    public List<ExtensionPoint<?>> extensionPoints() { return extensionPoints; }
     public boolean defaultEnabled() { return defaultEnabled; }
 
     /** 插件 ID（name@builtin 格式）. */
@@ -67,6 +70,7 @@ public final class PluginDescriptor {
         private final String description;
         private String version = "";
         private List<Skill> skills = Collections.emptyList();
+        private List<ExtensionPoint<?>> extensionPoints = Collections.emptyList();
         private boolean defaultEnabled = true;
         private Supplier<Boolean> isAvailable = () -> true;
 
@@ -77,6 +81,7 @@ public final class PluginDescriptor {
 
         public Builder version(String v) { this.version = v; return this; }
         public Builder skills(List<Skill> v) { this.skills = v; return this; }
+        public Builder extensionPoints(List<ExtensionPoint<?>> v) { this.extensionPoints = v; return this; }
         public Builder defaultEnabled(boolean v) { this.defaultEnabled = v; return this; }
         public Builder isAvailable(Supplier<Boolean> v) { this.isAvailable = v; return this; }
 
