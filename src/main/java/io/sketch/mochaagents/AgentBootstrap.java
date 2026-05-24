@@ -3,7 +3,7 @@
 
 package io.sketch.mochaagents;
 
-import io.sketch.mochaagents.agent.loop.ToolCallingAgent;
+import io.sketch.mochaagents.agent.MochaAgent;
 import io.sketch.mochaagents.model.Model;
 import io.sketch.mochaagents.tool.ToolRegistry;
 import io.sketch.mochaagents.tool.internal.*;
@@ -12,11 +12,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Framework bootstrap — minimal init: creates ToolRegistry with base tools.
+ * Framework bootstrap — creates a fully-featured MochaAgent with base tools.
  *
- * <p>Skills, plugins, and MCP are loaded lazily via {@link #withSkills()},
- * {@link #withPlugins()}, {@link #withMcp()}.
-  * @author lanxia39@163.com
+ * <pre>{@code
+ * var agent = AgentBootstrap.init(model).buildAgent("assistant");
+ * String result = agent.run("What is 2+2?");
+ * }</pre>
+ *
+ * @author lanxia39@163.com
  */
 public final class AgentBootstrap {
 
@@ -38,19 +41,16 @@ public final class AgentBootstrap {
     public ToolRegistry toolRegistry() { return toolRegistry; }
     public Model model() { return model; }
 
-    /** Build a ToolCallingAgent with all registered tools. */
-    public ToolCallingAgent buildAgent(String name) {
-        return ToolCallingAgent.builder()
-                .name(name).model(model).toolRegistry(toolRegistry).build();
+    /** Build a fully-featured MochaAgent with learning + global memory. */
+    public MochaAgent buildAgent(String name) {
+        return MochaAgent.builder(name, model)
+                .toolRegistry(toolRegistry)
+                .globalMemory(true)
+                .build();
     }
 
-    // ── Backward-compat accessors ──
-
-    public io.sketch.mochaagents.plugin.PluginBootstrap pluginBootstrap() {
-        return io.sketch.mochaagents.plugin.PluginBootstrap.bootstrap(
-                io.sketch.mochaagents.skill.SkillManager.bootstrap(toolRegistry).skillRegistry());
-    }
-
+    /** @deprecated sub-agents are spawned via AgentTool registered in ToolRegistry */
+    @Deprecated
     public io.sketch.mochaagents.tool.internal.AgentTool agentTool() { return null; }
 
     // ── Optional add-ons ──
@@ -61,6 +61,7 @@ public final class AgentBootstrap {
     }
 
     public AgentBootstrap withPlugins() {
+        withSkills(); // Skills must be loaded first
         io.sketch.mochaagents.plugin.PluginBootstrap.bootstrap(
                 io.sketch.mochaagents.skill.SkillManager.bootstrap(toolRegistry).skillRegistry());
         return this;
