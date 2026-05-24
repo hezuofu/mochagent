@@ -1,14 +1,9 @@
 package io.sketch.mochaagents.reasoning;
 
 /**
- * 推理器接口 — 统一推理入口，策略可插拔.
- * @author lanxia39@163.com
+ * Minimal reasoning — analyze a question and return a reasoning chain.
  */
+@FunctionalInterface
 public interface Reasoner {
-
     ReasoningChain reason(String question);
-
-    void setStrategy(ReasoningStrategy strategy);
-
-    ReasoningStrategy getStrategy();
 }

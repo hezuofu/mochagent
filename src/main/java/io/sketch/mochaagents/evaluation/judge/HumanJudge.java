@@ -24,8 +24,7 @@ public class HumanJudge implements Evaluator {
         return new EvaluationResult(scores, "Human review pending", List.of());
     }
 
-    @Override
-    public EvaluationCriteria getCriteria() {
+        public EvaluationCriteria getCriteria() {
         return EvaluationCriteria.defaultCriteria();
     }
 

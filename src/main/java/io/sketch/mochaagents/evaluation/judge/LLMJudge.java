@@ -27,8 +27,7 @@ public class LLMJudge implements Evaluator {
         return judge(input, output, expected);
     }
 
-    @Override
-    public EvaluationCriteria getCriteria() {
+        public EvaluationCriteria getCriteria() {
         return EvaluationCriteria.defaultCriteria();
     }
 

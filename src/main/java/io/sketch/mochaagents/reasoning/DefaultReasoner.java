@@ -71,15 +71,13 @@ public class DefaultReasoner implements Reasoner {
         return best;
     }
 
-    @Override
-    public void setStrategy(ReasoningStrategy strategy) {
+        public void setStrategy(ReasoningStrategy strategy) {
         strategies.clear();
         strategies.add(strategy);
         activeStrategyIdx = 0;
     }
 
-    @Override
-    public ReasoningStrategy getStrategy() {
+        public ReasoningStrategy getStrategy() {
         return strategies.get(activeStrategyIdx);
     }
 

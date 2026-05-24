@@ -28,8 +28,7 @@ public class DynamicPlanner<T> implements Planner<T> {
         return plan;
     }
 
-    @Override
-    public CompletableFuture<Plan<T>> generatePlanAsync(PlanningRequest<T> request) {
+        public CompletableFuture<Plan<T>> generatePlanAsync(PlanningRequest<T> request) {
         return CompletableFuture.supplyAsync(() -> generatePlan(request));
     }
 
@@ -45,9 +44,7 @@ public class DynamicPlanner<T> implements Planner<T> {
         return currentPlan;
     }
 
-    @Override
-    public PlanningStrategy getStrategy() { return strategy; }
+        public PlanningStrategy getStrategy() { return strategy; }
 
-    @Override
-    public void setStrategy(PlanningStrategy strategy) { this.strategy = strategy; }
+        public void setStrategy(PlanningStrategy strategy) { this.strategy = strategy; }
 }

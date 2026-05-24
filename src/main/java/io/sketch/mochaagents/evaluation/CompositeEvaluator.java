@@ -72,8 +72,7 @@ public class CompositeEvaluator implements Evaluator {
                 allIssues);
     }
 
-    @Override
-    public EvaluationCriteria getCriteria() { return criteria; }
+        public EvaluationCriteria getCriteria() { return criteria; }
 
     /** 注册的 Judge 数量 */
     public int judgeCount() { return judges.size(); }

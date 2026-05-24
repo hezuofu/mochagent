@@ -41,8 +41,7 @@ public class AutomatedJudge implements Evaluator {
         return new EvaluationResult(scores, "Automated evaluation", issues);
     }
 
-    @Override
-    public EvaluationCriteria getCriteria() {
+        public EvaluationCriteria getCriteria() {
         return EvaluationCriteria.defaultCriteria();
     }
 }
