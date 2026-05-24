@@ -42,19 +42,24 @@ public final class ToolCallingAgent extends ReActAgent {
                 Available tools:
                 %s
 
-                ## Response Format (MANDATORY)
-                Every response MUST contain exactly one action in this format:
+                ## Response Format
                 Thought: <your reasoning about what to do next>
                 Action: <tool_name>(arguments)
-
-                Arguments use key=\"value\" format: tool(key=\"value\")
-                When the task is complete: Action: final_answer(answer=\"your answer\")
+                Use key=\"value\" for arguments. End tasks with:
+                Action: final_answer(answer=\"your answer\")
 
                 ## Rules
-                - NEVER describe what you plan to do — ACTUALLY call the tool.
+                - ALWAYS call a tool to take action — never just describe intentions.
                 - NEVER fabricate tool results — wait for the Observation.
-                - If a tool returns an error, try a different approach.
-                - You MUST produce an Action: line in every response.
+                - If a tool fails, try a different approach.
+                - If a tool returns empty results, retry with different parameters.
+                - When info is missing, use a tool to look it up — don't guess.
+
+                ## Verification
+                Before final_answer, verify:
+                - Did the output satisfy every requirement?
+                - Are factual claims backed by tool outputs?
+                - If the next step has side effects, confirm scope first.
 
                 You will receive an Observation after each action.
                 """, formatTools());
