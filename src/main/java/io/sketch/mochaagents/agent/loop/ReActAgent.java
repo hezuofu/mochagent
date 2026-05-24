@@ -285,8 +285,8 @@ public abstract class ReActAgent extends BaseAgent<String, String>
                         executeReActStepStreaming(step, input, mem, onToken),
                 planningInterval);
 
-        Predicate<StepResult> condition = Termination.maxSteps(maxSteps)
-                .or(Termination.onError());
+        Predicate<StepResult> condition = r -> r.stepNumber() >= maxSteps
+                || r.hasError() || memory.hasFinalAnswer();
         String result = loop.run(this, task, condition);
 
         if (!memory.hasFinalAnswer()) {
@@ -334,8 +334,8 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
         // ===== ReAct loop with integrated capability hooks per step =====
         AgentLoop<String, String> loop = resolveLoop();
-        Predicate<StepResult> condition = Termination.maxSteps(maxSteps)
-                .or(Termination.onError());
+        Predicate<StepResult> condition = r -> r.stepNumber() >= maxSteps
+                || r.hasError() || memory.hasFinalAnswer();
 
         String result = loop.run(this, task, condition);
 
