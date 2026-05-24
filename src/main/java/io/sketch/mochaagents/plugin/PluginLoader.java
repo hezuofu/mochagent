@@ -197,51 +197,6 @@ public class PluginLoader {
         }
     }
 
-    /**
-     * Apply plugin extensions to an agent configuration.
-     * Highest-priority extension for each type wins.
-     */
-    public void applyExtensions(io.sketch.mochaagents.agent.MochaAgent.Config config) {
-        ExtensionPoint<?> bestPerceptor = null;
-        ExtensionPoint<?> bestReasoner = null;
-        ExtensionPoint<?> bestPlanner = null;
-        ExtensionPoint<?> bestEvaluator = null;
-        ExtensionPoint<?> bestLoop = null;
-
-        for (var desc : discovered.values()) {
-            for (var ext : desc.extensionPoints()) {
-                switch (ext.type()) {
-                    case "PERCEPTOR":
-                        if (bestPerceptor == null || ext.priority() > bestPerceptor.priority())
-                            bestPerceptor = ext;
-                        break;
-                    case "REASONER":
-                        if (bestReasoner == null || ext.priority() > bestReasoner.priority())
-                            bestReasoner = ext;
-                        break;
-                    case "PLANNER":
-                        if (bestPlanner == null || ext.priority() > bestPlanner.priority())
-                            bestPlanner = ext;
-                        break;
-                    case "EVALUATOR":
-                        if (bestEvaluator == null || ext.priority() > bestEvaluator.priority())
-                            bestEvaluator = ext;
-                        break;
-                    case "LOOP":
-                        if (bestLoop == null || ext.priority() > bestLoop.priority())
-                            bestLoop = ext;
-                        break;
-                }
-            }
-        }
-
-        if (bestPerceptor != null) config.setPerceptor((Perceptor<String, String>) bestPerceptor.component());
-        if (bestReasoner != null) config.setReasoner((Reasoner) bestReasoner.component());
-        if (bestPlanner != null) config.setPlanner((Planner<?>) bestPlanner.component());
-        if (bestEvaluator != null) config.setEvaluator((Evaluator) bestEvaluator.component());
-        if (bestLoop != null) config.setLoop((AgentLoop<String, String>) bestLoop.component());
-    }
-
     /** Discovered plugins. */
     public Map<String, PluginDescriptor> plugins() { return Collections.unmodifiableMap(discovered); }
 }
