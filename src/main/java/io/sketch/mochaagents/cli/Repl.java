@@ -61,7 +61,7 @@ final class Repl implements CliCommand {
             ╚═╝     ╚═╝ ╚═════╝  ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝""";
 
     private final ModelConfig modelCfg;
-    private ToolCallingAgent agent;
+    private io.sketch.mochaagents.agent.MochaAgent agent;
     private AgentBootstrap bootstrap;
     private Model model;
     private PrintStream out;
@@ -429,15 +429,11 @@ final class Repl implements CliCommand {
 
     // ============ Agent lifecycle ============
 
-    private ToolCallingAgent agent() {
+    private io.sketch.mochaagents.agent.MochaAgent agent() {
         if (agent == null) {
             bootstrap = AgentBootstrap.init();
             model = modelCfg.build();
-            agent = ToolCallingAgent.builder()
-                    .name("repl-agent").model(model)
-                    .toolRegistry(bootstrap.toolRegistry())
-                    .maxSteps(modelCfg.maxTokens() > 0 ? 20 : 10)
-                    .build();
+            agent = AgentBootstrap.init(model).buildAgent("repl-agent");
             log.info("REPL agent created — model: {}", model.modelName());
         }
         return agent;
