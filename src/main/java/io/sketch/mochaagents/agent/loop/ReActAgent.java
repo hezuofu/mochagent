@@ -74,7 +74,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     // ── Core components ──
 
     protected final LLM llm;
-    protected final io.sketch.mochaagents.llm.router.LLMRouter router;
+    protected final io.sketch.mochaagents.llm.LLMRouter router;
     protected final io.sketch.mochaagents.llm.OptimizationConfig optimization;
     protected final io.sketch.mochaagents.llm.CostTracker costTracker;
     protected final AgentMemory memory = new AgentMemory();
@@ -914,7 +914,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
             extends BaseAgent.Builder<String, String, T> {
 
         protected LLM llm;
-        protected io.sketch.mochaagents.llm.router.LLMRouter router;
+        protected io.sketch.mochaagents.llm.LLMRouter router;
         protected io.sketch.mochaagents.orchestration.Orchestrator orchestrator;
         protected List<Tool> tools = new ArrayList<>();
         protected List<ReActAgent> managedAgents = new ArrayList<>();
@@ -928,7 +928,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         protected io.sketch.mochaagents.llm.OptimizationConfig optimization
                 = io.sketch.mochaagents.llm.OptimizationConfig.balanced();
         protected AgentLoop<String, String> agentLoop;
-        protected io.sketch.mochaagents.interaction.permission.PermissionRules permissionRules;
+        protected io.sketch.mochaagents.interaction.PermissionRules permissionRules;
 
         // Cognitive capabilities (own them, not inherited from BaseAgent)
         protected io.sketch.mochaagents.perception.Perceptor<String, String> perceptor;
@@ -938,7 +938,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
         public T llm(LLM llm) { this.llm = llm; return (T) this; }
         public T optimization(io.sketch.mochaagents.llm.OptimizationConfig cfg) { this.optimization = cfg; return (T) this; }
-        public T router(io.sketch.mochaagents.llm.router.LLMRouter router) { this.router = router; return (T) this; }
+        public T router(io.sketch.mochaagents.llm.LLMRouter router) { this.router = router; return (T) this; }
         public T orchestrator(io.sketch.mochaagents.orchestration.Orchestrator o) { this.orchestrator = o; return (T) this; }
         public T tools(List<Tool> tools) { this.tools = tools; return (T) this; }
         public T managedAgents(List<ReActAgent> agents) { this.managedAgents = agents; return (T) this; }
@@ -958,7 +958,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         public T agentLoop(AgentLoop<String, String> loop) {
             this.agentLoop = loop; return (T) this;
         }
-        public T permissionRules(io.sketch.mochaagents.interaction.permission.PermissionRules rules) {
+        public T permissionRules(io.sketch.mochaagents.interaction.PermissionRules rules) {
             this.permissionRules = rules; return (T) this;
         }
     }

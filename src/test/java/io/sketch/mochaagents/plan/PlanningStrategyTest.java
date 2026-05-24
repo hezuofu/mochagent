@@ -3,10 +3,10 @@ package io.sketch.mochaagents.plan;
 import io.sketch.mochaagents.llm.LLM;
 import io.sketch.mochaagents.llm.LLMRequest;
 import io.sketch.mochaagents.llm.LLMResponse;
-import io.sketch.mochaagents.plan.decomposer.SemanticDecomposer;
-import io.sketch.mochaagents.plan.strategy.AdaptivePlanner;
-import io.sketch.mochaagents.plan.strategy.HierarchicalPlanner;
-import io.sketch.mochaagents.plan.strategy.ReplanningStrategy;
+import io.sketch.mochaagents.plan.SemanticDecomposer;
+import io.sketch.mochaagents.plan.AdaptivePlanner;
+import io.sketch.mochaagents.plan.HierarchicalPlanner;
+import io.sketch.mochaagents.plan.ReplanningStrategy;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

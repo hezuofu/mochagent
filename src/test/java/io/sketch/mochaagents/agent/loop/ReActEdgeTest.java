@@ -4,7 +4,7 @@ import io.sketch.mochaagents.prompt.Persona;
 import io.sketch.mochaagents.agent.AgentContext;
 import io.sketch.mochaagents.agent.ExecutionReport;
 import io.sketch.mochaagents.agent.loop.ToolCallingAgent;
-import io.sketch.mochaagents.interaction.permission.PermissionRules;
+import io.sketch.mochaagents.interaction.PermissionRules;
 import io.sketch.mochaagents.llm.LLM;
 import io.sketch.mochaagents.llm.LLMRequest;
 import io.sketch.mochaagents.llm.LLMResponse;

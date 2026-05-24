@@ -3,10 +3,10 @@ package io.sketch.mochaagents.reasoning;
 import io.sketch.mochaagents.llm.LLM;
 import io.sketch.mochaagents.llm.LLMRequest;
 import io.sketch.mochaagents.llm.LLMResponse;
-import io.sketch.mochaagents.reasoning.strategy.ChainOfThought;
-import io.sketch.mochaagents.reasoning.strategy.GraphOfThought;
-import io.sketch.mochaagents.reasoning.strategy.ProgramOfThought;
-import io.sketch.mochaagents.reasoning.strategy.TreeOfThought;
+import io.sketch.mochaagents.reasoning.ChainOfThought;
+import io.sketch.mochaagents.reasoning.GraphOfThought;
+import io.sketch.mochaagents.reasoning.ProgramOfThought;
+import io.sketch.mochaagents.reasoning.TreeOfThought;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;

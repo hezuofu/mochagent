@@ -6,8 +6,8 @@ import io.sketch.mochaagents.agent.event.AgentListener;
 import io.sketch.mochaagents.agent.Agent;
 import io.sketch.mochaagents.agent.AgentContext;
 import io.sketch.mochaagents.agent.AgentMetadata;
-import io.sketch.mochaagents.orchestration.strategy.DebateStrategy;
-import io.sketch.mochaagents.orchestration.strategy.SwarmStrategy;
+import io.sketch.mochaagents.orchestration.DebateStrategy;
+import io.sketch.mochaagents.orchestration.SwarmStrategy;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

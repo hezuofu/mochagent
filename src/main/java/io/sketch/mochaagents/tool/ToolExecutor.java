@@ -19,7 +19,7 @@ public class ToolExecutor {
     private final int maxRetries;
     private final long retryDelayMs;
     private io.sketch.mochaagents.tool.Hooks hooks;
-    private io.sketch.mochaagents.interaction.permission.PermissionRules permissions;
+    private io.sketch.mochaagents.interaction.PermissionRules permissions;
     private io.sketch.mochaagents.agent.event.AgentEvents events;
 
     public ToolExecutor(ToolRegistry registry, long timeoutMs, int maxRetries, long retryDelayMs) {
@@ -34,7 +34,7 @@ public class ToolExecutor {
     /** Inject hooks for pre/post tool interception. */
     public ToolExecutor withHooks(io.sketch.mochaagents.tool.Hooks hooks) { this.hooks = hooks; return this; }
     /** Inject permission rules for tool gating. */
-    public ToolExecutor withPermissions(io.sketch.mochaagents.interaction.permission.PermissionRules permissions) { this.permissions = permissions; return this; }
+    public ToolExecutor withPermissions(io.sketch.mochaagents.interaction.PermissionRules permissions) { this.permissions = permissions; return this; }
     /** Inject event bus for real-time tool call notifications (diff display etc.). */
     public ToolExecutor withEvents(io.sketch.mochaagents.agent.event.AgentEvents events) { this.events = events; return this; }
 
@@ -48,7 +48,7 @@ public class ToolExecutor {
         // Permission check
         if (permissions != null) {
             var perm = permissions.resolve(toolName);
-            if (perm == io.sketch.mochaagents.interaction.permission.PermissionRules.Behavior.DENY) {
+            if (perm == io.sketch.mochaagents.interaction.PermissionRules.Behavior.DENY) {
                 return ToolResult.Builder.failure(toolName, "Permission denied: " + toolName, null);
             }
         }

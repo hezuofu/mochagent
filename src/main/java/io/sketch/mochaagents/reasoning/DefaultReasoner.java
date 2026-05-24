@@ -1,8 +1,8 @@
 package io.sketch.mochaagents.reasoning;
 
 import io.sketch.mochaagents.llm.LLM;
-import io.sketch.mochaagents.reasoning.strategy.ChainOfThought;
-import io.sketch.mochaagents.reasoning.strategy.TreeOfThought;
+import io.sketch.mochaagents.reasoning.ChainOfThought;
+import io.sketch.mochaagents.reasoning.TreeOfThought;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

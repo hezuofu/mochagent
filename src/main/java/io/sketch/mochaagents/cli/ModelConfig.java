@@ -4,9 +4,9 @@ import io.sketch.mochaagents.llm.LLM;
 import io.sketch.mochaagents.llm.LLMRequest;
 import io.sketch.mochaagents.llm.LLMResponse;
 import io.sketch.mochaagents.llm.provider.*;
-import io.sketch.mochaagents.llm.router.LLMRouter;
-import io.sketch.mochaagents.llm.router.CostOptimizer;
-import io.sketch.mochaagents.llm.router.FallbackStrategy;
+import io.sketch.mochaagents.llm.LLMRouter;
+import io.sketch.mochaagents.llm.CostOptimizer;
+import io.sketch.mochaagents.llm.FallbackStrategy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,8 +48,8 @@ public class ModelConfig {
         }
 
         // Multiple models: use LLMRouter for cost-optimized selection
-        LLMRouter router = new LLMRouter(new io.sketch.mochaagents.llm.router.CostOptimizer(),
-                new io.sketch.mochaagents.llm.router.FallbackStrategy());
+        LLMRouter router = new LLMRouter(new io.sketch.mochaagents.llm.CostOptimizer(),
+                new io.sketch.mochaagents.llm.FallbackStrategy());
         for (Entry e : models) {
             router.register(e.modelId(), buildOne(e));
         }

@@ -1,7 +1,7 @@
 package io.sketch.mochaagents.evaluation;
 
-import io.sketch.mochaagents.evaluation.judge.AutomatedJudge;
-import io.sketch.mochaagents.evaluation.judge.LLMJudge;
+import io.sketch.mochaagents.evaluation.AutomatedJudge;
+import io.sketch.mochaagents.evaluation.LLMJudge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

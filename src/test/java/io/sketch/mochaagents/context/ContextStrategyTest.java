@@ -1,7 +1,7 @@
 package io.sketch.mochaagents.context;
 
-import io.sketch.mochaagents.context.strategy.HybridContextStrategy;
-import io.sketch.mochaagents.context.strategy.SlidingWindowStrategy;
+import io.sketch.mochaagents.context.HybridContextStrategy;
+import io.sketch.mochaagents.context.SlidingWindowStrategy;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
