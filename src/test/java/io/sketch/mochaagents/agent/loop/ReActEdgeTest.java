@@ -31,17 +31,17 @@ class ReActEdgeTest {
     }
 
     @Test void emptyTaskReturnsResult() {
-        var agent = ToolCallingAgent.builder().name("t").llm(mock("Action: final_answer(answer=\"ok\")")).maxSteps(2).build();
+        var agent = ToolCallingAgent.builder().name("t").model(mock("Action: final_answer(answer=\"ok\")")).maxSteps(2).build();
         assertNotNull(agent.run(""));
     }
 
     @Test void nullAgentContextDoesNotThrow() {
-        var agent = ToolCallingAgent.builder().name("t").llm(mock("Action: final_answer(answer=\"ok\")")).maxSteps(2).build();
+        var agent = ToolCallingAgent.builder().name("t").model(mock("Action: final_answer(answer=\"ok\")")).maxSteps(2).build();
         assertDoesNotThrow(() -> agent.run("test"));
     }
 
     @Test void runAndReportContainsCostInfo() {
-        var agent = ToolCallingAgent.builder().name("t").llm(mock("Action: final_answer(answer=\"done\")")).maxSteps(2).build();
+        var agent = ToolCallingAgent.builder().name("t").model(mock("Action: final_answer(answer=\"done\")")).maxSteps(2).build();
         ExecutionReport r = agent.runAndReport("test");
         assertNotNull(r.result());
         assertTrue(r.steps() >= 1);
@@ -55,7 +55,7 @@ class ReActEdgeTest {
     }
 
     @Test void streamRunDoesNotThrow() {
-        var agent = ToolCallingAgent.builder().name("t").llm(mock("Action: final_answer(answer=\"ok\")")).maxSteps(2).build();
+        var agent = ToolCallingAgent.builder().name("t").model(mock("Action: final_answer(answer=\"ok\")")).maxSteps(2).build();
         StringBuilder sb = new StringBuilder();
         assertDoesNotThrow(() -> agent.runStreaming(AgentContext.of("test"), sb::append));
     }

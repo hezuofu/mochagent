@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Real Model integration tests — requires API key to run.
  *
- * <p>Activate with: {@code mvn test -Dtest=RealLLMIntegrationTest}
+ * <p>Activate with: {@code mvn test -Dtest=RealModelIntegrationTest}
  *
  * <p>Supported free-tier providers:
  * <ul>
@@ -31,9 +31,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * @author lanxia39@163.com
  */
 @Disabled("Requires real Model API key. Set DEEPSEEK_API_KEY or GROQ_API_KEY env var and remove @Disabled")
-class RealLLMIntegrationTest {
+class RealModelIntegrationTest {
 
-    private static Model resolveLlm() {
+    private static Model resolveModel() {
         String groqKey = System.getenv("GROQ_API_KEY");
         if (groqKey != null && !groqKey.isEmpty()) {
             return OpenAICompatibleModel.compatibleBuilder()
@@ -77,7 +77,7 @@ class RealLLMIntegrationTest {
 
     @Test
     void toolCallingAgentCompletesSimpleTask() {
-        Model llm = resolveLlm();
+        Model model = resolveModel();
         ToolRegistry registry = new ToolRegistry();
 
         // Register a simple calculator tool
@@ -105,7 +105,7 @@ class RealLLMIntegrationTest {
 
         ToolCallingAgent agent = ToolCallingAgent.builder()
                 .name("math-agent")
-                .model(llm)
+                .model(model)
                 .toolRegistry(registry)
                 .maxSteps(5)
                 .build();
@@ -119,11 +119,11 @@ class RealLLMIntegrationTest {
 
     @Test
     void agentWithAgentContextUsesHistory() {
-        Model llm = resolveLlm();
+        Model model = resolveModel();
 
         ToolCallingAgent agent = ToolCallingAgent.builder()
                 .name("context-agent")
-                .model(llm)
+                .model(model)
                 .maxSteps(3)
                 .build();
 

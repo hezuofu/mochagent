@@ -37,7 +37,7 @@ class AgentIntegrationTest {
     private ToolCallingAgent createAgent(Model llm, Tool... tools) {
         ToolRegistry registry = new ToolRegistry();
         for (Tool t : tools) registry.register(t);
-        return ToolCallingAgent.builder().name("test-agent").llm(llm)
+        return ToolCallingAgent.builder().name("test-agent").model(llm)
                 .toolRegistry(registry).maxSteps(5).build();
     }
 
@@ -45,7 +45,7 @@ class AgentIntegrationTest {
 
     @Test
     void toolCallResultFlowsBackToLlmAsObservation() {
-        var llm = new RecordingLLM();
+        var llm = new RecordingModel();
         llm.addResponse("Thought: Call the echo tool.\nAction: echo(message=\"hello world\")");
         llm.addResponse("Thought: I got the echo result.\nAction: final_answer(answer=\"done\")");
 
@@ -65,7 +65,7 @@ class AgentIntegrationTest {
 
     @Test
     void memoryCapturesFullExecutionTrace() {
-        var llm = new RecordingLLM();
+        var llm = new RecordingModel();
         llm.addResponse("Thought: Step one.\nAction: echo(message=\"first\")");
         llm.addResponse("Thought: Step two.\nAction: echo(message=\"second\")");
         llm.addResponse("Thought: Done.\nAction: final_answer(answer=\"complete\")");
@@ -96,7 +96,7 @@ class AgentIntegrationTest {
 
     @Test
     void agentCanRecoverFromToolNotFound() {
-        var llm = new RecordingLLM();
+        var llm = new RecordingModel();
         // First: call a tool that doesn't exist
         llm.addResponse("Thought: Try unknown tool.\nAction: nonexistent_tool(input=\"test\")");
         // Second: after seeing the error observation, use the correct tool
@@ -119,14 +119,14 @@ class AgentIntegrationTest {
 
     @Test
     void agentExceedsMaxStepsProducesFallback() {
-        var llm = new RecordingLLM();
+        var llm = new RecordingModel();
         // Never give final_answer — always keep trying
         for (int i = 0; i < 10; i++) {
             llm.addResponse("Thought: Let me think more.\nAction: echo(message=\"step " + i + "\")");
         }
 
         ToolCallingAgent agent = ToolCallingAgent.builder()
-                .name("stuck-agent").llm(llm)
+                .name("stuck-agent").model(llm)
                 .toolRegistry(new ToolRegistry())
                 .maxSteps(3) // only 3 steps allowed
                 .build();
@@ -140,7 +140,7 @@ class AgentIntegrationTest {
 
     @Test
     void agentContextConversationHistoryInjectedIntoMemory() {
-        var llm = new RecordingLLM();
+        var llm = new RecordingModel();
         llm.addResponse("Thought: I see history.\nAction: final_answer(answer=\"acknowledged\")");
 
         ToolCallingAgent agent = createAgent(llm);
@@ -161,7 +161,7 @@ class AgentIntegrationTest {
 
     // ============ Recording Model helper ============
 
-    private static final class RecordingLLM implements Model {
+    private static final class RecordingModel implements Model {
         final java.util.List<ModelRequest> requests = new java.util.ArrayList<>();
         final java.util.List<String> responses = new java.util.ArrayList<>();
         int callIdx = 0;

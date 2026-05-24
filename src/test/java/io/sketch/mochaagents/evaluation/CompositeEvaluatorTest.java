@@ -4,7 +4,7 @@
 package io.sketch.mochaagents.evaluation;
 
 import io.sketch.mochaagents.evaluation.AutomatedJudge;
-import io.sketch.mochaagents.evaluation.LLMJudge;
+import io.sketch.mochaagents.evaluation.ModelJudge;
 import io.sketch.mochaagents.model.Model;
 import io.sketch.mochaagents.model.ModelRequest;
 import io.sketch.mochaagents.model.ModelResponse;
@@ -35,7 +35,7 @@ class CompositeEvaluatorTest {
 
     @Test
     void defaultsCreatesWithTwoJudges() {
-        CompositeEvaluator eval = CompositeEvaluator.defaults(new LLMJudge(mockLlm()));
+        CompositeEvaluator eval = CompositeEvaluator.defaults(new ModelJudge(mockLlm()));
         assertEquals(2, eval.judgeCount());
     }
 
@@ -43,7 +43,7 @@ class CompositeEvaluatorTest {
     void evaluateMergesScoresFromAllJudges() {
         CompositeEvaluator eval = CompositeEvaluator.builder()
                 .addJudge(new AutomatedJudge())
-                .addJudge(new LLMJudge(mockLlm()))
+                .addJudge(new ModelJudge(mockLlm()))
                 .build();
 
         EvaluationResult result = eval.evaluate("test input", "test output", "expected");
@@ -62,7 +62,7 @@ class CompositeEvaluatorTest {
     void weightedJudgesAffectOverallScore() {
         CompositeEvaluator eval = CompositeEvaluator.builder()
                 .addJudge(new AutomatedJudge())
-                .addJudge(new LLMJudge(mockLlm()))
+                .addJudge(new ModelJudge(mockLlm()))
                 .weights(0.3, 0.7)
                 .build();
 

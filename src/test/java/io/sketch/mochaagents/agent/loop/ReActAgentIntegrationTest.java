@@ -52,7 +52,7 @@ class ReActAgentIntegrationTest {
 
         // Hooks are wired via ToolExecutor.withHooks(), which the agent applies per-step
         ToolCallingAgent agent = ToolCallingAgent.builder()
-                .name("hook-test").llm(echoLlm("Action: final_answer(answer=\"done\")"))
+                .name("hook-test").model(echoLlm("Action: final_answer(answer=\"done\")"))
                 .maxSteps(2).build();
 
         // Register hooks directly on the agent
@@ -114,7 +114,7 @@ class ReActAgentIntegrationTest {
 
         // Create agent with all features
         ToolCallingAgent agent = ToolCallingAgent.builder()
-                .name("full-pipeline").llm(echoLlm("Action: final_answer(answer=\"passed\")"))
+                .name("full-pipeline").model(echoLlm("Action: final_answer(answer=\"passed\")"))
                 .maxSteps(2).build();
 
         // Subscribe to events
