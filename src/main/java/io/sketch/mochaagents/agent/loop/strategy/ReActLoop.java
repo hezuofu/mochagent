@@ -85,9 +85,9 @@ public class ReActLoop<I, O> implements AgentLoop<I, O> {
         log.info("[{}] ReAct loop starting", agentName);
 
         // 使用 Agent 内部的 memory
-        MemoryManager memory = getMemory(agent);
+        MemoryManager memory = MemoryProvider.of(agent);
         if (memory != null) {
-            memory.setSystemPrompt(buildSystemPrompt(agent));
+            memory.setSystemPrompt(SystemPromptProvider.of(agent));
         }
 
         int step = 1;
@@ -129,22 +129,6 @@ public class ReActLoop<I, O> implements AgentLoop<I, O> {
         return output;
     }
 
-
-    // ============ 辅助方法 ============
-
-    private static MemoryManager getMemory(Agent<?, ?> agent) {
-        if (agent instanceof MemoryProvider mp) {
-            return MemoryProvider.of(agent);
-        }
-        return null;
-    }
-
-    private static String buildSystemPrompt(Agent<?, ?> agent) {
-        if (agent instanceof SystemPromptProvider spp) {
-            return spp.buildSystemPrompt();
-        }
-        return "";
-    }
 
     private static boolean isFinalAnswer(MemoryManager memory) {
         return memory != null && memory.hasFinalAnswer();

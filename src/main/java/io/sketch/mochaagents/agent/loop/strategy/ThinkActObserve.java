@@ -44,7 +44,7 @@ public class ThinkActObserve<I, O> implements AgentLoop<I, O> {
     @Override
     public O run(Agent<I, O> agent, I input, Predicate<StepResult> condition) {
         String agentName = agent.metadata().name();
-        MemoryManager memory = getMemory(agent);
+        MemoryManager memory = MemoryProvider.of(agent);
         log.info("[{}] TAO loop starting", agentName);
 
         int step = 1;
@@ -77,8 +77,4 @@ public class ThinkActObserve<I, O> implements AgentLoop<I, O> {
     }
 
 
-    private static MemoryManager getMemory(Agent<?, ?> agent) {
-        if (agent instanceof MemoryProvider mp) return MemoryProvider.of(agent);
-        return null;
-    }
 }

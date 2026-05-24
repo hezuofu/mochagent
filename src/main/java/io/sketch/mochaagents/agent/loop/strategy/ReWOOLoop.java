@@ -66,7 +66,7 @@ public class ReWOOLoop<I, O> implements AgentLoop<I, O> {
     @Override
     public O run(Agent<I, O> agent, I input, Predicate<StepResult> condition) {
         String agentName = agent.metadata().name();
-        MemoryManager memory = getMemory(agent);
+        MemoryManager memory = MemoryProvider.of(agent);
         String task = input != null ? input.toString() : "";
         log.info("[{}] ReWOO loop starting, task={}", agentName, truncate(task, 80));
 
@@ -214,10 +214,6 @@ public class ReWOOLoop<I, O> implements AgentLoop<I, O> {
 
     record ToolCall(String toolName, Map<String, Object> arguments) {}
 
-    private static MemoryManager getMemory(Agent<?, ?> agent) {
-        if (agent instanceof MemoryProvider mp) return MemoryProvider.of(agent);
-        return null;
-    }
 
     private static String truncate(String s, int maxLen) {
         if (s == null) return "";
