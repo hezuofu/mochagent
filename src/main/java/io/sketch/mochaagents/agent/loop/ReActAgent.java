@@ -279,8 +279,10 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
         String systemPrompt = buildSystemPrompt();
         systemPrompt = enrichFromContext(systemPrompt, ctx);
+        memory.startSession(System.getProperty("user.dir", "."), ctx.userId());
         memory.reset(systemPrompt);
         memory.appendTask(task);
+        memory.appendToSession("user", task);
         injectConversationHistory(ctx);
 
         
@@ -334,8 +336,10 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         String systemPrompt = buildSystemPrompt();
         systemPrompt = enrichFromContext(systemPrompt, ctx);
 
+        memory.startSession(System.getProperty("user.dir", "."), ctx.userId());
         memory.reset(systemPrompt);
         memory.appendTask(task);
+        memory.appendToSession("user", task);
         injectConversationHistory(ctx);
 
         // ===== Pre-loop: preflight context check =====
