@@ -7,7 +7,7 @@ import io.sketch.mochaagents.agent.event.AgentListener;
 import io.sketch.mochaagents.agent.AgentMetadata;
 import io.sketch.mochaagents.agent.AgentState;
 import io.sketch.mochaagents.context.ContextChunk;
-import io.sketch.mochaagents.context.ContextManager;
+import io.sketch.mochaagents.context.Context;
 import io.sketch.mochaagents.evaluation.EvaluationResult;
 import io.sketch.mochaagents.evaluation.Evaluator;
 import io.sketch.mochaagents.memory.Memory;
@@ -110,12 +110,12 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
     // ── Shared utilities (used by subclasses) ──
 
     protected EvaluationResult evaluate(String task, String result,
-                                        Evaluator evaluator, ContextManager ctx) {
+                                        Evaluator evaluator, Context ctx) {
         if (evaluator == null) return null;
         return evaluator.evaluate(task, result, null);
     }
 
-    protected void injectMemories(String task, ContextManager ctx) {
+    protected void injectMemories(String task, Context ctx) {
         if (memoryManager == null) return;
         for (Memory m : memoryManager.search(task != null ? task : ""))
             ctx.addChunk(newChunk("memory", m.content()));

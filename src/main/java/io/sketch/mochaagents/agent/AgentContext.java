@@ -1,17 +1,25 @@
 package io.sketch.mochaagents.agent;
 
+import io.sketch.mochaagents.context.Context;
+import io.sketch.mochaagents.context.ContextChunk;
+import io.sketch.mochaagents.context.ContextCompressor;
+import io.sketch.mochaagents.context.ContextManager;
+import io.sketch.mochaagents.context.ContextStrategy;
+
 import java.time.Instant;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
- * Agent 执行上下文 — 封装单次调用的会话、用户、消息及元数据.
+ * Universal agent context — session metadata + token window management.
  *
- * <p>参考需求文档参考代码 AgentContext 类.
- * @author lanxia39@163.com
+ * <p>Implements {@link Context} to unify request-level and token-level
+ * context management under a single abstraction. Use {@link #of(String)}
+ * for simple cases (ephemeral token window), or {@link #of(String, int)}
+ * with explicit token budget.
  */
-public final class AgentContext {
+public final class AgentContext implements Context {
+
+    // ── Request metadata ──
 
     private final String sessionId;
     private final String userId;
@@ -19,6 +27,7 @@ public final class AgentContext {
     private final String conversationHistory;
     private final Map<String, Object> metadata;
     private final Instant timestamp;
+    private final ContextManager window;
 
     private AgentContext(Builder builder) {
         this.sessionId = builder.sessionId;
@@ -27,7 +36,11 @@ public final class AgentContext {
         this.conversationHistory = builder.conversationHistory;
         this.metadata = Collections.unmodifiableMap(new HashMap<>(builder.metadata));
         this.timestamp = builder.timestamp != null ? builder.timestamp : Instant.now();
+        this.window = builder.window != null ? builder.window
+                : new ContextManager(8192, (chunks, mt) -> chunks, null);
     }
+
+    // ── Request metadata accessors ──
 
     public String sessionId() { return sessionId; }
     public String userId() { return userId; }
@@ -36,21 +49,18 @@ public final class AgentContext {
     public Map<String, Object> metadata() { return metadata; }
     public Instant timestamp() { return timestamp; }
 
-    /**
-     * 返回新的 Builder 实例.
-     */
-    public static Builder builder() {
-        return new Builder();
-    }
+    // ── Context interface (delegates to token window) ──
 
-    /**
-     * 从纯文本消息创建最小上下文（向后兼容 run(String)）.
-     */
-    public static AgentContext of(String userMessage) {
-        return builder().userMessage(userMessage).build();
-    }
+    @Override public void addChunk(ContextChunk chunk) { window.addChunk(chunk); }
+    @Override public List<ContextChunk> getContext() { return window.getContext(); }
+    @Override public void compress() { window.compress(); }
+    @Override public int tokenCount() { return window.tokenCount(); }
+    @Override public int maxTokens() { return window.maxTokens(); }
 
-    // ── Faculty enrichment — return new context with capability data ──
+    /** Direct access to the underlying token window (advanced use). */
+    public ContextManager window() { return window; }
+
+    // ── Faculty enrichment ──
 
     public AgentContext withPerception(Object data) {
         return copy().metadata("perception", data).build();
@@ -64,12 +74,25 @@ public final class AgentContext {
         return copy().metadata("plan", data).build();
     }
 
-    /** Create a copy of this context for immutable enrichment. */
     private Builder copy() {
         return new Builder()
                 .sessionId(sessionId).userId(userId).userMessage(userMessage)
                 .conversationHistory(conversationHistory).timestamp(timestamp);
     }
+
+    // ── Factory ──
+
+    public static Builder builder() { return new Builder(); }
+
+    public static AgentContext of(String userMessage) {
+        return builder().userMessage(userMessage).build();
+    }
+
+    public static AgentContext of(String userMessage, int maxTokens) {
+        return builder().userMessage(userMessage).maxTokens(maxTokens).build();
+    }
+
+    // ── Builder ──
 
     public static final class Builder {
         private String sessionId;
@@ -78,16 +101,20 @@ public final class AgentContext {
         private String conversationHistory;
         private final Map<String, Object> metadata = new HashMap<>();
         private Instant timestamp;
+        private ContextManager window;
 
-        public Builder sessionId(String sessionId) { this.sessionId = sessionId; return this; }
-        public Builder userId(String userId) { this.userId = userId; return this; }
-        public Builder userMessage(String userMessage) { this.userMessage = userMessage; return this; }
-        public Builder conversationHistory(String conversationHistory) { this.conversationHistory = conversationHistory; return this; }
+        public Builder sessionId(String id) { this.sessionId = id; return this; }
+        public Builder userId(String id) { this.userId = id; return this; }
+        public Builder userMessage(String msg) { this.userMessage = msg; return this; }
+        public Builder conversationHistory(String h) { this.conversationHistory = h; return this; }
         public Builder metadata(String key, Object value) { this.metadata.put(key, value); return this; }
-        public Builder timestamp(Instant timestamp) { this.timestamp = timestamp; return this; }
-
-        public AgentContext build() {
-            return new AgentContext(this);
+        public Builder timestamp(Instant t) { this.timestamp = t; return this; }
+        public Builder maxTokens(int tokens) {
+            this.window = new ContextManager(tokens, (chunks, mt) -> chunks, null);
+            return this;
         }
+        public Builder window(ContextManager w) { this.window = w; return this; }
+
+        public AgentContext build() { return new AgentContext(this); }
     }
 }

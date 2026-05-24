@@ -12,7 +12,7 @@ import io.sketch.mochaagents.agent.loop.Termination;
 import io.sketch.mochaagents.agent.loop.strategy.ReActLoop;
 import io.sketch.mochaagents.tool.Hooks;
 import io.sketch.mochaagents.context.ContextCompressor;
-import io.sketch.mochaagents.context.ContextManager;
+import io.sketch.mochaagents.context.Context;
 import io.sketch.mochaagents.context.LLMContextCompressor;
 import io.sketch.mochaagents.evaluation.EvaluationResult;
 import io.sketch.mochaagents.llm.LLM;
@@ -140,13 +140,6 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     // ============ Context ============
 
     private io.sketch.mochaagents.context.AutoCompactor autoCompactor;
-
-    protected ContextManager newContextManager() {
-        ContextCompressor compressor = new LLMContextCompressor(llm);
-        ContextManager cm = new ContextManager(8192, (chunks, maxT) -> chunks, compressor);
-        if (autoCompactor == null) autoCompactor = new io.sketch.mochaagents.context.AutoCompactor(cm, 8192);
-        return cm;
-    }
 
     /** Public — allows REPL / users to trigger context compaction manually. */
     public void autoCompact() {
@@ -281,10 +274,10 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         memory.appendTask(task);
         injectConversationHistory(ctx);
 
-        ContextManager ctxMgr = newContextManager();
+        
 
         // Pre-loop: initialize capabilities
-        initializeCapabilities(task, ctxMgr);
+        initializeCapabilities(task, ctx);
 
         // Streaming ReAct loop with integrated steps
         ReActLoop<String, String> loop = new ReActLoop<>(
@@ -302,8 +295,8 @@ public abstract class ReActAgent extends BaseAgent<String, String>
             memory.appendFinalAnswer(result);
         }
 
-        EvaluationResult eval = evaluate(task, result, evaluator, ctxMgr);
-        ctxMgr.compress();
+        EvaluationResult eval = evaluate(task, result, evaluator, ctx);
+        ctx.compress();
 
         long elapsed = System.currentTimeMillis() - startMs;
         onToken.accept("\n[" + name + " done in " + elapsed + "ms, " + memory.steps().size() + " steps]");
@@ -337,8 +330,8 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         injectConversationHistory(ctx);
 
         // ===== Pre-loop: initialize capabilities (perceive, reason, plan) =====
-        ContextManager ctxMgr = newContextManager();
-        initializeCapabilities(task, ctxMgr);
+        
+        initializeCapabilities(task, ctx);
 
         // ===== ReAct loop with integrated capability hooks per step =====
         AgentLoop<String, String> loop = resolveLoop();
@@ -355,9 +348,9 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
         // ===== Post-loop: final evaluation, memory storage, and learning =====
         autoCompact();
-        EvaluationResult eval = evaluate(task, result, evaluator, ctxMgr);
+        EvaluationResult eval = evaluate(task, result, evaluator, ctx);
         storeMemories(task, result);
-        ctxMgr.compress();
+        ctx.compress();
 
         long elapsed = System.currentTimeMillis() - startMs;
         log.info("Agent '{}' completed in {}ms, steps={}, planDeviations={}, result={}",
@@ -410,7 +403,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     // ============ Capability initialization (pre-loop) ============
 
     /** Initialize perception, reasoning, and planning before the loop starts. */
-    private void initializeCapabilities(String task, ContextManager ctx) {
+    private void initializeCapabilities(String task, Context ctx) {
         // 1. Memory injection from past sessions
         injectMemories(task, ctx);
 
@@ -644,11 +637,10 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
     /** Auto-extract and persist memories after task completion. */
     private void storeMemories(String task, String result) {
-        if (memoryManager == null) return;
         try {
             List<io.sketch.mochaagents.memory.Memory> snapshots = memory.snapshot();
             for (var mem : snapshots) {
-                memoryManager.store(mem);
+                memory.save(mem);
             }
             if (!snapshots.isEmpty()) {
                 log.debug("Agent '{}' stored {} memory entries", name, snapshots.size());
@@ -659,7 +651,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     }
 
     /** Initial perception + memory injection (called once before loop). */
-    private void perceiveAndRemember(String input, ContextManager ctx) {
+    private void perceiveAndRemember(String input, Context ctx) {
         if (perceptor == null) return;
         PerceptionResult<String> result = perceptor.perceive(input);
         String data = result.data() != null ? result.data() : "";
@@ -671,7 +663,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     }
 
     /** Initial plan generation (called once before loop). */
-    private void planAndRemember(String input, ReasoningChain chain, ContextManager ctx) {
+    private void planAndRemember(String input, ReasoningChain chain, Context ctx) {
         if (planner == null) return;
         @SuppressWarnings("unchecked")
         Plan<String> plan = (Plan<String>) planner.generatePlan(
