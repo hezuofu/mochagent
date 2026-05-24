@@ -52,11 +52,21 @@ public class SkillManager {
         init.registerBundledSkills();
         init.loadFileSystemSkills();
         init.registerSkillTool();
+        // Register all skills as Plugins via PluginLoader
+        init.registerAsPlugins();
         log.info("Skills system initialized: {} skills loaded ({} bundled, {} file-system)",
                 init.skillRegistry.size(),
                 init.skillRegistry.filterBySource(SkillSource.BUNDLED).size(),
                 init.skillRegistry.filterBySource(SkillSource.FILE_SYSTEM).size());
         return init;
+    }
+
+    private void registerAsPlugins() {
+        io.sketch.mochaagents.plugin.PluginManager pm =
+                io.sketch.mochaagents.plugin.PluginBootstrap.bootstrap(skillRegistry).pluginManager();
+        for (Skill skill : skillRegistry.all()) {
+            pm.registerPlugin(skill);
+        }
     }
 
     /** 获取全局技能注册表. */

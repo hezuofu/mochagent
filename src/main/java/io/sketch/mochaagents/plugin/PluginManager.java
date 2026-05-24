@@ -44,6 +44,16 @@ public class PluginManager {
         log.debug("Plugin registered: {} (enabled={})", descriptor.name(), initialEnabled);
     }
 
+    /** Register a Plugin instance directly. */
+    public void registerPlugin(Plugin plugin) {
+        PluginDescriptor desc = PluginDescriptor.of(plugin.name(), plugin.version(), plugin.description());
+        for (ExtensionPoint<?> ext : plugin.extensions()) {
+            desc = desc.withExtension(ext);
+        }
+        register(desc);
+        plugin.onActivate();
+    }
+
     /** 注销插件. */
     public void unregister(String name) {
         plugins.remove(name);
