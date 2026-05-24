@@ -2,7 +2,7 @@ package io.sketch.mochaagents.agent.impl;
 
 import io.sketch.mochaagents.agent.Agent;
 import io.sketch.mochaagents.agent.AgentContext;
-import io.sketch.mochaagents.agent.AgentListener;
+import io.sketch.mochaagents.agent.event.AgentListener;
 import io.sketch.mochaagents.agent.AgentMetadata;
 
 import java.util.ArrayList;
@@ -67,8 +67,8 @@ public class CompositeAgent<I, O> implements Agent<I, List<O>> {
         // Composite 将监听器转发给子 Agent
         for (Agent<I, O> agent : agents) {
             agent.addListener(new AgentListener<I, O>() {
-                @Override public void onComplete(io.sketch.mochaagents.agent.AgentEvent<O> event) {
-                    listener.onComplete(new io.sketch.mochaagents.agent.AgentEvent<>(name, List.of(event.data())));
+                @Override public void onComplete(io.sketch.mochaagents.agent.event.AgentEvent<O> event) {
+                    listener.onComplete(new io.sketch.mochaagents.agent.event.AgentEvent<>(name, List.of(event.data())));
                 }
             });
         }

@@ -1,5 +1,8 @@
 package io.sketch.mochaagents.agent;
 
+import io.sketch.mochaagents.agent.event.AgentEvent;
+import io.sketch.mochaagents.agent.event.AgentListener;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -42,6 +45,13 @@ public interface Agent<I, O> {
      */
     default CompletableFuture<O> executeAsync(I input) {
         return executeAsync(input, AgentContext.of(input != null ? input.toString() : ""));
+    }
+
+    // ============ Assembly ============
+
+    /** Layer a Faculty onto this agent, returning an enhanced agent. */
+    default Agent<I, O> with(Faculty<I, O> faculty) {
+        return faculty.apply(this);
     }
 
     // ============ 元数据与监控 ============

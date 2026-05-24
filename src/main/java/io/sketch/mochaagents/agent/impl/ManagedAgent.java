@@ -1,7 +1,7 @@
 package io.sketch.mochaagents.agent.impl;
 
 import io.sketch.mochaagents.agent.AgentContext;
-import io.sketch.mochaagents.agent.react.ReActAgent;
+import io.sketch.mochaagents.agent.loop.ReActAgent;
 import io.sketch.mochaagents.tool.Tool;
 import io.sketch.mochaagents.tool.ToolInput;
 

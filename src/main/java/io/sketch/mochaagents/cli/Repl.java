@@ -1,8 +1,8 @@
 package io.sketch.mochaagents.cli;
 
 import io.sketch.mochaagents.AgentBootstrap;
-import io.sketch.mochaagents.agent.impl.ToolCallingAgent;
-import io.sketch.mochaagents.agent.react.PlanMode;
+import io.sketch.mochaagents.agent.loop.ToolCallingAgent;
+import io.sketch.mochaagents.agent.loop.PlanMode;
 import io.sketch.mochaagents.llm.LLM;
 
 import org.slf4j.Logger;
@@ -160,9 +160,9 @@ final class Repl implements CliCommand {
             // Real-time event display (claude-code style)
             var unsub = a.onEvent(e -> {
                 switch (e.type()) {
-                    case io.sketch.mochaagents.agent.AgentEvents.STARTED ->
+                    case io.sketch.mochaagents.agent.event.AgentEvents.STARTED ->
                         out.print(dim("  Thinking"));
-                    case io.sketch.mochaagents.agent.AgentEvents.TOOL_CALL -> {
+                    case io.sketch.mochaagents.agent.event.AgentEvents.TOOL_CALL -> {
                         @SuppressWarnings("unchecked")
                         Map<String, Object> d = (Map<String, Object>) e.data();
                         String toolName = (String) d.get("toolName");
@@ -188,13 +188,13 @@ final class Repl implements CliCommand {
                             if (!currentRunHasDiff) out.print(".");
                         }
                     }
-                    case io.sketch.mochaagents.agent.AgentEvents.COST -> {
+                    case io.sketch.mochaagents.agent.event.AgentEvents.COST -> {
                         double[] c = (double[]) e.data();
                         sessionCost += c[0];
                         sessionInputTokens += (long) c[1];
                         sessionOutputTokens += (long) c[2];
                     }
-                    case io.sketch.mochaagents.agent.AgentEvents.COMPLETED -> {
+                    case io.sketch.mochaagents.agent.event.AgentEvents.COMPLETED -> {
                         long elapsed = e.elapsedMs();
                         if (currentRunHasDiff) {
                             out.println(dim("  │"));

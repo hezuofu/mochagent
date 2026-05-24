@@ -1,6 +1,6 @@
 package io.sketch.mochaagents.plugin;
 
-import io.sketch.mochaagents.agent.react.AgenticLoop;
+import io.sketch.mochaagents.agent.AgentLoop;
 import io.sketch.mochaagents.evaluation.Evaluator;
 import io.sketch.mochaagents.perception.Perceptor;
 import io.sketch.mochaagents.plan.Planner;
@@ -157,9 +157,9 @@ public class PluginLoader {
                         ? Optional.of(ExtensionPoint.planner(p, priority)) : Optional.empty();
                 case "EVALUATOR" -> instance instanceof Evaluator e
                         ? Optional.of(ExtensionPoint.evaluator(e, priority)) : Optional.empty();
-                case "LOOP" -> instance instanceof AgenticLoop<?,?> l
+                case "LOOP" -> instance instanceof AgentLoop<?,?> l
                         ? Optional.of(ExtensionPoint.loop(
-                                (AgenticLoop<String, String>) l, priority))
+                                (AgentLoop<String, String>) l, priority))
                         : Optional.empty();
                 case "MCP_SERVER" -> instance instanceof String s
                         ? Optional.of(ExtensionPoint.mcpServer(s, priority)) : Optional.empty();
@@ -239,7 +239,7 @@ public class PluginLoader {
         if (bestReasoner != null) config.setReasoner((Reasoner) bestReasoner.component());
         if (bestPlanner != null) config.setPlanner((Planner<?>) bestPlanner.component());
         if (bestEvaluator != null) config.setEvaluator((Evaluator) bestEvaluator.component());
-        if (bestLoop != null) config.setLoop((AgenticLoop<String, String>) bestLoop.component());
+        if (bestLoop != null) config.setLoop((AgentLoop<String, String>) bestLoop.component());
     }
 
     /** Discovered plugins. */

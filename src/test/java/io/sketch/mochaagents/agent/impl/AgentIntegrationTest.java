@@ -1,8 +1,10 @@
 package io.sketch.mochaagents.agent.impl;
 
 import io.sketch.mochaagents.agent.AgentContext;
-import io.sketch.mochaagents.agent.react.step.ActionStep;
-import io.sketch.mochaagents.agent.react.step.MemoryStep;
+import io.sketch.mochaagents.agent.loop.CodeAgent;
+import io.sketch.mochaagents.agent.loop.ToolCallingAgent;
+import io.sketch.mochaagents.agent.loop.step.ActionStep;
+import io.sketch.mochaagents.agent.loop.step.MemoryStep;
 import io.sketch.mochaagents.llm.LLM;
 import io.sketch.mochaagents.llm.LLMRequest;
 import io.sketch.mochaagents.llm.LLMResponse;

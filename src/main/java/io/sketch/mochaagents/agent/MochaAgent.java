@@ -1,9 +1,10 @@
 package io.sketch.mochaagents.agent;
 
+import io.sketch.mochaagents.agent.event.AgentListener;
 import io.sketch.mochaagents.agent.impl.*;
-import io.sketch.mochaagents.agent.react.*;
-import io.sketch.mochaagents.agent.react.strategy.ReflexionLoop;
-import io.sketch.mochaagents.agent.react.strategy.ReWOOLoop;
+import io.sketch.mochaagents.agent.loop.*;
+import io.sketch.mochaagents.agent.loop.strategy.ReflexionLoop;
+import io.sketch.mochaagents.agent.loop.strategy.ReWOOLoop;
 import io.sketch.mochaagents.evaluation.Evaluator;
 import io.sketch.mochaagents.llm.*;
 import io.sketch.mochaagents.memory.MemoryManager;
@@ -89,8 +90,8 @@ public final class MochaAgent implements Agent<String, String> {
     public Agent<String, String> inner() { return inner; }
 
     /** Switch execution paradigm at runtime. */
-    public MochaAgent withLoop(AgenticLoop<String, String> loop) {
-        if (inner instanceof ReActAgent ra) return new MochaAgent(ra.withAgenticLoop(loop));
+    public MochaAgent withLoop(AgentLoop<String, String> loop) {
+        if (inner instanceof ReActAgent ra) return new MochaAgent(ra.withAgentLoop(loop));
         return this;
     }
 
@@ -122,7 +123,7 @@ public final class MochaAgent implements Agent<String, String> {
         if (config.evaluator != null) builder.evaluator(config.evaluator);
         if (config.memoryManager != null) builder.memoryManager(config.memoryManager);
         if (config.safetyManager != null) builder.safetyManager(config.safetyManager);
-        if (config.loop != null) builder.agenticLoop(config.loop);
+        if (config.loop != null) builder.agentLoop(config.loop);
         if (config.orchestrator != null) builder.orchestrator(config.orchestrator);
         if (config.systemPrompt != null)
             builder.systemPromptTemplate(PromptTemplate.of(config.systemPrompt));
@@ -157,7 +158,7 @@ public final class MochaAgent implements Agent<String, String> {
         public Builder evaluator(Evaluator e) { config.evaluator = e; return this; }
         public Builder memoryManager(MemoryManager m) { config.memoryManager = m; return this; }
         public Builder safetyManager(SafetyManager s) { config.safetyManager = s; return this; }
-        public Builder loop(AgenticLoop<String, String> l) { config.loop = l; return this; }
+        public Builder loop(AgentLoop<String, String> l) { config.loop = l; return this; }
         public Builder orchestrator(Orchestrator o) { config.orchestrator = o; return this; }
 
         /** Convenience: use Reflexion loop (self-critique after each step). */
@@ -198,7 +199,7 @@ public final class MochaAgent implements Agent<String, String> {
         Evaluator evaluator;
         MemoryManager memoryManager;
         SafetyManager safetyManager;
-        AgenticLoop<String, String> loop;
+        AgentLoop<String, String> loop;
         Orchestrator orchestrator;
 
         // Setters for cross-package access (PluginLoader etc.)
@@ -207,6 +208,6 @@ public final class MochaAgent implements Agent<String, String> {
         @SuppressWarnings("unchecked")
         public void setPlanner(io.sketch.mochaagents.plan.Planner<?> p) { this.planner = (Planner<String>) p; }
         public void setEvaluator(Evaluator e) { this.evaluator = e; }
-        public void setLoop(AgenticLoop<String, String> l) { this.loop = l; }
+        public void setLoop(AgentLoop<String, String> l) { this.loop = l; }
     }
 }

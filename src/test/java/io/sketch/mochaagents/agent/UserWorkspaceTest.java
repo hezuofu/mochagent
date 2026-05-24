@@ -1,4 +1,5 @@
 package io.sketch.mochaagents.agent;
+import io.sketch.mochaagents.context.UserWorkspace;
 
 import io.sketch.mochaagents.llm.FallbackLLM;
 import org.junit.jupiter.api.Test;

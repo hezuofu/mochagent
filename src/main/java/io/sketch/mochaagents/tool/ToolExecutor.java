@@ -18,9 +18,9 @@ public class ToolExecutor {
     private final long timeoutMs;
     private final int maxRetries;
     private final long retryDelayMs;
-    private io.sketch.mochaagents.agent.react.Hooks hooks;
+    private io.sketch.mochaagents.tool.Hooks hooks;
     private io.sketch.mochaagents.interaction.permission.PermissionRules permissions;
-    private io.sketch.mochaagents.agent.AgentEvents events;
+    private io.sketch.mochaagents.agent.event.AgentEvents events;
 
     public ToolExecutor(ToolRegistry registry, long timeoutMs, int maxRetries, long retryDelayMs) {
         this.registry = registry;
@@ -32,11 +32,11 @@ public class ToolExecutor {
     public ToolExecutor(ToolRegistry registry) { this(registry, 60_000, 2, 500); }
 
     /** Inject hooks for pre/post tool interception. */
-    public ToolExecutor withHooks(io.sketch.mochaagents.agent.react.Hooks hooks) { this.hooks = hooks; return this; }
+    public ToolExecutor withHooks(io.sketch.mochaagents.tool.Hooks hooks) { this.hooks = hooks; return this; }
     /** Inject permission rules for tool gating. */
     public ToolExecutor withPermissions(io.sketch.mochaagents.interaction.permission.PermissionRules permissions) { this.permissions = permissions; return this; }
     /** Inject event bus for real-time tool call notifications (diff display etc.). */
-    public ToolExecutor withEvents(io.sketch.mochaagents.agent.AgentEvents events) { this.events = events; return this; }
+    public ToolExecutor withEvents(io.sketch.mochaagents.agent.event.AgentEvents events) { this.events = events; return this; }
 
     public ToolResult execute(String toolName, Map<String, Object> arguments) {
         Tool tool = registry.get(toolName);
@@ -56,7 +56,7 @@ public class ToolExecutor {
         // Pre-tool hooks
         if (hooks != null) {
             var decision = hooks.applyPreTool(tool, arguments);
-            if (decision.outcome() == io.sketch.mochaagents.agent.react.Hooks.HookDecision.Outcome.DENY)
+            if (decision.outcome() == io.sketch.mochaagents.tool.Hooks.HookDecision.Outcome.DENY)
                 return ToolResult.Builder.failure(toolName, "Hook denied: " + decision.reason(), null);
             if (decision.modifiedArgs() != null) arguments = decision.modifiedArgs();
         }
@@ -77,8 +77,8 @@ public class ToolExecutor {
                 // Fire tool call event for real-time display (diff etc.)
                 if (events != null) {
                     Map<String, Object> eventData = buildToolEventData(toolName, arguments, result, elapsed);
-                    events.fire(new io.sketch.mochaagents.agent.AgentEvents.Event(
-                            io.sketch.mochaagents.agent.AgentEvents.TOOL_CALL,
+                    events.fire(new io.sketch.mochaagents.agent.event.AgentEvents.Event(
+                            io.sketch.mochaagents.agent.event.AgentEvents.TOOL_CALL,
                             toolName, eventData, elapsed));
                 }
                 return ToolResult.Builder.success(toolName, result, elapsed);

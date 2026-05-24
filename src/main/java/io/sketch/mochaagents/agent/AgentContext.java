@@ -50,6 +50,27 @@ public final class AgentContext {
         return builder().userMessage(userMessage).build();
     }
 
+    // ── Faculty enrichment — return new context with capability data ──
+
+    public AgentContext withPerception(Object data) {
+        return copy().metadata("perception", data).build();
+    }
+
+    public AgentContext withReasoning(Object data) {
+        return copy().metadata("reasoning", data).build();
+    }
+
+    public AgentContext withPlan(Object data) {
+        return copy().metadata("plan", data).build();
+    }
+
+    /** Create a copy of this context for immutable enrichment. */
+    private Builder copy() {
+        return new Builder()
+                .sessionId(sessionId).userId(userId).userMessage(userMessage)
+                .conversationHistory(conversationHistory).timestamp(timestamp);
+    }
+
     public static final class Builder {
         private String sessionId;
         private String userId;

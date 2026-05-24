@@ -3,7 +3,7 @@ package io.sketch.mochaagents.tool.impl;
 import io.sketch.mochaagents.agent.Agent;
 import io.sketch.mochaagents.agent.AgentContext;
 import io.sketch.mochaagents.agent.AgentMetadata;
-import io.sketch.mochaagents.agent.impl.ToolCallingAgent;
+import io.sketch.mochaagents.agent.loop.ToolCallingAgent;
 import io.sketch.mochaagents.llm.LLM;
 import io.sketch.mochaagents.orchestration.TaskNotification;
 import io.sketch.mochaagents.tool.AbstractTool;
@@ -159,8 +159,8 @@ public class AgentTool extends AbstractTool {
                 return AgentMetadata.builder().name("SubAgent-General")
                         .version("1.0").description("ToolCallingAgent-backed sub-agent").build();
             }
-            @Override public void addListener(io.sketch.mochaagents.agent.AgentListener<Map<String, Object>, String> l) {}
-            @Override public void removeListener(io.sketch.mochaagents.agent.AgentListener<Map<String, Object>, String> l) {}
+            @Override public void addListener(io.sketch.mochaagents.agent.event.AgentListener<Map<String, Object>, String> l) {}
+            @Override public void removeListener(io.sketch.mochaagents.agent.event.AgentListener<Map<String, Object>, String> l) {}
         };
     }
 
@@ -173,8 +173,8 @@ public class AgentTool extends AbstractTool {
                 return CompletableFuture.completedFuture(execute(input, ctx));
             }
             @Override public AgentMetadata metadata() { return AgentMetadata.builder().name("SubAgent-Noop").build(); }
-            @Override public void addListener(io.sketch.mochaagents.agent.AgentListener<Map<String, Object>, String> l) {}
-            @Override public void removeListener(io.sketch.mochaagents.agent.AgentListener<Map<String, Object>, String> l) {}
+            @Override public void addListener(io.sketch.mochaagents.agent.event.AgentListener<Map<String, Object>, String> l) {}
+            @Override public void removeListener(io.sketch.mochaagents.agent.event.AgentListener<Map<String, Object>, String> l) {}
         };
     }
 

@@ -1,8 +1,8 @@
 package io.sketch.mochaagents.llm.provider;
 
 import io.sketch.mochaagents.agent.AgentContext;
-import io.sketch.mochaagents.agent.impl.CodeAgent;
-import io.sketch.mochaagents.agent.impl.ToolCallingAgent;
+import io.sketch.mochaagents.agent.loop.CodeAgent;
+import io.sketch.mochaagents.agent.loop.ToolCallingAgent;
 import io.sketch.mochaagents.llm.LLM;
 import io.sketch.mochaagents.tool.Tool;
 import io.sketch.mochaagents.tool.ToolInput;
