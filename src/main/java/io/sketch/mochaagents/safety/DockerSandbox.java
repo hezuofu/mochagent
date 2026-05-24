@@ -33,7 +33,7 @@ public class DockerSandbox implements Sandbox {
     public DockerSandbox() { this("alpine:latest", 30_000, 50_000, "512m", "1"); }
 
     @Override
-    public String execute(String code, String language) {
+    public String exec(String code, String language) {
         String shellCmd = switch (language.toLowerCase()) {
             case "python", "py" -> "python3 -c " + shellEscape(code);
             case "javascript", "js" -> "node -e " + shellEscape(code);

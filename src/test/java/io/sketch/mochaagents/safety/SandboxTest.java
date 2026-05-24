@@ -41,7 +41,7 @@ class SandboxTest {
     @Test
     void processSandboxExecutesCode() {
         ProcessSandbox sb = new ProcessSandbox(5000, 1000, true);
-        String result = sb.execute("echo hello", "shell");
+        String result = sb.exec("echo hello", "shell");
         assertTrue(result.contains("hello") || result.contains("Error"));
     }
 

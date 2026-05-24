@@ -33,7 +33,7 @@ public final class NoopSandbox implements Sandbox {
     }
 
     @Override
-    public String execute(String code, String language) {
+    public String exec(String code, String language) {
         log.warn(WARNING);
         return "[NoopSandbox] Code NOT executed — no execution backend configured. "
                 + "Language: " + language + ", code length: " + code.length() + " chars. "

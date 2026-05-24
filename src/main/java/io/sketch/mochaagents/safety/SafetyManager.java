@@ -51,7 +51,7 @@ public class SafetyManager {
             return "Code rejected by safety validator";
         }
         log.debug("Executing code safely in sandbox, language={}", language);
-        String result = sandbox.execute(code, language);
+        String result = sandbox.exec(code, language);
         log.debug("Sandbox execution completed");
         return result;
     }

@@ -98,8 +98,6 @@ public abstract class AbstractTool implements Tool {
         return output != null ? output.toString() : "";
     }
 
-    @Override public String getUserFacingName() { return name; }
-
     // ==================== Builder ====================
 
     public static Builder builder(String name, String description, SecurityLevel securityLevel) {

@@ -103,6 +103,6 @@ class ToolEdgeTest {
             @Override public SecurityLevel getSecurityLevel() { return SecurityLevel.LOW; }
         };
         assertTrue(t.getAliases().isEmpty());
-        assertEquals("test", t.getUserFacingName());
+        assertEquals("test", t.getName());
     }
 }

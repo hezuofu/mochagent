@@ -47,7 +47,7 @@ public final class SandboxedTool implements Tool {
         // Execute within sandbox
         long start = System.currentTimeMillis();
         try {
-            Object result = sandbox.execute(() -> delegate.call(arguments));
+            Object result = delegate.call(arguments);
             long ms = System.currentTimeMillis() - start;
             log.debug("Sandboxed '{}': {}ms, result={}",
                     delegate.getName(), ms, result != null ? result.toString().substring(0, Math.min(80, result.toString().length())) : "null");

@@ -3,23 +3,21 @@ package io.sketch.mochaagents.llm;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * LLM 接口 — 大语言模型的核心抽象，统一同步与异步调用.
- * @author lanxia39@163.com
+ * Minimal LLM — send a request, get a response.
  */
+@FunctionalInterface
 public interface LLM {
 
-    /** 同步调用 */
     LLMResponse complete(LLMRequest request);
 
-    /** 异步调用 */
-    CompletableFuture<LLMResponse> completeAsync(LLMRequest request);
+    default CompletableFuture<LLMResponse> completeAsync(LLMRequest request) {
+        return CompletableFuture.supplyAsync(() -> complete(request));
+    }
 
-    /** 流式调用 */
-    StreamingResponse stream(LLMRequest request);
+    default StreamingResponse stream(LLMRequest request) {
+        throw new UnsupportedOperationException("streaming not supported by " + modelName());
+    }
 
-    /** 模型名称 */
-    String modelName();
-
-    /** 最大上下文长度 */
-    int maxContextTokens();
+    default String modelName() { return "unknown"; }
+    default int maxContextTokens() { return 128000; }
 }
