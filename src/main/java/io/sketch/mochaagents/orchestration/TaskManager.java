@@ -44,16 +44,19 @@ public final class TaskManager {
 
     private final ConcurrentHashMap<String, TaskState> tasks = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, ProgressTracker> progress = new ConcurrentHashMap<>();
-    private final ExecutorService executor = Executors.newCachedThreadPool();
+    private final ExecutorService executor = Executors.newFixedThreadPool(
+            Runtime.getRuntime().availableProcessors() * 2);
     private final List<Consumer<TaskState>> listeners = new CopyOnWriteArrayList<>();
     private final Map<String, List<Runnable>> cleanupRegistry = new ConcurrentHashMap<>();
     private Path outputDir = Paths.get(System.getProperty("java.io.tmpdir"), "mocha-tasks");
+    private io.sketch.mochaagents.event.EventBus eventBus;
 
     public TaskManager() {
         try { Files.createDirectories(outputDir); } catch (IOException e) { log.warn("Cannot create output dir", e); }
     }
 
     public TaskManager withOutputDir(Path dir) { this.outputDir = dir; return this; }
+    public TaskManager withEventBus(io.sketch.mochaagents.event.EventBus bus) { this.eventBus = bus; return this; }
 
     // ============ Task submission ============
 
@@ -72,18 +75,20 @@ public final class TaskManager {
         executor.submit(() -> {
             updateStatus(id, TaskStatus.RUNNING);
             notifyListeners(state);
+            fireEvent(io.sketch.mochaagents.event.EventType.STARTED, id, description);
             try {
                 T result = work.get();
                 state.result = result;
                 state.endTime = System.currentTimeMillis();
                 updateStatus(id, TaskStatus.COMPLETED);
                 task.future.complete(result);
-                updateProgress(id, tracker -> {}); // final progress
+                fireEvent(io.sketch.mochaagents.event.EventType.COMPLETED, id, result);
             } catch (Exception e) {
                 state.error = e.getMessage();
                 state.endTime = System.currentTimeMillis();
                 updateStatus(id, TaskStatus.FAILED);
                 task.future.completeExceptionally(e);
+                fireEvent(io.sketch.mochaagents.event.EventType.ERROR, id, e.getMessage());
                 log.error("Task '{}' failed: {}", id, e.getMessage());
             }
             notifyListeners(state);
@@ -183,6 +188,11 @@ public final class TaskManager {
     private void updateStatus(String id, TaskStatus newStatus) {
         TaskState s = tasks.get(id);
         if (s != null) { s.status = newStatus; s.endTime = System.currentTimeMillis(); }
+    }
+
+    private void fireEvent(io.sketch.mochaagents.event.EventType type, String id, Object data) {
+        if (eventBus != null) eventBus.fire(
+                new io.sketch.mochaagents.event.AgentEvent(type, id, data, 0));
     }
 
     private void notifyListeners(TaskState state) {
