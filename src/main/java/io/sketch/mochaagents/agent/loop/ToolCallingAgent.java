@@ -37,7 +37,8 @@ public final class ToolCallingAgent extends ReActAgent {
                     "instructions", description != null ? description : ""
             ));
         }
-        return String.format("""
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format("""
                 You are an AI assistant that solves tasks step by step.
                 Available tools:
                 %s
@@ -62,7 +63,25 @@ public final class ToolCallingAgent extends ReActAgent {
                 - If the next step has side effects, confirm scope first.
 
                 You will receive an Observation after each action.
-                """, formatTools());
+                """, formatTools()));
+
+        // Model-specific guidance
+        String family = model.modelFamily();
+        if ("openai".equals(family)) {
+            sb.append("\n## Execution Discipline\n");
+            sb.append("- Use tools whenever they improve correctness, completeness, or grounding.\n");
+            sb.append("- Do not stop early when another tool call would materially improve the result.\n");
+            sb.append("- Never answer math, hashes, or current time from memory — use a tool.\n");
+            sb.append("- Before acting, check if prerequisite discovery is needed.\n");
+        } else if ("google".equals(family)) {
+            sb.append("\n## Operational Directives\n");
+            sb.append("- Use absolute paths for all file operations.\n");
+            sb.append("- Verify file contents before making changes — never guess.\n");
+            sb.append("- Keep explanations brief — a few sentences, not paragraphs.\n");
+            sb.append("- Make parallel tool calls when operations are independent.\n");
+            sb.append("- Use non-interactive flags (-y, --yes) to prevent CLI hangs.\n");
+        }
+        return sb.toString();
     }
 
     @Override

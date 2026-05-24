@@ -23,4 +23,13 @@ public interface Model {
 
     default String modelName() { return "unknown"; }
     default int maxContextTokens() { return 128000; }
+
+    /** Model family for tailored prompts: "anthropic", "openai", "google", "other". */
+    default String modelFamily() {
+        String n = modelName().toLowerCase();
+        if (n.contains("claude")) return "anthropic";
+        if (n.contains("gpt") || n.contains("codex")) return "openai";
+        if (n.contains("gemini") || n.contains("gemma")) return "google";
+        return "other";
+    }
 }
