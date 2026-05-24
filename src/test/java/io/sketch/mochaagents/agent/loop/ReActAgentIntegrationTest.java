@@ -10,9 +10,9 @@ import io.sketch.mochaagents.agent.ExecutionReport;
 import io.sketch.mochaagents.agent.loop.ToolCallingAgent;
 import io.sketch.mochaagents.interaction.DenialTracker;
 import io.sketch.mochaagents.interaction.PermissionRules;
-import io.sketch.mochaagents.llm.LLM;
-import io.sketch.mochaagents.llm.LLMRequest;
-import io.sketch.mochaagents.llm.LLMResponse;
+import io.sketch.mochaagents.model.Model;
+import io.sketch.mochaagents.model.ModelRequest;
+import io.sketch.mochaagents.model.ModelResponse;
 import io.sketch.mochaagents.tool.Tool;
 import io.sketch.mochaagents.tool.ToolInput;
 import io.sketch.mochaagents.tool.ToolRegistry;
@@ -30,18 +30,18 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class ReActAgentIntegrationTest {
 
-    private static LLM echoLlm(String response) {
-        return new LLM() {
-            @Override public LLMResponse complete(LLMRequest r) {
+    private static Model echoLlm(String response) {
+        return new Model() {
+            @Override public ModelResponse complete(ModelRequest r) {
                 String last = lastUserMsg(r);
                 if (last != null && last.contains("Observation:"))
-                    return LLMResponse.of("Action: final_answer(answer=\"done\")");
-                return LLMResponse.of(response);
+                    return ModelResponse.of("Action: final_answer(answer=\"done\")");
+                return ModelResponse.of(response);
             }
-            @Override public CompletableFuture<LLMResponse> completeAsync(LLMRequest r) {
+            @Override public CompletableFuture<ModelResponse> completeAsync(ModelRequest r) {
                 return CompletableFuture.completedFuture(complete(r));
             }
-            @Override public io.sketch.mochaagents.llm.StreamingResponse stream(LLMRequest r) { throw new UnsupportedOperationException(); }
+            @Override public io.sketch.mochaagents.model.StreamingResponse stream(ModelRequest r) { throw new UnsupportedOperationException(); }
             @Override public String modelName() { return "test"; }
             @Override public int maxContextTokens() { return 4096; }
         };
@@ -129,7 +129,7 @@ class ReActAgentIntegrationTest {
         assertTrue(eventCount.get() >= 2); // STARTED + COMPLETED
     }
 
-    private static String lastUserMsg(LLMRequest req) {
+    private static String lastUserMsg(ModelRequest req) {
         var msgs = req.messages();
         if (msgs != null) for (int i = msgs.size() - 1; i >= 0; i--)
             if ("user".equals(msgs.get(i).get("role"))) return msgs.get(i).get("content");

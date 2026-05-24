@@ -8,9 +8,9 @@ import io.sketch.mochaagents.agent.AgentContext;
 import io.sketch.mochaagents.agent.ExecutionReport;
 import io.sketch.mochaagents.agent.loop.ToolCallingAgent;
 import io.sketch.mochaagents.interaction.PermissionRules;
-import io.sketch.mochaagents.llm.LLM;
-import io.sketch.mochaagents.llm.LLMRequest;
-import io.sketch.mochaagents.llm.LLMResponse;
+import io.sketch.mochaagents.model.Model;
+import io.sketch.mochaagents.model.ModelRequest;
+import io.sketch.mochaagents.model.ModelResponse;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -20,11 +20,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ReActEdgeTest {
 
-    private static LLM mock(String response) {
-        return new LLM() {
-            @Override public LLMResponse complete(LLMRequest r) { return LLMResponse.of(response); }
-            @Override public CompletableFuture<LLMResponse> completeAsync(LLMRequest r) { return CompletableFuture.completedFuture(complete(r)); }
-            @Override public io.sketch.mochaagents.llm.StreamingResponse stream(LLMRequest r) { throw new UnsupportedOperationException(); }
+    private static Model mock(String response) {
+        return new Model() {
+            @Override public ModelResponse complete(ModelRequest r) { return ModelResponse.of(response); }
+            @Override public CompletableFuture<ModelResponse> completeAsync(ModelRequest r) { return CompletableFuture.completedFuture(complete(r)); }
+            @Override public io.sketch.mochaagents.model.StreamingResponse stream(ModelRequest r) { throw new UnsupportedOperationException(); }
             @Override public String modelName() { return "mock"; }
             @Override public int maxContextTokens() { return 4096; }
         };

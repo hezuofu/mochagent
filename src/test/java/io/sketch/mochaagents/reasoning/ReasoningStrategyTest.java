@@ -3,9 +3,9 @@
 
 package io.sketch.mochaagents.reasoning;
 
-import io.sketch.mochaagents.llm.LLM;
-import io.sketch.mochaagents.llm.LLMRequest;
-import io.sketch.mochaagents.llm.LLMResponse;
+import io.sketch.mochaagents.model.Model;
+import io.sketch.mochaagents.model.ModelRequest;
+import io.sketch.mochaagents.model.ModelResponse;
 import io.sketch.mochaagents.reasoning.ChainOfThought;
 import io.sketch.mochaagents.reasoning.GraphOfThought;
 import io.sketch.mochaagents.reasoning.ProgramOfThought;
@@ -18,15 +18,15 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ReasoningStrategyTest {
 
-    private static LLM mockLlm(String response) {
-        return new LLM() {
-            @Override public LLMResponse complete(LLMRequest req) {
-                return new LLMResponse(response, "mock", 10, 5, 0, Map.of());
+    private static Model mockLlm(String response) {
+        return new Model() {
+            @Override public ModelResponse complete(ModelRequest req) {
+                return new ModelResponse(response, "mock", 10, 5, 0, Map.of());
             }
-            @Override public java.util.concurrent.CompletableFuture<LLMResponse> completeAsync(LLMRequest req) {
+            @Override public java.util.concurrent.CompletableFuture<ModelResponse> completeAsync(ModelRequest req) {
                 return java.util.concurrent.CompletableFuture.completedFuture(complete(req));
             }
-            @Override public io.sketch.mochaagents.llm.StreamingResponse stream(LLMRequest req) {
+            @Override public io.sketch.mochaagents.model.StreamingResponse stream(ModelRequest req) {
                 throw new UnsupportedOperationException();
             }
             @Override public String modelName() { return "mock"; }
@@ -36,7 +36,7 @@ class ReasoningStrategyTest {
 
     @Test
     void chainOfThoughtParsesSteps() {
-        LLM llm = mockLlm("Step 1: Analyze the problem\nConfidence: 0.9\nStep 2: Solve\nConfidence: 0.85");
+        Model llm = mockLlm("Step 1: Analyze the problem\nConfidence: 0.9\nStep 2: Solve\nConfidence: 0.85");
         ChainOfThought cot = new ChainOfThought(llm);
         ReasoningChain chain = cot.reason("test");
 
@@ -46,7 +46,7 @@ class ReasoningStrategyTest {
 
     @Test
     void chainOfThoughtFallbackWhenEmpty() {
-        LLM llm = mockLlm("No steps here");
+        Model llm = mockLlm("No steps here");
         ChainOfThought cot = new ChainOfThought(llm);
         ReasoningChain chain = cot.reason("test");
 
@@ -55,7 +55,7 @@ class ReasoningStrategyTest {
 
     @Test
     void treeOfThoughtGeneratesBranches() {
-        LLM llm = mockLlm("Branch 1: Option A\nConclusion: Good\nScore: 0.9\nBranch 2: Option B\nConclusion: OK\nScore: 0.7");
+        Model llm = mockLlm("Branch 1: Option A\nConclusion: Good\nScore: 0.9\nBranch 2: Option B\nConclusion: OK\nScore: 0.7");
         TreeOfThought tot = new TreeOfThought(llm, 2, 1);
         ReasoningChain chain = tot.reason("test");
 
@@ -64,7 +64,7 @@ class ReasoningStrategyTest {
 
     @Test
     void programOfThoughtExtractsCode() {
-        LLM llm = mockLlm("```python\nprint(42)\n```\nExplanation: It works");
+        Model llm = mockLlm("```python\nprint(42)\n```\nExplanation: It works");
         ProgramOfThought pot = new ProgramOfThought(llm);
         ReasoningChain chain = pot.reason("compute 42");
 
@@ -73,7 +73,7 @@ class ReasoningStrategyTest {
 
     @Test
     void graphOfThoughtParsesNodes() {
-        LLM llm = mockLlm("ID: N1\nThought: Root idea\nDependsOn: none\nConfidence: 0.9\n\nID: N2\nThought: Child idea\nDependsOn: N1\nConfidence: 0.8");
+        Model llm = mockLlm("ID: N1\nThought: Root idea\nDependsOn: none\nConfidence: 0.9\n\nID: N2\nThought: Child idea\nDependsOn: N1\nConfidence: 0.8");
         GraphOfThought got = new GraphOfThought(llm);
         ReasoningChain chain = got.reason("test");
 

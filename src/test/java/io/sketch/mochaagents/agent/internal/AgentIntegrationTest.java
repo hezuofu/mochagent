@@ -7,9 +7,9 @@ import io.sketch.mochaagents.agent.AgentContext;
 import io.sketch.mochaagents.agent.loop.ToolCallingAgent;
 import io.sketch.mochaagents.agent.loop.step.ActionStep;
 import io.sketch.mochaagents.agent.loop.step.MemoryStep;
-import io.sketch.mochaagents.llm.LLM;
-import io.sketch.mochaagents.llm.LLMRequest;
-import io.sketch.mochaagents.llm.LLMResponse;
+import io.sketch.mochaagents.model.Model;
+import io.sketch.mochaagents.model.ModelRequest;
+import io.sketch.mochaagents.model.ModelResponse;
 import io.sketch.mochaagents.tool.Tool;
 import io.sketch.mochaagents.tool.ToolInput;
 import io.sketch.mochaagents.tool.ToolRegistry;
@@ -34,7 +34,7 @@ class AgentIntegrationTest {
         @Override public SecurityLevel getSecurityLevel() { return SecurityLevel.LOW; }
     }
 
-    private ToolCallingAgent createAgent(LLM llm, Tool... tools) {
+    private ToolCallingAgent createAgent(Model llm, Tool... tools) {
         ToolRegistry registry = new ToolRegistry();
         for (Tool t : tools) registry.register(t);
         return ToolCallingAgent.builder().name("test-agent").llm(llm)
@@ -52,8 +52,8 @@ class AgentIntegrationTest {
         ToolCallingAgent agent = createAgent(llm, new EchoTool());
         String result = agent.run("test");
 
-        // Verify: the SECOND LLM call includes the tool's ECHO output
-        LLMRequest secondCall = llm.requests.get(1);
+        // Verify: the SECOND Model call includes the tool's ECHO output
+        ModelRequest secondCall = llm.requests.get(1);
         String secondInput = extractAllContent(secondCall);
         assertTrue(secondInput.contains("ECHO: hello world"),
                 "LLM should see tool output in observation. Got: " + secondInput);
@@ -107,8 +107,8 @@ class AgentIntegrationTest {
         ToolCallingAgent agent = createAgent(llm, new EchoTool());
         agent.run("recovery test");
 
-        // Verify: the second LLM call's input contains the "Tool not found" error
-        LLMRequest secondCall = llm.requests.get(1);
+        // Verify: the second Model call's input contains the "Tool not found" error
+        ModelRequest secondCall = llm.requests.get(1);
         String secondInput = extractAllContent(secondCall);
         assertTrue(secondInput.contains("Tool not found"),
                 "LLM should see tool-not-found error. Got: " + secondInput);
@@ -159,34 +159,34 @@ class AgentIntegrationTest {
                 "Memory should have task + conversation history steps");
     }
 
-    // ============ Recording LLM helper ============
+    // ============ Recording Model helper ============
 
-    private static final class RecordingLLM implements LLM {
-        final java.util.List<LLMRequest> requests = new java.util.ArrayList<>();
+    private static final class RecordingLLM implements Model {
+        final java.util.List<ModelRequest> requests = new java.util.ArrayList<>();
         final java.util.List<String> responses = new java.util.ArrayList<>();
         int callIdx = 0;
 
         void addResponse(String r) { responses.add(r); }
 
         @Override
-        public LLMResponse complete(LLMRequest req) {
+        public ModelResponse complete(ModelRequest req) {
             requests.add(req);
             String content = callIdx < responses.size() ? responses.get(callIdx) : "Action: final_answer(answer=\"fallback\")";
             callIdx++;
-            return new LLMResponse(content, "mock", content.length() / 4, 10, 1, Map.of());
+            return new ModelResponse(content, "mock", content.length() / 4, 10, 1, Map.of());
         }
 
-        @Override public java.util.concurrent.CompletableFuture<LLMResponse> completeAsync(LLMRequest req) {
+        @Override public java.util.concurrent.CompletableFuture<ModelResponse> completeAsync(ModelRequest req) {
             return java.util.concurrent.CompletableFuture.completedFuture(complete(req));
         }
-        @Override public io.sketch.mochaagents.llm.StreamingResponse stream(LLMRequest req) {
+        @Override public io.sketch.mochaagents.model.StreamingResponse stream(ModelRequest req) {
             throw new UnsupportedOperationException();
         }
         @Override public String modelName() { return "mock"; }
         @Override public int maxContextTokens() { return 4096; }
     }
 
-    private static String extractAllContent(LLMRequest req) {
+    private static String extractAllContent(ModelRequest req) {
         StringBuilder sb = new StringBuilder();
         if (req.messages() != null) {
             for (var m : req.messages()) {

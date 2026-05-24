@@ -3,9 +3,9 @@
 
 package io.sketch.mochaagents.plan;
 
-import io.sketch.mochaagents.llm.LLM;
-import io.sketch.mochaagents.llm.LLMRequest;
-import io.sketch.mochaagents.llm.LLMResponse;
+import io.sketch.mochaagents.model.Model;
+import io.sketch.mochaagents.model.ModelRequest;
+import io.sketch.mochaagents.model.ModelResponse;
 import io.sketch.mochaagents.plan.SemanticDecomposer;
 import io.sketch.mochaagents.plan.AdaptivePlanner;
 import io.sketch.mochaagents.plan.HierarchicalPlanner;
@@ -19,15 +19,15 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class PlanningStrategyTest {
 
-    private static LLM mockLlm(String response) {
-        return new LLM() {
-            @Override public LLMResponse complete(LLMRequest req) {
-                return new LLMResponse(response, "mock", 10, 5, 0, Map.of());
+    private static Model mockLlm(String response) {
+        return new Model() {
+            @Override public ModelResponse complete(ModelRequest req) {
+                return new ModelResponse(response, "mock", 10, 5, 0, Map.of());
             }
-            @Override public java.util.concurrent.CompletableFuture<LLMResponse> completeAsync(LLMRequest req) {
+            @Override public java.util.concurrent.CompletableFuture<ModelResponse> completeAsync(ModelRequest req) {
                 return java.util.concurrent.CompletableFuture.completedFuture(complete(req));
             }
-            @Override public io.sketch.mochaagents.llm.StreamingResponse stream(LLMRequest req) {
+            @Override public io.sketch.mochaagents.model.StreamingResponse stream(ModelRequest req) {
                 throw new UnsupportedOperationException();
             }
             @Override public String modelName() { return "mock"; }

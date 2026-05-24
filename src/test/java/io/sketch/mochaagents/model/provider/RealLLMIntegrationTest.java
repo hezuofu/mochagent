@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2024-2026 MochaAgents Authors
 
-package io.sketch.mochaagents.llm.provider;
+package io.sketch.mochaagents.model.provider;
 
 import io.sketch.mochaagents.agent.AgentContext;
 import io.sketch.mochaagents.agent.loop.ToolCallingAgent;
-import io.sketch.mochaagents.llm.LLM;
+import io.sketch.mochaagents.model.Model;
 import io.sketch.mochaagents.tool.Tool;
 import io.sketch.mochaagents.tool.ToolInput;
 import io.sketch.mochaagents.tool.ToolRegistry;
@@ -17,7 +17,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Real LLM integration tests — requires API key to run.
+ * Real Model integration tests — requires API key to run.
  *
  * <p>Activate with: {@code mvn test -Dtest=RealLLMIntegrationTest}
  *
@@ -30,10 +30,10 @@ import static org.junit.jupiter.api.Assertions.*;
  * </ul>
  * @author lanxia39@163.com
  */
-@Disabled("Requires real LLM API key. Set DEEPSEEK_API_KEY or GROQ_API_KEY env var and remove @Disabled")
+@Disabled("Requires real Model API key. Set DEEPSEEK_API_KEY or GROQ_API_KEY env var and remove @Disabled")
 class RealLLMIntegrationTest {
 
-    private static LLM resolveLlm() {
+    private static Model resolveLlm() {
         String groqKey = System.getenv("GROQ_API_KEY");
         if (groqKey != null && !groqKey.isEmpty()) {
             return OpenAICompatibleLLM.compatibleBuilder()
@@ -64,12 +64,12 @@ class RealLLMIntegrationTest {
         // Try Ollama local
         OpenAICompatibleLLM ollama = OpenAICompatibleLLM.forOllama("llama3.2");
         try {
-            ollama.complete(io.sketch.mochaagents.llm.LLMRequest.builder()
+            ollama.complete(io.sketch.mochaagents.model.ModelRequest.builder()
                     .addMessage("user", "hi").maxTokens(5).build());
             return ollama;
         } catch (Exception e) {
             throw new IllegalStateException(
-                    "No LLM API key found. Set DEEPSEEK_API_KEY, GROQ_API_KEY, or GEMINI_API_KEY, or start Ollama locally.");
+                    "No Model API key found. Set DEEPSEEK_API_KEY, GROQ_API_KEY, or GEMINI_API_KEY, or start Ollama locally.");
         }
     }
 
@@ -77,7 +77,7 @@ class RealLLMIntegrationTest {
 
     @Test
     void toolCallingAgentCompletesSimpleTask() {
-        LLM llm = resolveLlm();
+        Model llm = resolveLlm();
         ToolRegistry registry = new ToolRegistry();
 
         // Register a simple calculator tool
@@ -119,7 +119,7 @@ class RealLLMIntegrationTest {
 
     @Test
     void agentWithAgentContextUsesHistory() {
-        LLM llm = resolveLlm();
+        Model llm = resolveLlm();
 
         ToolCallingAgent agent = ToolCallingAgent.builder()
                 .name("context-agent")
