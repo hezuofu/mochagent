@@ -49,18 +49,6 @@ public class FileWriteTool extends AbstractTool {
                 .outputProperty("oldContent", "string", "Original file content (null for new files)")
                 .build();
     }
-
-    @Override
-    public Map<String, ToolInput> getInputs() {
-        Map<String, ToolInput> inputs = new LinkedHashMap<>();
-        inputs.put("file_path", ToolInput.string("The absolute path to the file to write"));
-        inputs.put("content", ToolInput.string("The content to write to the file"));
-        return inputs;
-    }
-
-    @Override
-    public String getOutputType() { return "object"; }
-
     // ==================== Validation ====================
 
     @Override

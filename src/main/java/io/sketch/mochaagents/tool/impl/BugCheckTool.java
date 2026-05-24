@@ -49,18 +49,6 @@ public class BugCheckTool extends AbstractTool {
              + "SQL injection, concurrency issues, infinite loops, swallowed exceptions). "
              + "Input: 'code' (string) and optional 'language' (java/python/sql)";
     }
-
-    @Override
-    public Map<String, ToolInput> getInputs() {
-        Map<String, ToolInput> inputs = new LinkedHashMap<>();
-        inputs.put("code", new ToolInput("string", "Source code to analyze", true));
-        inputs.put("language", new ToolInput("string", "Programming language", false));
-        return inputs;
-    }
-
-    @Override
-    public String getOutputType() { return "string"; }
-
     @Override
     public ToolSchema getSchema() {
         return ToolSchema.builder()

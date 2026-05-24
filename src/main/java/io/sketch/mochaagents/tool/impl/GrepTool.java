@@ -69,23 +69,6 @@ public class GrepTool extends AbstractTool {
                 .outputProperty("content", "string", "Matching content lines")
                 .build();
     }
-
-    @Override
-    public Map<String, ToolInput> getInputs() {
-        Map<String, ToolInput> inputs = new LinkedHashMap<>();
-        inputs.put("pattern", ToolInput.string("The regex pattern to search for"));
-        inputs.put("path", new ToolInput("string", "File or directory to search in", true));
-        inputs.put("glob", new ToolInput("string", "Glob pattern to filter files", true));
-        inputs.put("output_mode", new ToolInput("string", "Output mode: content, files_with_matches, count", true));
-        inputs.put("-i", new ToolInput("boolean", "Case insensitive search", true));
-        inputs.put("-n", new ToolInput("boolean", "Show line numbers", true));
-        inputs.put("head_limit", new ToolInput("integer", "Limit output lines", true));
-        return inputs;
-    }
-
-    @Override
-    public String getOutputType() { return "object"; }
-
     @Override
     public ValidationResult validateInput(Map<String, Object> arguments) {
         String pattern = (String) arguments.get("pattern");

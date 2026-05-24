@@ -273,19 +273,6 @@ public class PowerShellTool extends AbstractTool {
                         "Warning about potentially destructive operations, if any")
                 .build();
     }
-
-    @Override
-    public Map<String, ToolInput> getInputs() {
-        Map<String, ToolInput> inputs = new LinkedHashMap<>();
-        inputs.put("command", ToolInput.string("The PowerShell command to execute"));
-        inputs.put("timeout", new ToolInput("integer", "Timeout in seconds", true));
-        inputs.put("workdir", new ToolInput("string", "Working directory", true));
-        return inputs;
-    }
-
-    @Override
-    public String getOutputType() { return "object"; }
-
     // ==================== 安全属性 ====================
 
     @Override

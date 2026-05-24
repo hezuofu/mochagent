@@ -44,17 +44,6 @@ public class TodoWriteTool extends AbstractTool {
                 .outputProperty("newTodos", "array", "The todo list after update")
                 .build();
     }
-
-    @Override
-    public Map<String, ToolInput> getInputs() {
-        Map<String, ToolInput> inputs = new LinkedHashMap<>();
-        inputs.put("todos", new ToolInput("array", "Array of todo items", true));
-        return inputs;
-    }
-
-    @Override
-    public String getOutputType() { return "object"; }
-
     // ==================== Call ====================
 
     @Override

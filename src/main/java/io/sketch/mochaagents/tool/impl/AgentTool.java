@@ -86,21 +86,6 @@ public class AgentTool extends AbstractTool {
                 .outputProperty("turns", "integer", "Number of turns executed")
                 .build();
     }
-
-    @Override
-    public Map<String, ToolInput> getInputs() {
-        Map<String, ToolInput> inputs = new LinkedHashMap<>();
-        inputs.put("description", ToolInput.string("Short description of the task"));
-        inputs.put("prompt", ToolInput.string("The task for the sub-agent"));
-        inputs.put("subagent_type", new ToolInput("string", "Type of sub-agent", true));
-        inputs.put("subagent_path", new ToolInput("string", "Path to custom agent definition", true));
-        inputs.put("max_turns", new ToolInput("integer", "Maximum turns", true));
-        return inputs;
-    }
-
-    @Override
-    public String getOutputType() { return "object"; }
-
     // ==================== Agent Factory Registration ====================
 
     /**

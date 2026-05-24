@@ -44,19 +44,6 @@ public class CodeExecutionTool extends AbstractTool {
                 .outputProperty("exitCode", "integer", "Process exit code")
                 .build();
     }
-
-    @Override
-    public Map<String, ToolInput> getInputs() {
-        Map<String, ToolInput> inputs = new LinkedHashMap<>();
-        inputs.put("language", ToolInput.string("python, javascript, or shell"));
-        inputs.put("code", ToolInput.string("The code to execute"));
-        inputs.put("timeout", new ToolInput("integer", "Timeout in seconds", true));
-        return inputs;
-    }
-
-    @Override
-    public String getOutputType() { return "object"; }
-
     @Override
     public ValidationResult validateInput(Map<String, Object> arguments) {
         String language = (String) arguments.get("language");

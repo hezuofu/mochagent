@@ -63,18 +63,6 @@ public class WebFetchTool extends AbstractTool {
                 .outputProperty("durationMs", "integer", "Time taken to fetch and process")
                 .build();
     }
-
-    @Override
-    public Map<String, ToolInput> getInputs() {
-        Map<String, ToolInput> inputs = new LinkedHashMap<>();
-        inputs.put("url", ToolInput.string("The URL to fetch content from"));
-        inputs.put("prompt", ToolInput.string("The prompt to run on the fetched content"));
-        return inputs;
-    }
-
-    @Override
-    public String getOutputType() { return "object"; }
-
     @Override
     public ValidationResult validateInput(Map<String, Object> arguments) {
         String url = (String) arguments.get("url");

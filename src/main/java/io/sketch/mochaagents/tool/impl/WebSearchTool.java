@@ -61,19 +61,6 @@ public class WebSearchTool extends AbstractTool {
                 .outputProperty("durationSeconds", "number", "Time taken for the search")
                 .build();
     }
-
-    @Override
-    public Map<String, ToolInput> getInputs() {
-        Map<String, ToolInput> inputs = new LinkedHashMap<>();
-        inputs.put("query", ToolInput.string("The search query to use"));
-        inputs.put("allowed_domains", new ToolInput("array", "Only include results from these domains", true));
-        inputs.put("blocked_domains", new ToolInput("array", "Never include results from these domains", true));
-        return inputs;
-    }
-
-    @Override
-    public String getOutputType() { return "object"; }
-
     @Override
     public ValidationResult validateInput(Map<String, Object> arguments) {
         String query = (String) arguments.get("query");

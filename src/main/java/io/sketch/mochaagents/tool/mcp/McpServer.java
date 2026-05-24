@@ -137,14 +137,18 @@ public class McpServer {
             ObjectNode props = schema.putObject("properties");
             ArrayNode required = schema.putArray("required");
 
-            for (var entry : t.getInputs().entrySet()) {
-                ObjectNode prop = props.putObject(entry.getKey());
-                prop.put("type", entry.getValue().type());
-                prop.put("description", entry.getValue().description());
-                if (!entry.getValue().nullable()) {
-                    required.add(entry.getKey());
+            var inputSchema = t.getSchema().getInputSchema();
+            @SuppressWarnings("unchecked")
+            var sprops = (Map<String, Map<String, Object>>) inputSchema.get("properties");
+            if (sprops != null) {
+                for (var entry : sprops.entrySet()) {
+                    ObjectNode prop = props.putObject(entry.getKey());
+                    prop.put("type", String.valueOf(entry.getValue().getOrDefault("type", "string")));
+                    prop.put("description", String.valueOf(entry.getValue().getOrDefault("description", "")));
                 }
             }
+            String[] req = (String[]) inputSchema.get("required");
+            if (req != null) for (String r : req) required.add(r);
         }
 
         log.debug("MCP: tools/list returned {} tools", tools.size());

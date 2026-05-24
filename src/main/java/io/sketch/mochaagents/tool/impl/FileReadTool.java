@@ -58,19 +58,6 @@ public class FileReadTool extends AbstractTool {
     }
 
     // ==================== Legacy Compatibility ====================
-
-    @Override
-    public Map<String, ToolInput> getInputs() {
-        Map<String, ToolInput> inputs = new LinkedHashMap<>();
-        inputs.put("file_path", ToolInput.string("The absolute path to the file to read"));
-        inputs.put("offset", new ToolInput("integer", "Line number to start reading from", true));
-        inputs.put("limit", new ToolInput("integer", "Number of lines to read", true));
-        return inputs;
-    }
-
-    @Override
-    public String getOutputType() { return "object"; }
-
     // ==================== Validation ====================
 
     @Override

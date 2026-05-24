@@ -55,18 +55,6 @@ public class GlobTool extends AbstractTool {
                 .outputProperty("durationMs", "integer", "Time taken to execute in milliseconds")
                 .build();
     }
-
-    @Override
-    public Map<String, ToolInput> getInputs() {
-        Map<String, ToolInput> inputs = new LinkedHashMap<>();
-        inputs.put("pattern", ToolInput.string("The glob pattern to match files against"));
-        inputs.put("path", new ToolInput("string", "Directory to search in", true));
-        return inputs;
-    }
-
-    @Override
-    public String getOutputType() { return "object"; }
-
     @Override
     public ValidationResult validateInput(Map<String, Object> arguments) {
         String pattern = (String) arguments.get("pattern");

@@ -61,15 +61,6 @@ public class SkillTool extends AbstractTool {
                 .outputProperty("status", "string", "Execution status: 'inline'")
                 .build();
     }
-
-    @Override
-    public Map<String, ToolInput> getInputs() {
-        Map<String, ToolInput> inputs = new LinkedHashMap<>();
-        inputs.put("skill", new ToolInput("string", "The skill name", false));
-        inputs.put("args", new ToolInput("string", "Optional arguments for the skill", true));
-        return inputs;
-    }
-
     @Override
     public String getOutputType() {
         return "object";

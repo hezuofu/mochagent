@@ -52,20 +52,6 @@ public class FileEditTool extends AbstractTool {
                 .outputProperty("occurrences", "integer", "Number of replacements made")
                 .build();
     }
-
-    @Override
-    public Map<String, ToolInput> getInputs() {
-        Map<String, ToolInput> inputs = new LinkedHashMap<>();
-        inputs.put("file_path", ToolInput.string("The absolute path to the file to edit"));
-        inputs.put("old_string", ToolInput.string("The text to replace"));
-        inputs.put("new_string", ToolInput.string("The text to replace with"));
-        inputs.put("replace_all", new ToolInput("boolean", "Whether to replace all occurrences", true));
-        return inputs;
-    }
-
-    @Override
-    public String getOutputType() { return "object"; }
-
     // ==================== Validation ====================
 
     @Override
