@@ -104,6 +104,20 @@ public final class MochaAgent implements Agent<String, String> {
         public Builder globalMemory(boolean v) { globalMemory = v; return this; }
         public Builder antiForgetting(boolean v) { antiForgetting = v; return this; }
 
+        // Faculty shortcuts
+        public Builder withPerception(io.sketch.mochaagents.perception.Perceptor<String, String> p) {
+            return with(Faculty.Perception.of(p));
+        }
+        public Builder withReasoning(io.sketch.mochaagents.reasoning.Reasoner r) {
+            return with(Faculty.Reasoning.of(r));
+        }
+        public Builder withPlanning(io.sketch.mochaagents.plan.Planner<String> p) {
+            return with(Faculty.Planning.of(p));
+        }
+        public Builder withEvaluation(io.sketch.mochaagents.evaluation.Evaluator e) {
+            return with(Faculty.Evaluation.of(e));
+        }
+
         public Builder reflexionLoop() { loop = new ReflexionLoop<>(null, ReflectionEngine.noop()); return this; }
         public Builder rewooLoop(ReWOOLoop.Reasoner r, ReWOOLoop.ToolExecutor e, ReWOOLoop.Synthesizer s) {
             loop = new ReWOOLoop<>(r, e, s); return this;
