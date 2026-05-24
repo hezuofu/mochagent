@@ -755,7 +755,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
             return "Unable to complete task within step limit.";
         }
 
-        log.debug("Agent '{}' generating fallback answer via LLM", name);
+        log.debug("Agent '{}' generating fallback answer via Model", name);
         String preMsg = finalAnswerPreTemplate.render(Map.of());
         String postMsg = finalAnswerPostTemplate.render("task", task);
 
