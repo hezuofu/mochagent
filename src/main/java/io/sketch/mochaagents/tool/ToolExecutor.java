@@ -86,11 +86,15 @@ public class ToolExecutor {
             } catch (TimeoutException e) {
                 lastError = new RuntimeException("Tool '" + toolName + "' timed out after " + timeoutMs + "ms");
                 log.warn("Tool '{}' timeout (attempt {}/{})", toolName, attempt, maxRetries + 1);
-            } catch (ExecutionException | InterruptedException e) {
+            } catch (ExecutionException e) {
+                // Non-retryable: validation/permission errors should fail fast
+                if (e.getCause() instanceof IllegalArgumentException) throw (IllegalArgumentException) e.getCause();
                 lastError = new RuntimeException("Tool '" + toolName + "' failed: " + e.getMessage(), e);
-                log.warn("Tool '{}' failed (attempt {}/{}): {}", toolName, attempt, maxRetries + 1, e.getMessage());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                lastError = new RuntimeException("Tool '" + toolName + "' interrupted", e);
             } catch (Exception e) {
-                lastError = new RuntimeException(e);
+                lastError = new RuntimeException("Tool '" + toolName + "' failed: " + e.getMessage(), e);
                 log.warn("Tool '{}' error (attempt {}/{}): {}", toolName, attempt, maxRetries + 1, e.getMessage());
             }
 

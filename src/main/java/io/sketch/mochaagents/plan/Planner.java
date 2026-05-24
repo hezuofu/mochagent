@@ -5,6 +5,7 @@ package io.sketch.mochaagents.plan;
  */
 @FunctionalInterface
 public interface Planner<T> {
+
     Plan<T> generatePlan(PlanningRequest<T> request);
 
     default Plan<T> replan(Plan<T> current, ExecutionFeedback feedback) {

@@ -14,5 +14,6 @@ import java.util.function.Predicate;
  */
 @FunctionalInterface
 public interface AgentLoop<I, O> {
+
     O run(Agent<I, O> agent, I input, Predicate<StepResult> done);
 }

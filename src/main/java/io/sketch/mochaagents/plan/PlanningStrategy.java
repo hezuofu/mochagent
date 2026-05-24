@@ -6,6 +6,7 @@ package io.sketch.mochaagents.plan;
 @FunctionalInterface
 /** @author lanxia39@163.com */
 public interface PlanningStrategy {
+
     Plan<?> plan(PlanningRequest<?> request);
     default String name() { return getClass().getSimpleName(); }
 }

@@ -327,8 +327,14 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         memory.appendTask(task);
         injectConversationHistory(ctx);
 
+        // ===== Pre-loop: preflight context check =====
+        if (ctx.tokenCount() > ctx.maxTokens() * 0.75) {
+            log.info("Agent '{}' preflight compression: {} / {} tokens",
+                    name, ctx.tokenCount(), ctx.maxTokens());
+            ctx.compress();
+        }
+
         // ===== Pre-loop: initialize capabilities (perceive, reason, plan) =====
-        
         initializeCapabilities(task, ctx);
 
         // ===== ReAct loop with integrated capability hooks per step =====

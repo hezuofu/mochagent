@@ -1,12 +1,8 @@
 package io.sketch.mochaagents.perception;
 
-import io.sketch.mochaagents.perception.Observation;
-import io.sketch.mochaagents.perception.PerceptionResult;
-import io.sketch.mochaagents.perception.Perceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;

@@ -8,5 +8,6 @@ import java.util.List;
  * @author lanxia39@163.com
  */
 public interface TaskDecomposer {
+
     List<PlanStep> decompose(String task, int maxSteps);
 }
