@@ -105,32 +105,29 @@ public interface Agent<I, O> {
     /** 条件执行 — 条件满足时使用替代 Agent. */
     default Agent<I, O> when(Predicate<I> condition, Agent<I, O> alternative) {
         Agent<I, O> self = this;
-        return new Agent<I, O>() {
-            @Override public O execute(I input, AgentContext ctx) { return condition.test(input) ? alternative.execute(input, ctx) : self.execute(input, ctx); }
-            @Override public CompletableFuture<O> executeAsync(I input, AgentContext ctx) { return condition.test(input) ? alternative.executeAsync(input, ctx) : self.executeAsync(input, ctx); }
-            @Override public AgentMetadata metadata() { return self.metadata(); }
-            @Override public void addListener(AgentListener<I, O> l) { self.addListener(l); alternative.addListener(l); }
-            @Override public void removeListener(AgentListener<I, O> l) { self.removeListener(l); alternative.removeListener(l); }
+        return new AgentWrapper<>(self) {
+            @Override public O execute(I input, AgentContext ctx) {
+                return condition.test(input) ? alternative.execute(input, ctx) : inner.execute(input, ctx);
+            }
+            @Override public void addListener(AgentListener<I, O> l) {
+                self.addListener(l); alternative.addListener(l);
+            }
+            @Override public void removeListener(AgentListener<I, O> l) {
+                self.removeListener(l); alternative.removeListener(l);
+            }
         };
     }
 
-    /** Retry on failure — synchronous only. For async, use the async facade. */
+    /** Retry on failure. */
     default Agent<I, O> withRetry(int maxAttempts) {
-        Agent<I, O> self = this;
-        return new Agent<I, O>() {
+        return new AgentWrapper<>(this) {
             @Override public O execute(I input, AgentContext ctx) {
                 RuntimeException last = null;
                 for (int i = 0; i < maxAttempts; i++) {
-                    try { return self.execute(input, ctx); } catch (RuntimeException e) { last = e; }
+                    try { return inner.execute(input, ctx); } catch (RuntimeException e) { last = e; }
                 }
                 throw last != null ? last : new RuntimeException("retry exhausted");
             }
-            @Override public CompletableFuture<O> executeAsync(I input, AgentContext ctx) {
-                return self.executeAsync(input, ctx);
-            }
-            @Override public AgentMetadata metadata() { return self.metadata(); }
-            @Override public void addListener(AgentListener<I, O> l) { self.addListener(l); }
-            @Override public void removeListener(AgentListener<I, O> l) { self.removeListener(l); }
         };
     }
 }
