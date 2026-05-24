@@ -49,6 +49,7 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
     protected final MemoryManager memoryManager;
 
     protected final RecoveryStateMachine recovery;
+    protected final io.sketch.mochaagents.observability.Observability observability;
     protected ThinkingConfig thinkingConfig;
     protected EffortLevel effortLevel;
 
@@ -59,6 +60,8 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
         this.safetyManager = builder.safetyManager;
         this.memoryManager = builder.memoryManager;
         this.recovery = new RecoveryStateMachine();
+        this.observability = builder.observability != null
+                ? builder.observability : io.sketch.mochaagents.observability.Observability.noop();
         this.thinkingConfig = builder.thinkingConfig != null
                 ? builder.thinkingConfig : ThinkingConfig.adaptive();
         this.effortLevel = builder.effortLevel != null
@@ -204,6 +207,7 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
         protected MemoryManager memoryManager;
         protected ThinkingConfig thinkingConfig;
         protected EffortLevel effortLevel;
+        protected io.sketch.mochaagents.observability.Observability observability;
 
         public T name(String n) { this.name = n; return (T) this; }
         public T description(String d) { this.description = d; return (T) this; }
@@ -212,6 +216,7 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
         public T memoryManager(MemoryManager m) { this.memoryManager = m; return (T) this; }
         public T thinkingConfig(ThinkingConfig c) { this.thinkingConfig = c; return (T) this; }
         public T effortLevel(EffortLevel e) { this.effortLevel = e; return (T) this; }
+        public T observability(io.sketch.mochaagents.observability.Observability o) { this.observability = o; return (T) this; }
 
         public abstract BaseAgent<I, O> build();
     }

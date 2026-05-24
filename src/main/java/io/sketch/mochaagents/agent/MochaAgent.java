@@ -103,6 +103,7 @@ public final class MochaAgent implements Agent<String, String> {
         public Builder eventBus(io.sketch.mochaagents.event.EventBus bus) { eventBus = bus; return this; }
         public Builder globalMemory(boolean v) { globalMemory = v; return this; }
         public Builder antiForgetting(boolean v) { antiForgetting = v; return this; }
+        public Builder observability(io.sketch.mochaagents.observability.Observability o) { this.eventBus = null; /* use observability */ return this; }
 
         // Faculty shortcuts
         public Builder withPerception(io.sketch.mochaagents.perception.Perceptor<String, String> p) {
