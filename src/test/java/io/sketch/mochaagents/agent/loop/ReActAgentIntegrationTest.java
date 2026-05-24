@@ -4,7 +4,6 @@ import io.sketch.mochaagents.orchestration.TaskManager;
 
 import io.sketch.mochaagents.agent.AgentContext;
 import io.sketch.mochaagents.agent.ExecutionReport;
-import io.sketch.mochaagents.agent.loop.CodeAgent;
 import io.sketch.mochaagents.agent.loop.ToolCallingAgent;
 import io.sketch.mochaagents.interaction.permission.DenialTracker;
 import io.sketch.mochaagents.interaction.permission.PermissionRules;
@@ -95,17 +94,6 @@ class ReActAgentIntegrationTest {
         String notif = TaskManager.buildNotification(task.state(), null);
         assertTrue(notif.contains(id));
         assertTrue(notif.contains("completed"));
-    }
-
-    @Test void codeAgentWithEventSubscription() {
-        var llm = echoLlm("<code>\nfinal_answer(\"42\")\n</code>");
-        CodeAgent agent = CodeAgent.builder().name("event-test").llm(llm).maxSteps(2).build();
-
-        List<String> events = new ArrayList<>();
-        agent.onEvent(e -> events.add(e.type()));
-
-        agent.run("what is 6*7?");
-        assertFalse(events.isEmpty());
     }
 
     @Test void fullPipelineWithAllFeatures() {

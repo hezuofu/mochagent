@@ -1,7 +1,6 @@
 package io.sketch.mochaagents.llm.provider;
 
 import io.sketch.mochaagents.agent.AgentContext;
-import io.sketch.mochaagents.agent.loop.CodeAgent;
 import io.sketch.mochaagents.agent.loop.ToolCallingAgent;
 import io.sketch.mochaagents.llm.LLM;
 import io.sketch.mochaagents.tool.Tool;
@@ -113,23 +112,6 @@ class RealLLMIntegrationTest {
         assertNotNull(result);
         assertFalse(result.isEmpty());
         System.out.println("ToolCallingAgent result: " + result);
-    }
-
-    @Test
-    void codeAgentWritesCodeAndProducesAnswer() {
-        LLM llm = resolveLlm();
-
-        CodeAgent agent = CodeAgent.builder()
-                .name("python-agent")
-                .llm(llm)
-                .maxSteps(5)
-                .build();
-
-        String result = agent.run("Calculate the factorial of 5 using Python code.");
-
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-        System.out.println("CodeAgent result: " + result);
     }
 
     @Test

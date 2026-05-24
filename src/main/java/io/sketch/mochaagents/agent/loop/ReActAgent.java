@@ -65,7 +65,6 @@ import java.util.*;
  * }</pre>
  *
  * @see ToolCallingAgent
- * @see CodeAgent
  * @author lanxia39@163.com
  */
 public abstract class ReActAgent extends BaseAgent<String, String>
@@ -382,7 +381,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         // 1. Pre-step: inject capability context into system prompt
         injectCapabilityContext(stepNumber, memory);
 
-        // 2. Act: delegate to subclass (ToolCallingAgent / CodeAgent)
+        // 2. Act: delegate to subclass (ToolCallingAgent)
         StepResult result = executeReActStep(stepNumber, input, memory);
 
         // 3. Perceive: continuous environmental awareness after action
@@ -599,7 +598,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     }
 
     /**
-     * Execute a single ReAct step. Subclasses (ToolCallingAgent / CodeAgent)
+     * Execute a single ReAct step. Subclasses (ToolCallingAgent)
      * implement the actual LLM call and tool/code execution.
      */
     protected abstract StepResult executeReActStep(

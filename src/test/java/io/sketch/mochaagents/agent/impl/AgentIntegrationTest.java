@@ -1,7 +1,6 @@
 package io.sketch.mochaagents.agent.impl;
 
 import io.sketch.mochaagents.agent.AgentContext;
-import io.sketch.mochaagents.agent.loop.CodeAgent;
 import io.sketch.mochaagents.agent.loop.ToolCallingAgent;
 import io.sketch.mochaagents.agent.loop.step.ActionStep;
 import io.sketch.mochaagents.agent.loop.step.MemoryStep;
@@ -134,29 +133,6 @@ class AgentIntegrationTest {
         // After exceeding max steps, should produce fallback
         assertTrue(agent.memory().steps().size() >= 4,
                 "Should have task + 3 actions + final_answer");
-    }
-
-    @Test
-    void codeAgentFullExecutionCycle() {
-        var llm = new RecordingLLM();
-        llm.addResponse("<code>\nx = 21 * 2\nfinal_answer(str(x))\n</code>");
-
-        CodeAgent agent = CodeAgent.builder()
-                .name("code-agent").llm(llm).maxSteps(3).build();
-
-        String result = agent.run("compute 21*2");
-
-        // Verify: code agent detected final_answer in code
-        assertNotNull(result);
-        assertTrue(agent.memory().hasFinalAnswer(),
-                "CodeAgent should detect final_answer() in code block");
-
-        // Verify: memory has action step for code execution
-        boolean hasCodeAction = agent.memory().steps().stream()
-                .filter(s -> s instanceof ActionStep as
-                        && "python_interpreter".equals(as.action()))
-                .findAny().isPresent();
-        assertTrue(hasCodeAction, "Should have python_interpreter action");
     }
 
     @Test
