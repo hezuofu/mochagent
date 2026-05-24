@@ -3,9 +3,9 @@
 
 package io.sketch.mochaagents.reasoning;
 
-import io.sketch.mochaagents.llm.LLM;
-import io.sketch.mochaagents.llm.LLMRequest;
-import io.sketch.mochaagents.llm.LLMResponse;
+import io.sketch.mochaagents.model.Model;
+import io.sketch.mochaagents.model.ModelRequest;
+import io.sketch.mochaagents.model.ModelResponse;
 import io.sketch.mochaagents.reasoning.ReasoningChain;
 import io.sketch.mochaagents.reasoning.ReasoningStep;
 import io.sketch.mochaagents.reasoning.ReasoningStrategy;
@@ -16,7 +16,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Chain of Thought — 提示 LLM 输出结构化推理步骤并解析为 ReasoningStep 序列.
+ * Chain of Thought — 提示 Model 输出结构化推理步骤并解析为 ReasoningStep 序列.
  * @author lanxia39@163.com
  */
 public class ChainOfThought implements ReasoningStrategy {
@@ -25,10 +25,10 @@ public class ChainOfThought implements ReasoningStrategy {
     private static final Pattern STEP_PATTERN = Pattern.compile(
             "Step\\s*(\\d+)\\s*[:：]\\s*(.+?)(?:\\n|$)", Pattern.DOTALL);
 
-    private final LLM llm;
+    private final Model model;
 
-    public ChainOfThought(LLM llm) {
-        this.llm = llm;
+    public ChainOfThought(Model model) {
+        this.model = model;
     }
 
     @Override
@@ -53,13 +53,13 @@ public class ChainOfThought implements ReasoningStrategy {
                 Now answer this question:
                 %s""".formatted(question);
 
-        LLMRequest request = LLMRequest.builder()
+        ModelRequest request = ModelRequest.builder()
                 .addMessage("user", prompt)
                 .maxTokens(2048)
                 .temperature(0.3)
                 .build();
 
-        LLMResponse response = llm.complete(request);
+        ModelResponse response = model.complete(request);
         return parseIntoChain(response.content(), question);
     }
 

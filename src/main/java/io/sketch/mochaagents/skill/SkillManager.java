@@ -181,7 +181,7 @@ public class SkillManager {
 
     /**
      * 向 ToolRegistry 注册 SkillTool.
-     * 使 LLM 可以通过 Skill 工具调用技能。
+     * 使 Model 可以通过 Skill 工具调用技能。
      */
     private void registerSkillTool() {
         toolRegistry.registerSkillTool(skillRegistry);

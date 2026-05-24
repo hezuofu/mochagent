@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2024-2026 MochaAgents Authors
 
-package io.sketch.mochaagents.llm;
+package io.sketch.mochaagents.model;
 
 /**
  * API error classification and retry predicates — pattern from claude-code's errors.ts.

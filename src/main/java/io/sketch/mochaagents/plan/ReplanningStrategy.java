@@ -3,22 +3,22 @@
 
 package io.sketch.mochaagents.plan;
 
-import io.sketch.mochaagents.llm.LLM;
-import io.sketch.mochaagents.llm.LLMRequest;
+import io.sketch.mochaagents.model.Model;
+import io.sketch.mochaagents.model.ModelRequest;
 import io.sketch.mochaagents.plan.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 重规划策略 — 用 LLM 分析失败并生成替代方案.
+ * 重规划策略 — 用 Model 分析失败并生成替代方案.
  * @author lanxia39@163.com
  */
 public class ReplanningStrategy implements PlanningStrategy {
 
     private static final Logger log = LoggerFactory.getLogger(ReplanningStrategy.class);
-    private final LLM llm;
+    private final Model model;
 
-    public ReplanningStrategy(LLM llm) { this.llm = llm; }
+    public ReplanningStrategy(Model model) { this.model = model; }
 
     @Override
     @SuppressWarnings("unchecked")
@@ -44,7 +44,7 @@ public class ReplanningStrategy implements PlanningStrategy {
                     Output: Step N: <description>""", goal, maxSteps);
         }
 
-        String response = llm.complete(LLMRequest.builder()
+        String response = model.complete(ModelRequest.builder()
                 .addMessage("user", prompt).maxTokens(1024).temperature(0.4).build()).content();
 
         DefaultPlan<Object> plan = new DefaultPlan<>((PlanningRequest<Object>) request);

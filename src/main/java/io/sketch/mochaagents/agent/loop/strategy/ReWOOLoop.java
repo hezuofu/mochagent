@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
  *   Phase 3 — SYNTHESIZE: combine all results into final answer
  * </pre>
  *
- * <p>Key advantage: fewer LLM calls (only 2 total), faster execution.
+ * <p>Key advantage: fewer Model calls (only 2 total), faster execution.
  * Best for tasks where the plan is clear and doesn't need per-step course correction.
  *
  * <p>Reference: Xu et al. "ReWOO: Decoupling Reasoning from Observations for Efficient Augmented Language Models"

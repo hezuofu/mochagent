@@ -4,7 +4,7 @@
 package io.sketch.mochaagents;
 
 import io.sketch.mochaagents.agent.loop.ToolCallingAgent;
-import io.sketch.mochaagents.llm.LLM;
+import io.sketch.mochaagents.model.Model;
 import io.sketch.mochaagents.tool.ToolRegistry;
 import io.sketch.mochaagents.tool.internal.*;
 
@@ -22,25 +22,25 @@ public final class AgentBootstrap {
     private static final Logger log = LoggerFactory.getLogger(AgentBootstrap.class);
 
     private final ToolRegistry toolRegistry;
-    private final LLM llm;
+    private final Model model;
 
-    private AgentBootstrap(LLM llm) {
-        this.llm = llm;
+    private AgentBootstrap(Model model) {
+        this.model = model;
         this.toolRegistry = new ToolRegistry();
         registerBaseTools();
         log.info("Bootstrapped: {} base tools", toolRegistry.size());
     }
 
     public static AgentBootstrap init() { return new AgentBootstrap(null); }
-    public static AgentBootstrap init(LLM llm) { return new AgentBootstrap(llm); }
+    public static AgentBootstrap init(Model model) { return new AgentBootstrap(model); }
 
     public ToolRegistry toolRegistry() { return toolRegistry; }
-    public LLM llm() { return llm; }
+    public Model model() { return model; }
 
     /** Build a ToolCallingAgent with all registered tools. */
     public ToolCallingAgent buildAgent(String name) {
         return ToolCallingAgent.builder()
-                .name(name).llm(llm).toolRegistry(toolRegistry).build();
+                .name(name).model(model).toolRegistry(toolRegistry).build();
     }
 
     // ── Backward-compat accessors ──

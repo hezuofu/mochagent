@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
  * <p>循环流程：
  * <ol>
  *   <li>生成/更新计划（可选）</li>
- *   <li>调用 LLM 生成行动</li>
+ *   <li>调用 Model 生成行动</li>
  *   <li>执行工具/代码</li>
  *   <li>记录观察结果</li>
  *   <li>判断是否终止</li>

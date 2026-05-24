@@ -1,29 +1,29 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2024-2026 MochaAgents Authors
 
-package io.sketch.mochaagents.llm.provider;
+package io.sketch.mochaagents.model.provider;
 
 import io.sketch.mochaagents.MochaException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.sketch.mochaagents.llm.LLMRequest;
-import io.sketch.mochaagents.llm.LLMResponse;
+import io.sketch.mochaagents.model.ModelRequest;
+import io.sketch.mochaagents.model.ModelResponse;
 
 import java.util.Map;
 
 /**
- * OpenAI LLM 提供者 — 通过 Chat Completions API 调用 OpenAI 模型.
+ * OpenAI Model 提供者 — 通过 Chat Completions API 调用 OpenAI 模型.
  *
  * <pre>{@code
  * // 从环境变量读取 API Key
- * OpenAILLM llm = OpenAILLM.builder()
+ * OpenAIModel model = OpenAIModel.builder()
  *         .modelId("gpt-4o")
  *         .apiKey(System.getenv("OPENAI_API_KEY"))
  *         .build();
  *
  * // 或使用自定义端点 (Azure / 代理)
- * OpenAILLM llm = OpenAILLM.builder()
+ * OpenAIModel model = OpenAIModel.builder()
  *         .modelId("gpt-4o-mini")
  *         .apiKey("sk-...")
  *         .baseUrl("https://api.openai.com/v1")
@@ -31,14 +31,14 @@ import java.util.Map;
  * }</pre>
  * @author lanxia39@163.com
  */
-public class OpenAILLM extends BaseApiLLM {
+public class OpenAIModel extends BaseApiModel {
 
     private final String apiKey;
     private final String baseUrl;
     private final String organization;
     private final String project;
 
-    protected OpenAILLM(OpenAIBuilder builder) {
+    protected OpenAIModel(OpenAIBuilder builder) {
         super(builder);
         this.apiKey = builder.apiKey;
         this.baseUrl = builder.baseUrl;
@@ -65,16 +65,16 @@ public class OpenAILLM extends BaseApiLLM {
     }
 
     @Override
-    protected String buildRequestBody(LLMRequest request) {
+    protected String buildRequestBody(ModelRequest request) {
         return buildRequestBody(request, false);
     }
 
     @Override
-    protected String buildStreamRequestBody(LLMRequest request) {
+    protected String buildStreamRequestBody(ModelRequest request) {
         return buildRequestBody(request, true);
     }
 
-    private String buildRequestBody(LLMRequest request, boolean stream) {
+    private String buildRequestBody(ModelRequest request, boolean stream) {
         ObjectNode body = JSON.createObjectNode();
         body.put("model", modelId);
 
@@ -160,9 +160,9 @@ public class OpenAILLM extends BaseApiLLM {
         public OpenAIBuilder organization(String org) { this.organization = org; return this; }
         public OpenAIBuilder project(String proj) { this.project = proj; return this; }
 
-        public OpenAILLM build() {
+        public OpenAIModel build() {
             if (modelId == null) modelId = "gpt-4o";
-            return new OpenAILLM(this);
+            return new OpenAIModel(this);
         }
     }
 }

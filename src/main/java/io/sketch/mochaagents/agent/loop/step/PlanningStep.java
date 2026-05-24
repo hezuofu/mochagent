@@ -7,7 +7,7 @@ package io.sketch.mochaagents.agent.loop.step;
  * 规划步 — 记录 Agent 在规划阶段生成的计划.
  *
  * @param plan        计划文本内容
- * @param modelOutput LLM 原始输出
+ * @param modelOutput Model 原始输出
  * @param inputTokens 输入 token 数
  * @param outputTokens 输出 token 数
  * @author lanxia39@163.com

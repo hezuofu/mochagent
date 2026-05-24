@@ -8,5 +8,6 @@ package io.sketch.mochaagents.reasoning;
  */
 @FunctionalInterface
 public interface Reasoner {
+
     ReasoningChain reason(String question);
 }

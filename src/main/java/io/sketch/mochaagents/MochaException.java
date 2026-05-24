@@ -33,7 +33,7 @@ public class MochaException extends RuntimeException {
         public String toolName() { return toolName; }
     }
 
-    /** LLM API call failure. */
+    /** Model API call failure. */
     public static class LlmException extends MochaException {
         private final int statusCode;
         private final String model;

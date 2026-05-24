@@ -1,36 +1,36 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2024-2026 MochaAgents Authors
 
-package io.sketch.mochaagents.llm.provider;
+package io.sketch.mochaagents.model.provider;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.sketch.mochaagents.llm.LLMRequest;
-import io.sketch.mochaagents.llm.StreamingResponse;
+import io.sketch.mochaagents.model.ModelRequest;
+import io.sketch.mochaagents.model.StreamingResponse;
 
 import java.util.List;
 import java.util.Map;
 
 /**
- * Anthropic Claude LLM 提供者 — 通过 Messages API 调用.
+ * Anthropic Claude Model 提供者 — 通过 Messages API 调用.
  *
  * <pre>{@code
- * AnthropicLLM llm = AnthropicLLM.builder()
+ * AnthropicModel model = AnthropicModel.builder()
  *         .modelId("claude-sonnet-4-20250514")
  *         .apiKey(System.getenv("ANTHROPIC_API_KEY"))
  *         .build();
  * }</pre>
  * @author lanxia39@163.com
  */
-public class AnthropicLLM extends BaseApiLLM {
+public class AnthropicModel extends BaseApiModel {
 
     private final String apiKey;
     private final String baseUrl;
     private final String anthropicVersion;
     private final boolean usePromptCaching;
 
-    protected AnthropicLLM(AnthropicBuilder builder) {
+    protected AnthropicModel(AnthropicBuilder builder) {
         super(builder);
         this.apiKey = builder.apiKey;
         this.baseUrl = builder.baseUrl;
@@ -53,16 +53,16 @@ public class AnthropicLLM extends BaseApiLLM {
     }
 
     @Override
-    protected String buildRequestBody(LLMRequest request) {
+    protected String buildRequestBody(ModelRequest request) {
         return buildRequestBody(request, false);
     }
 
     @Override
-    protected String buildStreamRequestBody(LLMRequest request) {
+    protected String buildStreamRequestBody(ModelRequest request) {
         return buildRequestBody(request, true);
     }
 
-    private String buildRequestBody(LLMRequest request, boolean stream) {
+    private String buildRequestBody(ModelRequest request, boolean stream) {
         ObjectNode body = JSON.createObjectNode();
         body.put("model", modelId);
         body.put("max_tokens", request.maxTokens() > 0 ? request.maxTokens() : 4096);
@@ -82,7 +82,7 @@ public class AnthropicLLM extends BaseApiLLM {
             body.set("stop_sequences", stops);
         }
 
-        // Apply ThinkingConfig — flows from Reasoner → ReActAgent → LLMRequest → Provider
+        // Apply ThinkingConfig — flows from Reasoner → ReActAgent → ModelRequest → Provider
         var thinkingConfig = request.thinkingConfig();
         if (thinkingConfig != null && thinkingConfig.type() != io.sketch.mochaagents.reasoning.ThinkingConfig.Type.DISABLED) {
             ObjectNode thinking = JSON.createObjectNode();
@@ -219,9 +219,9 @@ public class AnthropicLLM extends BaseApiLLM {
         public AnthropicBuilder anthropicVersion(String ver) { this.anthropicVersion = ver; return this; }
         public AnthropicBuilder promptCaching(boolean v) { this.usePromptCaching = v; return this; }
 
-        public AnthropicLLM build() {
+        public AnthropicModel build() {
             if (modelId == null) modelId = "claude-sonnet-4-20250514";
-            return new AnthropicLLM(this);
+            return new AnthropicModel(this);
         }
     }
 }

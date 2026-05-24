@@ -7,7 +7,7 @@ import io.sketch.mochaagents.agent.Agent;
 import io.sketch.mochaagents.agent.AgentContext;
 import io.sketch.mochaagents.agent.AgentMetadata;
 import io.sketch.mochaagents.agent.loop.ToolCallingAgent;
-import io.sketch.mochaagents.llm.LLM;
+import io.sketch.mochaagents.model.Model;
 import io.sketch.mochaagents.orchestration.TaskNotification;
 import io.sketch.mochaagents.tool.AbstractTool;
 import io.sketch.mochaagents.tool.ToolInput;
@@ -101,19 +101,19 @@ public class AgentTool extends AbstractTool {
     /**
      * 注册默认的通用 Agent 工厂，使用真实的 ToolCallingAgent.
      */
-    public void registerDefaultAgent(ToolRegistry toolRegistry, LLM llm) {
-        agentFactories.put("general-purpose", () -> createDefaultAgent(toolRegistry, llm));
+    public void registerDefaultAgent(ToolRegistry toolRegistry, Model model) {
+        agentFactories.put("general-purpose", () -> createDefaultAgent(toolRegistry, model));
     }
 
-    /** 向后兼容 — 无 LLM 工厂注册，子 Agent 不可用. */
+    /** 向后兼容 — 无 Model 工厂注册，子 Agent 不可用. */
     public void registerDefaultAgent(ToolRegistry toolRegistry) {
         agentFactories.put("general-purpose", () -> createFallbackAgent());
     }
 
-    private Agent<Map<String, Object>, String> createDefaultAgent(ToolRegistry registry, LLM llm) {
+    private Agent<Map<String, Object>, String> createDefaultAgent(ToolRegistry registry, Model model) {
         ToolCallingAgent subAgent = ToolCallingAgent.builder()
                 .name("SubAgent-General")
-                .llm(llm)
+                .model(model)
                 .toolRegistry(registry)
                 .maxSteps(10)
                 .build();
@@ -154,7 +154,7 @@ public class AgentTool extends AbstractTool {
     private Agent<Map<String, Object>, String> createFallbackAgent() {
         return new Agent<Map<String, Object>, String>() {
             @Override public String execute(Map<String, Object> input, io.sketch.mochaagents.agent.AgentContext ctx) {
-                return "[SubAgent] No LLM configured — cannot execute autonomously.";
+                return "[SubAgent] No Model configured — cannot execute autonomously.";
             }
             @Override public CompletableFuture<String> executeAsync(Map<String, Object> input, io.sketch.mochaagents.agent.AgentContext ctx) {
                 return CompletableFuture.completedFuture(execute(input, ctx));

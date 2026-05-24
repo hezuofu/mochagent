@@ -3,8 +3,8 @@
 
 package io.sketch.mochaagents.plan;
 
-import io.sketch.mochaagents.llm.LLM;
-import io.sketch.mochaagents.llm.LLMRequest;
+import io.sketch.mochaagents.model.Model;
+import io.sketch.mochaagents.model.ModelRequest;
 import io.sketch.mochaagents.plan.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,16 +13,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 自适应规划策略 — 用 LLM 生成计划并根据执行反馈动态调整.
+ * 自适应规划策略 — 用 Model 生成计划并根据执行反馈动态调整.
  * @author lanxia39@163.com
  */
 public class AdaptivePlanner implements PlanningStrategy {
 
     private static final Logger log = LoggerFactory.getLogger(AdaptivePlanner.class);
-    private final LLM llm;
+    private final Model model;
     private final List<ExecutionFeedback> history = new ArrayList<>();
 
-    public AdaptivePlanner(LLM llm) { this.llm = llm; }
+    public AdaptivePlanner(Model model) { this.model = model; }
 
     @Override
     public Plan<?> plan(PlanningRequest<?> request) {
@@ -49,7 +49,7 @@ public class AdaptivePlanner implements PlanningStrategy {
                 Output one step per line: Step N: <description>""",
                 steps, goal, ctx, fb.toString());
 
-        String response = llm.complete(LLMRequest.builder()
+        String response = model.complete(ModelRequest.builder()
                 .addMessage("user", prompt).maxTokens(1024).temperature(0.3).build()).content();
 
         @SuppressWarnings("unchecked")

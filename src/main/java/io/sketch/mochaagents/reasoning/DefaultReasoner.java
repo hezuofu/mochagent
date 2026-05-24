@@ -3,7 +3,7 @@
 
 package io.sketch.mochaagents.reasoning;
 
-import io.sketch.mochaagents.llm.LLM;
+import io.sketch.mochaagents.model.Model;
 import io.sketch.mochaagents.reasoning.ChainOfThought;
 import io.sketch.mochaagents.reasoning.TreeOfThought;
 import org.slf4j.Logger;
@@ -27,10 +27,10 @@ public class DefaultReasoner implements Reasoner {
     private final List<ReasoningStrategy> strategies;
     private int activeStrategyIdx;
 
-    public DefaultReasoner(LLM llm) {
+    public DefaultReasoner(Model model) {
         this(List.of(
-                new ChainOfThought(llm),
-                new TreeOfThought(llm, 3, 2) // fallback: branch exploration when CoT confidence < 0.5
+                new ChainOfThought(model),
+                new TreeOfThought(model, 3, 2) // fallback: branch exploration when CoT confidence < 0.5
         ));
     }
 

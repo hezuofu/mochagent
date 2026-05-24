@@ -3,8 +3,8 @@
 
 package io.sketch.mochaagents.reasoning;
 
-import io.sketch.mochaagents.llm.LLM;
-import io.sketch.mochaagents.llm.LLMRequest;
+import io.sketch.mochaagents.model.Model;
+import io.sketch.mochaagents.model.ModelRequest;
 import io.sketch.mochaagents.reasoning.ReasoningChain;
 import io.sketch.mochaagents.reasoning.ReasoningStep;
 import io.sketch.mochaagents.reasoning.ReasoningStrategy;
@@ -20,9 +20,9 @@ import java.util.*;
 public class GraphOfThought implements ReasoningStrategy {
 
     private static final Logger log = LoggerFactory.getLogger(GraphOfThought.class);
-    private final LLM llm;
+    private final Model model;
 
-    public GraphOfThought(LLM llm) { this.llm = llm; }
+    public GraphOfThought(Model model) { this.model = model; }
 
     @Override
     public ReasoningChain reason(String question) {
@@ -48,7 +48,7 @@ public class GraphOfThought implements ReasoningStrategy {
                 ---
                 Question: %s""".formatted(question);
 
-        String response = llm.complete(LLMRequest.builder()
+        String response = model.complete(ModelRequest.builder()
                 .addMessage("user", prompt).maxTokens(2048).temperature(0.5).build()).content();
 
         List<ThoughtNode> nodes = parseNodes(response);

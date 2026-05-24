@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2024-2026 MochaAgents Authors
 
-package io.sketch.mochaagents.llm;
+package io.sketch.mochaagents.model;
 
 import java.util.Map;
 
 /**
- * LLM 响应 — 封装模型返回的文本、token 统计等信息.
+ * Model 响应 — 封装模型返回的文本、token 统计等信息.
  * @author lanxia39@163.com
  */
-public class LLMResponse {
+public class ModelResponse {
 
     private final String content;
     private final String model;
@@ -19,7 +19,7 @@ public class LLMResponse {
     private final long latencyMs;
     private final Map<String, Object> metadata;
 
-    public LLMResponse(String content, String model, int promptTokens,
+    public ModelResponse(String content, String model, int promptTokens,
                        int completionTokens, long latencyMs, Map<String, Object> metadata) {
         this.content = content;
         this.model = model;
@@ -38,7 +38,7 @@ public class LLMResponse {
     public long latencyMs() { return latencyMs; }
     public Map<String, Object> metadata() { return metadata; }
 
-    public static LLMResponse of(String content) {
-        return new LLMResponse(content, "unknown", 0, 0, 0, Map.of());
+    public static ModelResponse of(String content) {
+        return new ModelResponse(content, "unknown", 0, 0, 0, Map.of());
     }
 }

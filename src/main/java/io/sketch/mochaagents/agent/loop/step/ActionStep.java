@@ -7,8 +7,8 @@ package io.sketch.mochaagents.agent.loop.step;
  * 行动步 — 记录单次 ReAct 循环中的思考-行动-观察.
  *
  * @param stepNumber     当前步号
- * @param modelInput     LLM 输入消息
- * @param modelOutput    LLM 输出
+ * @param modelInput     Model 输入消息
+ * @param modelOutput    Model 输出
  * @param action         执行的动作/工具调用
  * @param observation    观察结果
  * @param error          错误信息（若有）

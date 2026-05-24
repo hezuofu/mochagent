@@ -10,20 +10,16 @@ import java.util.function.Predicate;
 import io.sketch.mochaagents.agent.internal.BaseAgent;
 import io.sketch.mochaagents.memory.MemoryProvider;
 import io.sketch.mochaagents.prompt.SystemPromptProvider;
-import io.sketch.mochaagents.agent.loop.StepResult;
 import io.sketch.mochaagents.agent.loop.strategy.ReActLoop;
 import io.sketch.mochaagents.tool.Hooks;
-import io.sketch.mochaagents.context.ContextCompressor;
 import io.sketch.mochaagents.context.Context;
-import io.sketch.mochaagents.context.LLMContextCompressor;
 import io.sketch.mochaagents.evaluation.EvaluationResult;
-import io.sketch.mochaagents.llm.LLM;
-import io.sketch.mochaagents.llm.LLMRequest;
-import io.sketch.mochaagents.llm.LLMResponse;
+import io.sketch.mochaagents.model.Model;
+import io.sketch.mochaagents.model.ModelRequest;
+import io.sketch.mochaagents.model.ModelResponse;
 import io.sketch.mochaagents.memory.MemoryManager;
 import io.sketch.mochaagents.memory.MemoryRecord;
 import io.sketch.mochaagents.agent.loop.step.*;
-import io.sketch.mochaagents.perception.LayeredContextBuilder;
 import io.sketch.mochaagents.perception.PerceptionObserver;
 import io.sketch.mochaagents.perception.PerceptionResult;
 import io.sketch.mochaagents.plan.Plan;
@@ -33,9 +29,6 @@ import io.sketch.mochaagents.plan.ExecutionFeedback;
 import io.sketch.mochaagents.prompt.PromptTemplate;
 import io.sketch.mochaagents.reasoning.ReasoningChain;
 import io.sketch.mochaagents.reasoning.ReasoningStep;
-import io.sketch.mochaagents.reasoning.RecoveryStateMachine;
-import io.sketch.mochaagents.reasoning.ThinkingConfig;
-import io.sketch.mochaagents.reasoning.EffortLevel;
 import io.sketch.mochaagents.tool.Tool;
 import io.sketch.mochaagents.tool.ToolInput;
 import org.slf4j.Logger;
@@ -59,8 +52,8 @@ import java.util.*;
  * <h2>Quick Start</h2>
  * <pre>{@code
  * var agent = ToolCallingAgent.builder()
- *     .name("my-agent").llm(llm).tools(tools)
- *     .reasoner(new DefaultReasoner(llm))       // per-step reasoning
+ *     .name("my-agent").model(model).tools(tools)
+ *     .reasoner(new DefaultReasoner(model))       // per-step reasoning
  *     .planner(new DynamicPlanner<>(strategy))   // per-step plan tracking
  *     .perceptor(new CodebasePerceptor())        // continuous perception
  *     .maxSteps(10).build();
@@ -77,10 +70,10 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
     // ── Core components ──
 
-    protected final LLM llm;
-    protected final io.sketch.mochaagents.llm.LLMRouter router;
-    protected final io.sketch.mochaagents.llm.OptimizationConfig optimization;
-    protected final io.sketch.mochaagents.llm.CostTracker costTracker;
+    protected final Model model;
+    protected final io.sketch.mochaagents.model.ModelRouter router;
+    protected final io.sketch.mochaagents.model.OptimizationConfig optimization;
+    protected final io.sketch.mochaagents.model.CostTracker costTracker;
     protected final MemoryManager memory = MemoryManager.create();
     protected final int maxSteps;
     protected final int planningInterval;
@@ -163,13 +156,13 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     protected ReActAgent(Builder<?> builder) {
         super(builder);
         this.optimization = builder.optimization;
-        this.costTracker = new io.sketch.mochaagents.llm.CostTracker();
+        this.costTracker = new io.sketch.mochaagents.model.CostTracker();
 
-        LLM rawLlm = builder.llm;
-        if (rawLlm != null && optimization.cacheMaxEntries() > 0) {
-            rawLlm = new io.sketch.mochaagents.llm.CachingLLM(rawLlm, costTracker, optimization.cacheMaxEntries());
+        Model rawModel = builder.model;
+        if (rawModel != null && optimization.cacheMaxEntries() > 0) {
+            rawModel = new io.sketch.mochaagents.model.CachingModel(rawModel, costTracker, optimization.cacheMaxEntries());
         }
-        this.llm = rawLlm;
+        this.model = rawModel;
         this.router = builder.router;
         this.orchestrator = builder.orchestrator;
         this.maxSteps = builder.maxSteps;
@@ -208,11 +201,11 @@ public abstract class ReActAgent extends BaseAgent<String, String>
                 .withAntiForgetting(10, 65);
     }
 
-    protected LLM resolveLlm(LLMRequest request) {
+    protected Model resolveModel(ModelRequest request) {
         if (router != null && !router.getProviders().isEmpty()) {
             return router.route(request);
         }
-        return llm;
+        return model;
     }
 
     // ============ Public API ============
@@ -268,7 +261,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
                 errors, summary);
     }
 
-    public io.sketch.mochaagents.llm.CostTracker costTracker() { return costTracker; }
+    public io.sketch.mochaagents.model.CostTracker costTracker() { return costTracker; }
 
     public String run(String task, int maxSteps) {
         return run(AgentContext.of(task), maxSteps);
@@ -398,7 +391,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
      * <p>Each step follows the integrated cycle:
      * <ol>
      *   <li><b>Pre-reason</b>: inject current reasoning/plan state into messages</li>
-     *   <li><b>Act</b>: LLM call + tool execution (delegated to subclass)</li>
+     *   <li><b>Act</b>: Model call + tool execution (delegated to subclass)</li>
      *   <li><b>Perceive</b>: observe what changed after the action</li>
      *   <li><b>Track plan</b>: check if action matches expected plan step</li>
      *   <li><b>Adapt</b>: replan/re-reason if deviation detected</li>
@@ -450,7 +443,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
     /**
      * Inject current reasoning state and plan progress into AgentMemory
-     * so the LLM sees them as part of the conversation context.
+     * so the Model sees them as part of the conversation context.
      */
     private void injectCapabilityContext(int stepNumber, MemoryManager memory) {
         StringBuilder ctx = new StringBuilder();
@@ -626,7 +619,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
     /**
      * Execute a single ReAct step. Subclasses (ToolCallingAgent)
-     * implement the actual LLM call and tool/code execution.
+     * implement the actual Model call and tool/code execution.
      */
     protected abstract StepResult executeReActStep(
             int stepNumber, String input, MemoryManager memory);
@@ -644,7 +637,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
                 "tools", formatTools()
         ));
 
-        LLMRequest request = LLMRequest.builder()
+        ModelRequest request = ModelRequest.builder()
                 .addMessage("user", prompt)
                 .maxTokens(1024)
                 .thinkingConfig(thinkingConfig)
@@ -652,7 +645,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
                 .build();
 
         try {
-            LLMResponse response = llm.complete(request);
+            ModelResponse response = model.complete(request);
             log.debug("Agent '{}' plan generated: {}", name, truncate(response.content(), 150));
             return response.content();
         } catch (Exception e) {
@@ -755,7 +748,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         String preMsg = finalAnswerPreTemplate.render(Map.of());
         String postMsg = finalAnswerPostTemplate.render("task", task);
 
-        LLMRequest request = LLMRequest.builder()
+        ModelRequest request = ModelRequest.builder()
                 .addMessage("system", preMsg)
                 .addMessage("user", postMsg)
                 .maxTokens(512)
@@ -764,7 +757,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
                 .build();
 
         try {
-            String answer = llm.complete(request).content();
+            String answer = model.complete(request).content();
             log.debug("Agent '{}' fallback answer: {}", name, truncate(answer, 100));
             return answer;
         } catch (Exception e) {
@@ -776,7 +769,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     private int lastSerializedStep = 0;
     private final List<Map<String, String>> cachedMessages = new ArrayList<>();
 
-    /** Convert memory to LLM messages — incremental, O(steps since last call). */
+    /** Convert memory to Model messages — incremental, O(steps since last call). */
     protected List<Map<String, String>> writeMemoryToMessages() {
         if (cachedMessages.isEmpty() && memory.systemPrompt() != null
                 && !memory.systemPrompt().isEmpty()) {
@@ -873,7 +866,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
     /**
      * Delegate a task to a managed agent via the orchestrator.
-     * Called when the LLM selects a managed agent as a tool.
+     * Called when the Model selects a managed agent as a tool.
      */
     public String delegateToManagedAgent(String agentName, String task) {
         ReActAgent sub = managedAgents.get(agentName);
@@ -948,8 +941,8 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     public abstract static class Builder<T extends Builder<T>>
             extends BaseAgent.Builder<String, String, T> {
 
-        protected LLM llm;
-        protected io.sketch.mochaagents.llm.LLMRouter router;
+        protected Model model;
+        protected io.sketch.mochaagents.model.ModelRouter router;
         protected io.sketch.mochaagents.orchestration.Orchestrator orchestrator;
         protected List<Tool> tools = new ArrayList<>();
         protected List<ReActAgent> managedAgents = new ArrayList<>();
@@ -960,8 +953,8 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         protected PromptTemplate planningPromptTemplate;
         protected PromptTemplate finalAnswerPreTemplate;
         protected PromptTemplate finalAnswerPostTemplate;
-        protected io.sketch.mochaagents.llm.OptimizationConfig optimization
-                = io.sketch.mochaagents.llm.OptimizationConfig.balanced();
+        protected io.sketch.mochaagents.model.OptimizationConfig optimization
+                = io.sketch.mochaagents.model.OptimizationConfig.balanced();
         protected AgentLoop<String, String> agentLoop;
         protected io.sketch.mochaagents.interaction.PermissionRules permissionRules;
 
@@ -971,9 +964,9 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         protected io.sketch.mochaagents.plan.Planner<String> planner;
         protected io.sketch.mochaagents.evaluation.Evaluator evaluator;
 
-        public T llm(LLM llm) { this.llm = llm; return (T) this; }
-        public T optimization(io.sketch.mochaagents.llm.OptimizationConfig cfg) { this.optimization = cfg; return (T) this; }
-        public T router(io.sketch.mochaagents.llm.LLMRouter router) { this.router = router; return (T) this; }
+        public T model(Model model) { this.model = model; return (T) this; }
+        public T optimization(io.sketch.mochaagents.model.OptimizationConfig cfg) { this.optimization = cfg; return (T) this; }
+        public T router(io.sketch.mochaagents.model.ModelRouter router) { this.router = router; return (T) this; }
         public T orchestrator(io.sketch.mochaagents.orchestration.Orchestrator o) { this.orchestrator = o; return (T) this; }
         public T tools(List<Tool> tools) { this.tools = tools; return (T) this; }
         public T managedAgents(List<ReActAgent> agents) { this.managedAgents = agents; return (T) this; }
@@ -1019,7 +1012,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
                     = io.sketch.mochaagents.agent.loop.ToolCallingAgent.builder();
             b.name(delegate.name);
             b.description(delegate.description);
-            b.llm(delegate.llm);
+            b.model(delegate.model);
             b.maxSteps(delegate.maxSteps);
             b.agentLoop(loop);
             return b;

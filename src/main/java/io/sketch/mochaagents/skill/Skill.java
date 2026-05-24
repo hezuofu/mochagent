@@ -15,7 +15,7 @@ import java.util.List;
  * <p>设计要点:
  * <ul>
  *   <li>技能不是 Tool（不修改外部状态），而是 prompt 模板</li>
- *   <li>getPromptForCommand 返回 ContentBlock 列表，由 SkillTool 注入 LLM 上下文</li>
+ *   <li>getPromptForCommand 返回 ContentBlock 列表，由 SkillTool 注入 Model 上下文</li>
  *   <li>default 方法提供安全默认值，实现类按需覆盖</li>
  *   <li>allowedTools 可限制子任务工具白名单</li>
  * </ul>
@@ -28,7 +28,7 @@ public interface Skill {
     /** 技能唯一名称，供 SkillTool 查找. */
     String name();
 
-    /** 技能功能描述，供 LLM 理解何时调用. */
+    /** 技能功能描述，供 Model 理解何时调用. */
     String description();
 
     /** 技能别称列表. */
@@ -92,7 +92,7 @@ public interface Skill {
 
     /**
      * 生成技能 prompt 内容.
-     * 技能被调用时，返回的 ContentBlock 列表会作为 user message 注入 LLM 上下文。
+     * 技能被调用时，返回的 ContentBlock 列表会作为 user message 注入 Model 上下文。
      *
      * @param args 用户传递的参数（可能为空字符串）
      * @return prompt 内容块列表

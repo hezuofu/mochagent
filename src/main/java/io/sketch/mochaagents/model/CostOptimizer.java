@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2024-2026 MochaAgents Authors
 
-package io.sketch.mochaagents.llm;
+package io.sketch.mochaagents.model;
 
-import io.sketch.mochaagents.llm.LLM;
-import io.sketch.mochaagents.llm.LLMRequest;
+
 import java.util.*;
 
 /**
- * 成本优化器 — 根据预估 token 成本选择最优 LLM.
+ * 成本优化器 — 根据预估 token 成本选择最优 Model.
  * 包含主流模型的参考定价（美元/百万 token）.
  * @author lanxia39@163.com
  */
@@ -28,9 +27,9 @@ public class CostOptimizer {
     );
 
     /**
-     * 基于预估 token 成本和能力选择最优 LLM.
+     * 基于预估 token 成本和能力选择最优 Model.
      */
-    public LLM select(List<LLM> candidates, LLMRequest request) {
+    public Model select(List<Model> candidates, ModelRequest request) {
         if (candidates.isEmpty()) throw new IllegalArgumentException("No candidates");
 
         // Estimate token usage
@@ -52,7 +51,7 @@ public class CostOptimizer {
         return (inputTokens / 1_000_000.0) * prices[0] + (outputTokens / 1_000_000.0) * prices[1];
     }
 
-    private int estimateTokens(LLMRequest request) {
+    private int estimateTokens(ModelRequest request) {
         int tokens = 0;
         if (request.prompt() != null) tokens += request.prompt().length() / 4;
         if (request.messages() != null) {

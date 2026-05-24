@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2024-2026 MochaAgents Authors
 
-package io.sketch.mochaagents.llm;
+package io.sketch.mochaagents.model;
 
-import io.sketch.mochaagents.llm.LLM;
+import io.sketch.mochaagents.model.Model;
 import java.util.List;
 
 /**
- * 降级策略 — 主 LLM 不可用时自动切换到备用 LLM.
+ * 降级策略 — 主 Model 不可用时自动切换到备用 Model.
  * @author lanxia39@163.com
  */
 public class FallbackStrategy {
@@ -23,12 +23,12 @@ public class FallbackStrategy {
     }
 
     /**
-     * 从备用列表选择降级 LLM.
+     * 从备用列表选择降级 Model.
      */
-    public LLM fallback(LLM failed, List<LLM> alternatives) {
-        for (LLM alt : alternatives) {
+    public Model fallback(Model failed, List<Model> alternatives) {
+        for (Model alt : alternatives) {
             if (alt != failed) return alt;
         }
-        throw new IllegalStateException("No fallback LLM available");
+        throw new IllegalStateException("No fallback Model available");
     }
 }

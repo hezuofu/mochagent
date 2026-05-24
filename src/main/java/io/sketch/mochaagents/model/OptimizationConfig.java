@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2024-2026 MochaAgents Authors
 
-package io.sketch.mochaagents.llm;
+package io.sketch.mochaagents.model;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Tunable optimization parameters for LLM cost/latency/quality tradeoffs.
+ * Tunable optimization parameters for Model cost/latency/quality tradeoffs.
  * <p>Wire into agent builder: {@code .optimization(OptimizationConfig.balanced())}
  * @author lanxia39@163.com
  */

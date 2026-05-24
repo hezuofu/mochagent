@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2024-2026 MochaAgents Authors
 
-package io.sketch.mochaagents.llm;
+package io.sketch.mochaagents.model;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,36 +11,36 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Response-caching LLM decorator — caches identical requests to save cost.
+ * Response-caching Model decorator — caches identical requests to save cost.
  * <p>LRU cache with configurable max size. Cache key = hash of messages + parameters.
  * @author lanxia39@163.com
  */
-public class CachingLLM implements LLM {
+public class CachingModel implements Model {
 
-    private static final Logger log = LoggerFactory.getLogger(CachingLLM.class);
+    private static final Logger log = LoggerFactory.getLogger(CachingModel.class);
 
-    private final LLM delegate;
+    private final Model delegate;
     private final CostTracker costTracker;
     private final int maxCacheSize;
-    private final Map<String, LLMResponse> cache;
+    private final Map<String, ModelResponse> cache;
 
-    public CachingLLM(LLM delegate, CostTracker costTracker, int maxCacheSize) {
+    public CachingModel(Model delegate, CostTracker costTracker, int maxCacheSize) {
         this.delegate = delegate;
         this.costTracker = costTracker;
         this.maxCacheSize = maxCacheSize;
         this.cache = new LinkedHashMap<>(maxCacheSize, 0.75f, true) {
-            @Override protected boolean removeEldestEntry(Map.Entry<String, LLMResponse> e) {
+            @Override protected boolean removeEldestEntry(Map.Entry<String, ModelResponse> e) {
                 return size() > maxCacheSize;
             }
         };
     }
 
-    public CachingLLM(LLM delegate) { this(delegate, new CostTracker(), 100); }
+    public CachingModel(Model delegate) { this(delegate, new CostTracker(), 100); }
 
     @Override
-    public LLMResponse complete(LLMRequest request) {
+    public ModelResponse complete(ModelRequest request) {
         String key = cacheKey(request);
-        LLMResponse cached = cache.get(key);
+        ModelResponse cached = cache.get(key);
         if (cached != null) {
             log.debug("Cache hit: saved {} in + {} out tokens",
                     cached.promptTokens(), cached.completionTokens());
@@ -48,24 +48,24 @@ public class CachingLLM implements LLM {
         }
 
         long start = System.currentTimeMillis();
-        LLMResponse response = delegate.complete(request);
+        ModelResponse response = delegate.complete(request);
         long latency = System.currentTimeMillis() - start;
 
         cache.put(key, response);
         costTracker.record(delegate.modelName(), response.promptTokens(), response.completionTokens());
-        log.debug("LLM call: {}ms, {} in + {} out tokens, total cost=${}",
+        log.debug("Model call: {}ms, {} in + {} out tokens, total cost=${}",
                 latency, response.promptTokens(), response.completionTokens(),
                 String.format("%.4f", costTracker.estimatedTotalCost()));
         return response;
     }
 
     @Override
-    public CompletableFuture<LLMResponse> completeAsync(LLMRequest request) {
+    public CompletableFuture<ModelResponse> completeAsync(ModelRequest request) {
         return CompletableFuture.supplyAsync(() -> complete(request));
     }
 
     @Override
-    public StreamingResponse stream(LLMRequest request) {
+    public StreamingResponse stream(ModelRequest request) {
         return delegate.stream(request); // streaming not cached
     }
 
@@ -84,7 +84,7 @@ public class CachingLLM implements LLM {
     /** Number of cached entries. */
     public int cacheSize() { return cache.size(); }
 
-    private static String cacheKey(LLMRequest request) {
+    private static String cacheKey(ModelRequest request) {
         StringBuilder sb = new StringBuilder();
         sb.append(request.temperature()).append("|").append(request.maxTokens());
         if (request.messages() != null) {

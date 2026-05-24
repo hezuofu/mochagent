@@ -111,7 +111,7 @@ public class PerceptionObserver {
     }
 
     /**
-     * Build enriched context for injection into the next LLM call.
+     * Build enriched context for injection into the next Model call.
      * Includes recent perceptions (last 5) and summary stats.
      */
     public String buildEnrichedContext() {

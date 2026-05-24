@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2024-2026 MochaAgents Authors
 
-package io.sketch.mochaagents.llm.provider;
+package io.sketch.mochaagents.model.provider;
 
 /**
  * DeepSeek 模型 Provider — OpenAI 兼容接口.
@@ -14,22 +14,22 @@ package io.sketch.mochaagents.llm.provider;
  *
  * <h3>典型用法</h3>
  * <pre>{@code
- * DeepSeekLLM llm = DeepSeekLLM.deepseekBuilder()
+ * DeepSeekModel model = DeepSeekModel.deepseekBuilder()
  *         .modelId("deepseek-chat")
  *         .apiKey(System.getenv("DEEPSEEK_API_KEY"))
  *         .build();
  *
  * // 或使用快捷工厂
- * DeepSeekLLM llm = DeepSeekLLM.create();
+ * DeepSeekModel model = DeepSeekModel.create();
  * }</pre>
  * @author lanxia39@163.com
  */
-public class DeepSeekLLM extends OpenAICompatibleLLM {
+public class DeepSeekModel extends OpenAICompatibleModel {
 
     private static final String DEFAULT_BASE_URL = "https://api.deepseek.com/v1";
     private static final String DEFAULT_MODEL = "deepseek-chat";
 
-    protected DeepSeekLLM(DeepSeekBuilder builder) {
+    protected DeepSeekModel(DeepSeekBuilder builder) {
         super(new CompatibleBuilder()
                 .modelId(builder.modelId)
                 .maxContextTokens(builder.maxContextTokens)
@@ -41,7 +41,7 @@ public class DeepSeekLLM extends OpenAICompatibleLLM {
     }
 
     /** 快捷工厂 — 使用环境变量 DEEPSEEK_API_KEY, 默认模型 deepseek-chat. */
-    public static DeepSeekLLM create() {
+    public static DeepSeekModel create() {
         return deepseekBuilder().build();
     }
 
@@ -66,11 +66,11 @@ public class DeepSeekLLM extends OpenAICompatibleLLM {
         public DeepSeekBuilder apiKey(String key) { this.apiKey = key; return this; }
         public DeepSeekBuilder baseUrl(String url) { this.baseUrl = url; return this; }
 
-        public DeepSeekLLM build() {
+        public DeepSeekModel build() {
             if (apiKey == null || apiKey.isBlank()) {
                 apiKey = System.getenv("DEEPSEEK_API_KEY");
             }
-            return new DeepSeekLLM(this);
+            return new DeepSeekModel(this);
         }
     }
 }

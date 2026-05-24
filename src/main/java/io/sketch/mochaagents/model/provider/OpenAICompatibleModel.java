@@ -1,36 +1,36 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2024-2026 MochaAgents Authors
 
-package io.sketch.mochaagents.llm.provider;
+package io.sketch.mochaagents.model.provider;
 
 /**
- * 通用 OpenAI 兼容端点 — 覆盖 vLLM、Ollama、LiteLLM proxy、Groq、Cerebras 等.
+ * 通用 OpenAI 兼容端点 — 覆盖 vLLM、Ollama、LiteModel proxy、Groq、Cerebras 等.
  *
- * <p>与 {@link OpenAILLM} 共享相同的请求/响应格式, 但端点和认证完全可配置.
+ * <p>与 {@link OpenAIModel} 共享相同的请求/响应格式, 但端点和认证完全可配置.
  *
  * <h3>典型用法</h3>
  * <pre>{@code
  * // vLLM
- * OpenAICompatibleLLM vllm = OpenAICompatibleLLM.builder()
+ * OpenAICompatibleModel vllm = OpenAICompatibleModel.builder()
  *         .modelId("meta-llama/Llama-3.1-8B-Instruct")
  *         .baseUrl("http://localhost:8000/v1")
  *         .build();
  *
  * // Ollama
- * OpenAICompatibleLLM ollama = OpenAICompatibleLLM.builder()
+ * OpenAICompatibleModel ollama = OpenAICompatibleModel.builder()
  *         .modelId("llama3.2")
  *         .baseUrl("http://localhost:11434/v1")
  *         .build();
  *
  * // Groq
- * OpenAICompatibleLLM groq = OpenAICompatibleLLM.builder()
+ * OpenAICompatibleModel groq = OpenAICompatibleModel.builder()
  *         .modelId("llama-3.1-70b-versatile")
  *         .baseUrl("https://api.groq.com/openai/v1")
  *         .apiKey(System.getenv("GROQ_API_KEY"))
  *         .build();
  *
- * // LiteLLM Proxy (routes to 100+ providers)
- * OpenAICompatibleLLM litellm = OpenAICompatibleLLM.builder()
+ * // LiteModel Proxy (routes to 100+ providers)
+ * OpenAICompatibleModel litellm = OpenAICompatibleModel.builder()
  *         .modelId("gpt-4o")
  *         .baseUrl("http://localhost:4000/v1")
  *         .apiKey("sk-litellm-key")
@@ -38,9 +38,9 @@ package io.sketch.mochaagents.llm.provider;
  * }</pre>
  * @author lanxia39@163.com
  */
-public class OpenAICompatibleLLM extends OpenAILLM {
+public class OpenAICompatibleModel extends OpenAIModel {
 
-    protected OpenAICompatibleLLM(CompatibleBuilder builder) {
+    protected OpenAICompatibleModel(CompatibleBuilder builder) {
         super(new OpenAIBuilder()
                 .modelId(builder.modelId)
                 .maxContextTokens(builder.maxContextTokens)
@@ -57,7 +57,7 @@ public class OpenAICompatibleLLM extends OpenAILLM {
     /**
      * 快捷工厂 — 连接本地 Ollama.
      */
-    public static OpenAICompatibleLLM forOllama(String model) {
+    public static OpenAICompatibleModel forOllama(String model) {
         return compatibleBuilder()
                 .modelId(model)
                 .baseUrl("http://localhost:11434/v1")
@@ -67,7 +67,7 @@ public class OpenAICompatibleLLM extends OpenAILLM {
     /**
      * 快捷工厂 — 连接本地 vLLM.
      */
-    public static OpenAICompatibleLLM forVLLM(String model, int port) {
+    public static OpenAICompatibleModel forVLLM(String model, int port) {
         return compatibleBuilder()
                 .modelId(model)
                 .baseUrl("http://localhost:" + port + "/v1")
@@ -91,9 +91,9 @@ public class OpenAICompatibleLLM extends OpenAILLM {
         public CompatibleBuilder apiKey(String key) { this.apiKey = key; return this; }
         public CompatibleBuilder baseUrl(String url) { this.baseUrl = url; return this; }
 
-        public OpenAICompatibleLLM build() {
+        public OpenAICompatibleModel build() {
             if (modelId == null) modelId = "default";
-            return new OpenAICompatibleLLM(this);
+            return new OpenAICompatibleModel(this);
         }
     }
 }

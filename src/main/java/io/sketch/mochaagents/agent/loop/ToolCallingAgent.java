@@ -7,8 +7,8 @@ import io.sketch.mochaagents.agent.loop.LoopState;
 import io.sketch.mochaagents.memory.MemoryManager;
 import io.sketch.mochaagents.agent.loop.ReActAgent;
 import io.sketch.mochaagents.agent.loop.StepResult;
-import io.sketch.mochaagents.llm.LLMRequest;
-import io.sketch.mochaagents.llm.LLMResponse;
+import io.sketch.mochaagents.model.ModelRequest;
+import io.sketch.mochaagents.model.ModelResponse;
 import io.sketch.mochaagents.agent.loop.step.ActionStep;
 import io.sketch.mochaagents.tool.Tool;
 import org.slf4j.Logger;
@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 /**
- * ToolCallingAgent — LLM generates text, framework parses and executes tools.
+ * ToolCallingAgent — Model generates text, framework parses and executes tools.
  *
  * <p>Tool call parsing (parseAction/parseKvArgs/parseJsonArgs) is inherited
  * from {@link io.sketch.mochaagents.agent.internal.BaseAgent}.
@@ -67,11 +67,11 @@ public final class ToolCallingAgent extends ReActAgent {
         try {
             List<Map<String, String>> messages = writeMemoryToMessages();
 
-            LLMRequest request = LLMRequest.builder()
+            ModelRequest request = ModelRequest.builder()
                     .messages(messages).maxTokens(2048).temperature(0.7)
                     .thinkingConfig(thinkingConfig).effort(effortLevel).build();
 
-            LLMResponse response = withLlmRetry(() -> llm.complete(request), "step " + stepNumber);
+            ModelResponse response = withLlmRetry(() -> model.complete(request), "step " + stepNumber);
             String modelOutput = response.content();
             log.info("[ToolCallingAgent] step {} LLM: {}ms, tokens in={} out={}",
                     stepNumber, System.currentTimeMillis() - start,

@@ -4,7 +4,7 @@
 package io.sketch.mochaagents.evaluation;
 
 import io.sketch.mochaagents.evaluation.AutomatedJudge;
-import io.sketch.mochaagents.evaluation.LLMJudge;
+import io.sketch.mochaagents.evaluation.ModelJudge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,7 +13,7 @@ import java.util.*;
 /**
  * 组合评估器 — 链式调用多个 Judge 策略，合并评分为综合结果.
  *
- * <p>默认链: AutomatedJudge(指标评分) → LLMJudge(语义评判) → 加权合并.
+ * <p>默认链: AutomatedJudge(指标评分) → ModelJudge(语义评判) → 加权合并.
  * <p>策略模式: 每个 Judge 是一个 {@link Evaluator} 策略，按注册顺序执行.
  * @author lanxia39@163.com
  */
@@ -32,11 +32,11 @@ public class CompositeEvaluator implements Evaluator {
                 : defaultWeights(builder.judges.size());
     }
 
-    /** 使用 Automated + LLM 评估器的默认组合. */
-    public static CompositeEvaluator defaults(LLMJudge llmJudge) {
+    /** 使用 Automated + Model 评估器的默认组合. */
+    public static CompositeEvaluator defaults(ModelJudge modelJudge) {
         return builder()
                 .addJudge(new AutomatedJudge())
-                .addJudge(llmJudge)
+                .addJudge(modelJudge)
                 .build();
     }
 

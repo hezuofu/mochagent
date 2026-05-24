@@ -3,8 +3,8 @@
 
 package io.sketch.mochaagents.reasoning;
 
-import io.sketch.mochaagents.llm.LLM;
-import io.sketch.mochaagents.llm.LLMRequest;
+import io.sketch.mochaagents.model.Model;
+import io.sketch.mochaagents.model.ModelRequest;
 import io.sketch.mochaagents.reasoning.ReasoningChain;
 import io.sketch.mochaagents.reasoning.ReasoningStep;
 import io.sketch.mochaagents.reasoning.ReasoningStrategy;
@@ -15,20 +15,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Tree of Thought — 让 LLM 生成多个候选思路分支，评分并选择最优路径展开.
+ * Tree of Thought — 让 Model 生成多个候选思路分支，评分并选择最优路径展开.
  * @author lanxia39@163.com
  */
 public class TreeOfThought implements ReasoningStrategy {
 
     private static final Logger log = LoggerFactory.getLogger(TreeOfThought.class);
-    private final LLM llm;
+    private final Model model;
     private final int numBranches;
     private final int maxDepth;
 
-    public TreeOfThought(LLM llm) { this(llm, 3, 2); }
+    public TreeOfThought(Model model) { this(model, 3, 2); }
 
-    public TreeOfThought(LLM llm, int numBranches, int maxDepth) {
-        this.llm = llm; this.numBranches = numBranches; this.maxDepth = maxDepth;
+    public TreeOfThought(Model model, int numBranches, int maxDepth) {
+        this.model = model; this.numBranches = numBranches; this.maxDepth = maxDepth;
     }
 
     @Override
@@ -63,7 +63,7 @@ public class TreeOfThought implements ReasoningStrategy {
                 Conclusion: <expected outcome>
                 Score: <0.0-1.0>""".formatted(context, path.isEmpty() ? "(none)" : path, numBranches);
 
-        String text = llm.complete(LLMRequest.builder()
+        String text = model.complete(ModelRequest.builder()
                 .addMessage("user", prompt).maxTokens(1024).temperature(0.7).build()).content();
         return parseBranches(text);
     }

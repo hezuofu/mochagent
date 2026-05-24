@@ -115,7 +115,7 @@ public class ToolRegistry {
 
     /**
      * 注册 SkillTool 桥接器.
-     * 将 SkillRegistry 中的技能通过 SkillTool 暴露给 LLM 调用。
+     * 将 SkillRegistry 中的技能通过 SkillTool 暴露给 Model 调用。
      */
     public SkillTool registerSkillTool(SkillRegistry skillRegistry) {
         SkillTool skillTool = new SkillTool(skillRegistry);

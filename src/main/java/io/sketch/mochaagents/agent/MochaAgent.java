@@ -8,7 +8,7 @@ import io.sketch.mochaagents.agent.internal.*;
 import io.sketch.mochaagents.agent.loop.*;
 import io.sketch.mochaagents.agent.loop.strategy.ReflexionLoop;
 import io.sketch.mochaagents.agent.loop.strategy.ReWOOLoop;
-import io.sketch.mochaagents.llm.*;
+import io.sketch.mochaagents.model.*;
 import io.sketch.mochaagents.orchestration.Orchestrator;
 import io.sketch.mochaagents.prompt.PromptTemplate;
 import io.sketch.mochaagents.reasoning.*;
@@ -21,7 +21,7 @@ import java.util.concurrent.CompletableFuture;
  * MochaAgent — unified agent facade, composable via {@link Agent#andThen}.
  *
  * <pre>{@code
- * var agent = MochaAgent.builder("assistant", llm)
+ * var agent = MochaAgent.builder("assistant", model)
  *     .addTool(new WebSearchTool())
  *     .build();
  * String result = agent.run("What is the weather?");
@@ -62,12 +62,12 @@ public final class MochaAgent implements Agent<String, String> {
 
     // ── Builder ──
 
-    public static Builder builder(String name, LLM llm) { return new Builder(name, llm); }
-    public static Builder builder() { return new Builder("mocha-agent", new FallbackLLM()); }
+    public static Builder builder(String name, Model model) { return new Builder(name, model); }
+    public static Builder builder() { return new Builder("mocha-agent", new FallbackModel()); }
 
     public static final class Builder {
         private String name;
-        private LLM llm;
+        private Model model;
         private String description = "";
         private int maxSteps = 20;
         private String systemPrompt;
@@ -79,10 +79,10 @@ public final class MochaAgent implements Agent<String, String> {
         private Orchestrator orchestrator;
         private final List<Faculty<String, String>> faculties = new ArrayList<>();
 
-        Builder(String name, LLM llm) { this.name = name; this.llm = llm; }
+        Builder(String name, Model model) { this.name = name; this.model = model; }
 
         public Builder name(String n) { name = n; return this; }
-        public Builder llm(LLM l) { llm = l; return this; }
+        public Builder model(Model l) { model = l; return this; }
         public Builder description(String d) { description = d; return this; }
         public Builder maxSteps(int n) { maxSteps = n; return this; }
         public Builder systemPrompt(String sp) { systemPrompt = sp; return this; }
@@ -104,7 +104,7 @@ public final class MochaAgent implements Agent<String, String> {
 
         public MochaAgent build() {
             ToolCallingAgent.Builder b = ToolCallingAgent.builder()
-                    .name(name).llm(llm).description(description).maxSteps(maxSteps);
+                    .name(name).model(model).description(description).maxSteps(maxSteps);
             if (toolRegistry != null) b.toolRegistry(toolRegistry);
             if (!tools.isEmpty()) b.tools(tools);
             if (thinkingConfig != null) b.thinkingConfig(thinkingConfig);

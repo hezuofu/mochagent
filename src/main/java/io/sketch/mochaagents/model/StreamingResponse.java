@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2024-2026 MochaAgents Authors
 
-package io.sketch.mochaagents.llm;
+package io.sketch.mochaagents.model;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
- * 流式响应 — 支持逐 token 消费的 LLM 响应流.
+ * 流式响应 — 支持逐 token 消费的 Model 响应流.
  * @author lanxia39@163.com
  */
 public class StreamingResponse implements Iterable<String> {

@@ -3,9 +3,9 @@
 
 package io.sketch.mochaagents.context;
 
-import io.sketch.mochaagents.llm.LLM;
-import io.sketch.mochaagents.llm.LLMRequest;
-import io.sketch.mochaagents.llm.LLMResponse;
+import io.sketch.mochaagents.model.Model;
+import io.sketch.mochaagents.model.ModelRequest;
+import io.sketch.mochaagents.model.ModelResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,7 +17,7 @@ import java.util.function.Supplier;
  *
  * <p>Algorithm:
  * <ol>
- *   <li>Build compact prompt → stream compact summary via LLM</li>
+ *   <li>Build compact prompt → stream compact summary via Model</li>
  *   <li>PTL recovery: if compact itself hits prompt-too-long, truncate oldest
  *       API-round groups and retry (max 3 attempts)</li>
  *   <li>Validate summary (not null, not API error)</li>
@@ -36,19 +36,19 @@ public final class CompactConversation {
     private static final int MAX_TOTAL_RESTORE_TOKENS = 50000;
     private static final String PTL_ERROR_PREFIX = "prompt_too_long";
 
-    private final LLM llm;
+    private final Model model;
     private final int compactMaxTokens;
     private final Set<String> recentFiles = new LinkedHashSet<>();
     private int compactionCount;
     private int consecutiveFailures;
     private int totalPtLRecoveries;
 
-    public CompactConversation(LLM llm, int compactMaxTokens) {
-        this.llm = llm;
+    public CompactConversation(Model model, int compactMaxTokens) {
+        this.model = model;
         this.compactMaxTokens = compactMaxTokens;
     }
 
-    public CompactConversation(LLM llm) { this(llm, 1024); }
+    public CompactConversation(Model model) { this(model, 1024); }
 
     /**
      * Run compaction on a list of context chunks.
@@ -67,7 +67,7 @@ public final class CompactConversation {
         String currentTranscript = transcript;
 
         while (ptlAttempts <= MAX_PTL_RETRIES) {
-            LLMResponse response = llm.complete(LLMRequest.builder()
+            ModelResponse response = model.complete(ModelRequest.builder()
                     .addMessage("user", compactPrompt)
                     .maxTokens(compactMaxTokens)
                     .temperature(0.2)

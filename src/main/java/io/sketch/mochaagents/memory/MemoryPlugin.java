@@ -17,10 +17,10 @@ public interface MemoryPlugin {
     /** Build memory section for system prompt. Return "" if nothing. */
     default String buildSystemPrompt() { return ""; }
 
-    /** Pre-fetch relevant context before LLM call. */
+    /** Pre-fetch relevant context before Model call. */
     default String prefetch(String userMessage) { return ""; }
 
-    /** Sync conversation after LLM response. */
+    /** Sync conversation after Model response. */
     default void sync(String userMessage, String assistantResponse) {}
 
     /** Called at start of each turn. */

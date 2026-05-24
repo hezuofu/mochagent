@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2024-2026 MochaAgents Authors
 
-package io.sketch.mochaagents.llm;
+package io.sketch.mochaagents.model;
 
 import io.sketch.mochaagents.reasoning.ThinkingConfig;
 import io.sketch.mochaagents.reasoning.EffortLevel;
 import java.util.*;
 
 /**
- * LLM 请求 — 封装 prompt、参数与配置.
+ * Model 请求 — 封装 prompt、参数与配置.
  * ThinkingConfig and EffortLevel flow through to providers for API parameter mapping.
  * @author lanxia39@163.com
  */
-public class LLMRequest {
+public class ModelRequest {
 
     private final String prompt;
     private final List<Map<String, String>> messages;
@@ -27,7 +27,7 @@ public class LLMRequest {
     private final ThinkingConfig thinkingConfig;
     private final EffortLevel effort;
 
-    private LLMRequest(Builder builder) {
+    private ModelRequest(Builder builder) {
         this.prompt = builder.prompt;
         this.messages = List.copyOf(builder.messages);
         this.typedMessages = builder.typedMessages != null ? List.copyOf(builder.typedMessages) : List.of();
@@ -93,6 +93,6 @@ public class LLMRequest {
         public Builder thinkingConfig(ThinkingConfig config) { this.thinkingConfig = config; return this; }
         public Builder effort(EffortLevel effort) { this.effort = effort; return this; }
 
-        public LLMRequest build() { return new LLMRequest(this); }
+        public ModelRequest build() { return new ModelRequest(this); }
     }
 }

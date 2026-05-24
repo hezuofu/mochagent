@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 /**
  * Coordinator 模式系统提示 — 对齐 claude-code 的 coordinatorMode.ts.
  *
- * <p>生成 Coordinator 模式的 system prompt，指导 LLM 以多 worker 编排方式
+ * <p>生成 Coordinator 模式的 system prompt，指导 Model 以多 worker 编排方式
  * 执行软件工程任务。
  *
  * <p>核心工作流:

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2024-2026 MochaAgents Authors
 
-package io.sketch.mochaagents.llm.provider;
+package io.sketch.mochaagents.model.provider;
 
 /**
  * 通义千问 (Qwen) Provider — 通过阿里云 DashScope OpenAI 兼容接口接入.
@@ -20,22 +20,22 @@ package io.sketch.mochaagents.llm.provider;
  *
  * <h3>典型用法</h3>
  * <pre>{@code
- * QwenLLM llm = QwenLLM.qwenBuilder()
+ * QwenModel model = QwenModel.qwenBuilder()
  *         .modelId("qwen-plus")
  *         .apiKey(System.getenv("DASHSCOPE_API_KEY"))
  *         .build();
  *
  * // 或使用快捷工厂
- * QwenLLM llm = QwenLLM.create();
+ * QwenModel model = QwenModel.create();
  * }</pre>
  * @author lanxia39@163.com
  */
-public class QwenLLM extends OpenAICompatibleLLM {
+public class QwenModel extends OpenAICompatibleModel {
 
     private static final String DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1";
     private static final String DEFAULT_MODEL = "qwen-plus";
 
-    protected QwenLLM(QwenBuilder builder) {
+    protected QwenModel(QwenBuilder builder) {
         super(new CompatibleBuilder()
                 .modelId(builder.modelId)
                 .maxContextTokens(builder.maxContextTokens)
@@ -47,7 +47,7 @@ public class QwenLLM extends OpenAICompatibleLLM {
     }
 
     /** 快捷工厂 — 使用环境变量 DASHSCOPE_API_KEY, 默认模型 qwen-plus. */
-    public static QwenLLM create() {
+    public static QwenModel create() {
         return qwenBuilder().build();
     }
 
@@ -72,11 +72,11 @@ public class QwenLLM extends OpenAICompatibleLLM {
         public QwenBuilder apiKey(String key) { this.apiKey = key; return this; }
         public QwenBuilder baseUrl(String url) { this.baseUrl = url; return this; }
 
-        public QwenLLM build() {
+        public QwenModel build() {
             if (apiKey == null || apiKey.isBlank()) {
                 apiKey = System.getenv("DASHSCOPE_API_KEY");
             }
-            return new QwenLLM(this);
+            return new QwenModel(this);
         }
     }
 }

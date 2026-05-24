@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2024-2026 MochaAgents Authors
 
-package io.sketch.mochaagents.llm;
+package io.sketch.mochaagents.model;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Cost tracker — monitors LLM token usage and cost per model/session.
+ * Cost tracker — monitors Model token usage and cost per model/session.
  * <p>Pricing per 1M tokens (input, output) for major models.
  * @author lanxia39@163.com
  */
@@ -40,7 +40,7 @@ public class CostTracker {
     private final AtomicLong estimatedCostMicros = new AtomicLong(); // millionths of a dollar
     private final Map<String, long[]> perModel = new ConcurrentHashMap<>(); // [calls, inTokens, outTokens, costMicros]
 
-    /** Record a completed LLM call. */
+    /** Record a completed Model call. */
     public void record(String modelId, int inputTokens, int outputTokens) {
         totalInputTokens.addAndGet(inputTokens);
         totalOutputTokens.addAndGet(outputTokens);
@@ -66,7 +66,7 @@ public class CostTracker {
     public long totalInputTokens() { return totalInputTokens.get(); }
     /** Total output tokens across all calls. */
     public long totalOutputTokens() { return totalOutputTokens.get(); }
-    /** Total number of LLM calls. */
+    /** Total number of Model calls. */
     public long totalCalls() { return totalCalls.get(); }
     /** Estimated total cost in dollars. */
     public double estimatedTotalCost() { return estimatedCostMicros.get() / 1_000_000.0; }
@@ -89,7 +89,7 @@ public class CostTracker {
     /** Generate a summary report. */
     public String report() {
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("LLM Usage: %d calls, %d in + %d out tokens, $%.4f total\n",
+        sb.append(String.format("Model Usage: %d calls, %d in + %d out tokens, $%.4f total\n",
                 totalCalls(), totalInputTokens(), totalOutputTokens(), estimatedTotalCost()));
         perModelStats().forEach((model, stats) ->
                 sb.append(String.format("  %s: %d calls, $%.4f\n", model, stats.cost())));

@@ -10,7 +10,7 @@ import java.util.List;
  * @param result       final answer
  * @param steps        total ReAct steps taken
  * @param durationMs   wall-clock time
- * @param llmCost      estimated LLM cost (USD)
+ * @param llmCost      estimated Model cost (USD)
  * @param inputTokens  total input tokens consumed
  * @param outputTokens total output tokens produced
  * @param errors       any errors encountered

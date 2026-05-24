@@ -3,24 +3,24 @@
 
 package io.sketch.mochaagents.reasoning;
 
-import io.sketch.mochaagents.llm.LLM;
-import io.sketch.mochaagents.llm.LLMRequest;
+import io.sketch.mochaagents.model.Model;
+import io.sketch.mochaagents.model.ModelRequest;
 import io.sketch.mochaagents.reasoning.ReasoningChain;
 import io.sketch.mochaagents.reasoning.ReasoningStep;
 
 /**
- * 逻辑验证器 — 用 LLM 判断推理链的结论是否能从前提中逻辑推导出来.
+ * 逻辑验证器 — 用 Model 判断推理链的结论是否能从前提中逻辑推导出来.
  * @author lanxia39@163.com
  */
 public class LogicVerifier implements ReasoningVerifier {
 
-    private final LLM llm;
+    private final Model model;
     private final double confidenceThreshold;
 
-    public LogicVerifier(LLM llm) { this(llm, 0.5); }
+    public LogicVerifier(Model model) { this(model, 0.5); }
 
-    public LogicVerifier(LLM llm, double confidenceThreshold) {
-        this.llm = llm;
+    public LogicVerifier(Model model, double confidenceThreshold) {
+        this.model = model;
         this.confidenceThreshold = confidenceThreshold;
     }
 
@@ -41,7 +41,7 @@ public class LogicVerifier implements ReasoningVerifier {
                 Chain:
                 %s""".formatted(sb.toString());
 
-        String response = llm.complete(LLMRequest.builder()
+        String response = model.complete(ModelRequest.builder()
                 .addMessage("user", prompt).maxTokens(256).temperature(0.1).build()).content();
 
         boolean passed = response.trim().toUpperCase().startsWith("PASS");

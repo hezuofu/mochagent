@@ -141,7 +141,7 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
 
     protected record ParsedAction(String name, Map<String, Object> arguments) {}
 
-    /** Parse tool call from LLM output: JSON → "Action:" format → loose match. */
+    /** Parse tool call from Model output: JSON → "Action:" format → loose match. */
     protected ParsedAction parseAction(String modelOutput) {
         Matcher jm = JSON_ACTION_PATTERN.matcher(modelOutput);
         if (jm.find())

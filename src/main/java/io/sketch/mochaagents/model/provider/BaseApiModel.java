@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2024-2026 MochaAgents Authors
 
-package io.sketch.mochaagents.llm.provider;
+package io.sketch.mochaagents.model.provider;
 import io.sketch.mochaagents.MochaException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.sketch.mochaagents.llm.LLM;
-import io.sketch.mochaagents.llm.LLMRequest;
-import io.sketch.mochaagents.llm.LLMResponse;
-import io.sketch.mochaagents.llm.StreamingResponse;
+import io.sketch.mochaagents.model.Model;
+import io.sketch.mochaagents.model.ModelRequest;
+import io.sketch.mochaagents.model.ModelResponse;
+import io.sketch.mochaagents.model.StreamingResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,12 +30,12 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Base API LLM — JDK HttpClient, retry, rate limiting, SSE streaming.
+ * Base API Model — JDK HttpClient, retry, rate limiting, SSE streaming.
  *
  * <p>Subclasses implement: {@link #buildRequestBody}, {@link #parseResponseContent}, {@link #apiUrl}.
  * @author lanxia39@163.com
  */
-public abstract class BaseApiLLM implements LLM {
+public abstract class BaseApiModel implements Model {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
     protected static final ObjectMapper JSON = new ObjectMapper();
@@ -52,7 +52,7 @@ public abstract class BaseApiLLM implements LLM {
     protected final String modelId;
     protected final int maxContextTokens;
 
-    protected BaseApiLLM(Builder<?> builder) {
+    protected BaseApiModel(Builder<?> builder) {
         this.modelId = builder.modelId;
         this.maxContextTokens = builder.maxContextTokens;
 
@@ -77,7 +77,7 @@ public abstract class BaseApiLLM implements LLM {
     protected Map<String, String> authHeaders() { return Map.of(); }
 
     protected abstract String apiUrl();
-    protected abstract String buildRequestBody(LLMRequest request);
+    protected abstract String buildRequestBody(ModelRequest request);
     protected abstract ResponseParseResult parseResponseContent(JsonNode root);
 
     protected record ResponseParseResult(String content, int promptTokens, int completionTokens) {}
@@ -85,7 +85,7 @@ public abstract class BaseApiLLM implements LLM {
     // ============ LLM接口 ============
 
     @Override
-    public LLMResponse complete(LLMRequest request) {
+    public ModelResponse complete(ModelRequest request) {
         acquireRateLimit();
         String body = buildRequestBody(request);
 
@@ -108,7 +108,7 @@ public abstract class BaseApiLLM implements LLM {
                 if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
                     JsonNode root = JSON.readTree(resp.body());
                     ResponseParseResult parsed = parseResponseContent(root);
-                    return new LLMResponse(parsed.content(), modelId,
+                    return new ModelResponse(parsed.content(), modelId,
                             parsed.promptTokens(), parsed.completionTokens(),
                             latency, Map.of("provider", getClass().getSimpleName()));
                 }
@@ -146,12 +146,12 @@ public abstract class BaseApiLLM implements LLM {
     }
 
     @Override
-    public CompletableFuture<LLMResponse> completeAsync(LLMRequest request) {
+    public CompletableFuture<ModelResponse> completeAsync(ModelRequest request) {
         return CompletableFuture.supplyAsync(() -> complete(request));
     }
 
     @Override
-    public StreamingResponse stream(LLMRequest request) {
+    public StreamingResponse stream(ModelRequest request) {
         StreamingResponse response = new StreamingResponse();
         String body = buildStreamRequestBody(request);
         var reqBuilder = HttpRequest.newBuilder()
@@ -183,7 +183,7 @@ public abstract class BaseApiLLM implements LLM {
         return response;
     }
 
-    protected String buildStreamRequestBody(LLMRequest request) { return buildRequestBody(request); }
+    protected String buildStreamRequestBody(ModelRequest request) { return buildRequestBody(request); }
 
     protected void parseSseStream(java.io.InputStream stream, StreamingResponse response) throws IOException {
         String data = "";

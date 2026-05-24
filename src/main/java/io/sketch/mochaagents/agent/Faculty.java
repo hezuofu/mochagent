@@ -18,7 +18,7 @@ import java.util.function.BiFunction;
  * Faculty — a composable cognitive capability that wraps an Agent.
  *
  * <pre>{@code
- * var agent = MochaAgent.builder("a", llm).addTool(t)
+ * var agent = MochaAgent.builder("a", model).addTool(t)
  *     .with(Faculty.Perception.of(perceptor))
  *     .with(Faculty.Reasoning.of(reasoner))
  *     .build();

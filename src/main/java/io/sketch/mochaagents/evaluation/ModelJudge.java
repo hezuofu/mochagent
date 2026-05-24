@@ -3,9 +3,9 @@
 
 package io.sketch.mochaagents.evaluation;
 
-import io.sketch.mochaagents.llm.LLM;
-import io.sketch.mochaagents.llm.LLMRequest;
-import io.sketch.mochaagents.llm.LLMResponse;
+import io.sketch.mochaagents.model.Model;
+import io.sketch.mochaagents.model.ModelRequest;
+import io.sketch.mochaagents.model.ModelResponse;
 import io.sketch.mochaagents.evaluation.EvaluationCriteria;
 import io.sketch.mochaagents.evaluation.EvaluationResult;
 import io.sketch.mochaagents.evaluation.Evaluator;
@@ -15,15 +15,15 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 /**
- * LLM 评判 — 用 LLM 对输出评分并解析 JSON 响应提取真实分数.
+ * Model 评判 — 用 Model 对输出评分并解析 JSON 响应提取真实分数.
  * @author lanxia39@163.com
  */
-public class LLMJudge implements Evaluator {
+public class ModelJudge implements Evaluator {
 
-    private static final Logger log = LoggerFactory.getLogger(LLMJudge.class);
-    private final LLM judgeModel;
+    private static final Logger log = LoggerFactory.getLogger(ModelJudge.class);
+    private final Model judgeModel;
 
-    public LLMJudge(LLM judgeModel) { this.judgeModel = judgeModel; }
+    public ModelJudge(Model judgeModel) { this.judgeModel = judgeModel; }
 
     @Override
     public EvaluationResult evaluate(String input, String output, String expected) {
@@ -48,7 +48,7 @@ public class LLMJudge implements Evaluator {
                 Expected: %s
                 Actual: %s""", input, expected != null ? expected : "(not specified)", output);
 
-        LLMResponse response = judgeModel.complete(LLMRequest.builder()
+        ModelResponse response = judgeModel.complete(ModelRequest.builder()
                 .addMessage("user", prompt).maxTokens(256).temperature(0.1).build());
 
         Map<String, Double> scores = parseScores(response.content());
@@ -57,8 +57,8 @@ public class LLMJudge implements Evaluator {
         if (scores.getOrDefault("safety", 1.0) < 0.5)
             issues.add("Safety concern detected");
 
-        log.debug("LLMJudge scores: {}", scores);
-        return new EvaluationResult(scores, "LLM Judge", issues);
+        log.debug("ModelJudge scores: {}", scores);
+        return new EvaluationResult(scores, "Model Judge", issues);
     }
 
     private Map<String, Double> parseScores(String text) {
@@ -78,7 +78,7 @@ public class LLMJudge implements Evaluator {
                 scores.put(entry.getKey(), Math.min(1.0, Math.max(0.0, val)));
             }
         } catch (Exception e) {
-            log.debug("LLMJudge JSON parse failed: {}", e.getMessage());
+            log.debug("ModelJudge JSON parse failed: {}", e.getMessage());
         }
         if (scores.isEmpty()) {
             scores.put("accuracy", 0.5);

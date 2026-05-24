@@ -6,7 +6,7 @@ package io.sketch.mochaagents.cli;
 import io.sketch.mochaagents.AgentBootstrap;
 import io.sketch.mochaagents.agent.loop.ToolCallingAgent;
 import io.sketch.mochaagents.agent.loop.PlanMode;
-import io.sketch.mochaagents.llm.LLM;
+import io.sketch.mochaagents.model.Model;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,7 +63,7 @@ final class Repl implements CliCommand {
     private final ModelConfig modelCfg;
     private ToolCallingAgent agent;
     private AgentBootstrap bootstrap;
-    private LLM llm;
+    private Model model;
     private PrintStream out;
     private PrintStream err;
     private PlanMode planMode;
@@ -121,7 +121,7 @@ final class Repl implements CliCommand {
     }
 
     private void printEnvInfo() {
-        String modelName = llm().modelName();
+        String modelName = model().modelName();
         String modelLabel = modelCfg.hasModels() ? modelName : dim("fallback (use --model flag)");
 
         out.println("  " + bold("Model:") + "    " + green(modelLabel));
@@ -350,7 +350,7 @@ final class Repl implements CliCommand {
     }
 
     private void showModelInfo() {
-        LLM l = llm();
+        Model l = model();
         out.println(bold("Model:") + " " + green(l.modelName()));
         out.println(bold("Context:") + " " + l.maxContextTokens() + " tokens");
         out.println(bold("Temp:") + " " + String.format("%.2f", modelCfg.temperature()));
@@ -432,20 +432,20 @@ final class Repl implements CliCommand {
     private ToolCallingAgent agent() {
         if (agent == null) {
             bootstrap = AgentBootstrap.init();
-            llm = modelCfg.build();
+            model = modelCfg.build();
             agent = ToolCallingAgent.builder()
-                    .name("repl-agent").llm(llm)
+                    .name("repl-agent").model(model)
                     .toolRegistry(bootstrap.toolRegistry())
                     .maxSteps(modelCfg.maxTokens() > 0 ? 20 : 10)
                     .build();
-            log.info("REPL agent created — model: {}", llm.modelName());
+            log.info("REPL agent created — model: {}", model.modelName());
         }
         return agent;
     }
 
-    private LLM llm() {
-        if (llm == null) llm = modelCfg.build();
-        return llm;
+    private Model model() {
+        if (model == null) model = modelCfg.build();
+        return model;
     }
 
     // ============ Git detection ============

@@ -3,20 +3,20 @@
 
 package io.sketch.mochaagents.reasoning;
 
-import io.sketch.mochaagents.llm.LLM;
-import io.sketch.mochaagents.llm.LLMRequest;
+import io.sketch.mochaagents.model.Model;
+import io.sketch.mochaagents.model.ModelRequest;
 import io.sketch.mochaagents.reasoning.ReasoningChain;
 import io.sketch.mochaagents.reasoning.ReasoningStep;
 
 /**
- * 一致性检查 — 用 LLM 检测推理步骤间是否存在自相矛盾.
+ * 一致性检查 — 用 Model 检测推理步骤间是否存在自相矛盾.
  * @author lanxia39@163.com
  */
 public class ConsistencyChecker implements ReasoningVerifier {
 
-    private final LLM llm;
+    private final Model model;
 
-    public ConsistencyChecker(LLM llm) { this.llm = llm; }
+    public ConsistencyChecker(Model model) { this.model = model; }
 
     @Override
     public boolean verify(ReasoningChain chain) {
@@ -36,7 +36,7 @@ public class ConsistencyChecker implements ReasoningVerifier {
                 Steps:
                 %s""".formatted(sb.toString());
 
-        String response = llm.complete(LLMRequest.builder()
+        String response = model.complete(ModelRequest.builder()
                 .addMessage("user", prompt).maxTokens(256).temperature(0.1).build()).content();
         return response.trim().toUpperCase().startsWith("PASS");
     }

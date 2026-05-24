@@ -3,8 +3,8 @@
 
 package io.sketch.mochaagents.reasoning;
 
-import io.sketch.mochaagents.llm.LLM;
-import io.sketch.mochaagents.llm.LLMRequest;
+import io.sketch.mochaagents.model.Model;
+import io.sketch.mochaagents.model.ModelRequest;
 import io.sketch.mochaagents.reasoning.ReasoningChain;
 import io.sketch.mochaagents.reasoning.ReasoningStep;
 import io.sketch.mochaagents.reasoning.ReasoningStrategy;
@@ -15,15 +15,15 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 
 /**
- * Program of Thought — 让 LLM 生成可执行代码来推理，执行代码并基于输出得出结论.
+ * Program of Thought — 让 Model 生成可执行代码来推理，执行代码并基于输出得出结论.
  * @author lanxia39@163.com
  */
 public class ProgramOfThought implements ReasoningStrategy {
 
     private static final Logger log = LoggerFactory.getLogger(ProgramOfThought.class);
-    private final LLM llm;
+    private final Model model;
 
-    public ProgramOfThought(LLM llm) { this.llm = llm; }
+    public ProgramOfThought(Model model) { this.model = model; }
 
     @Override
     public ReasoningChain reason(String question) {
@@ -39,7 +39,7 @@ public class ProgramOfThought implements ReasoningStrategy {
 
                 Question: %s""".formatted(question);
 
-        String response = llm.complete(LLMRequest.builder()
+        String response = model.complete(ModelRequest.builder()
                 .addMessage("user", prompt).maxTokens(2048).temperature(0.2).build()).content();
 
         chain.add(new ReasoningStep(1, "Generate code for: " + question,

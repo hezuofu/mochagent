@@ -28,10 +28,10 @@ public interface MemoryProvider {
 
     // ── Turn lifecycle ──
 
-    /** Pre-fetch context before the LLM call. Return "" if none. */
+    /** Pre-fetch context before the Model call. Return "" if none. */
     default String prefetch(String userMessage) { return ""; }
 
-    /** Sync conversation after the LLM response. */
+    /** Sync conversation after the Model response. */
     default void sync(String userMessage, String assistantResponse) {}
 
     /** Called at the start of each turn. */

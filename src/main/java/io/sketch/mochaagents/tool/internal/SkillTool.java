@@ -185,7 +185,7 @@ public class SkillTool extends AbstractTool {
 
     /**
      * 将 skill 的 prompt 内容转换为 newMessages 格式.
-     * 供 ToolExecutor/Orchestrator 在 call 后提取并注入 LLM 上下文。
+     * 供 ToolExecutor/Orchestrator 在 call 后提取并注入 Model 上下文。
      *
      * @param arguments 原始调用参数
      * @return newMessages 列表，每项包含 type 和 content

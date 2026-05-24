@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2024-2026 MochaAgents Authors
 
-package io.sketch.mochaagents.llm;
+package io.sketch.mochaagents.model;
 
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Minimal LLM — send a request, get a response.
+ * Minimal Model — send a request, get a response.
  */
 @FunctionalInterface
-public interface LLM {
+public interface Model {
 
-    LLMResponse complete(LLMRequest request);
+    ModelResponse complete(ModelRequest request);
 
-    default CompletableFuture<LLMResponse> completeAsync(LLMRequest request) {
+    default CompletableFuture<ModelResponse> completeAsync(ModelRequest request) {
         return CompletableFuture.supplyAsync(() -> complete(request));
     }
 
-    default StreamingResponse stream(LLMRequest request) {
+    default StreamingResponse stream(ModelRequest request) {
         throw new UnsupportedOperationException("streaming not supported by " + modelName());
     }
 

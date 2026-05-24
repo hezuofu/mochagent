@@ -9,7 +9,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Agent event bus — pub/sub for real-time execution notifications.
- * <p>Subscribe to get notified of every step, tool call, LLM interaction, and error.
+ * <p>Subscribe to get notified of every step, tool call, Model interaction, and error.
  * @author lanxia39@163.com
  */
 public final class AgentEvents {
@@ -36,7 +36,7 @@ public final class AgentEvents {
     public static final String STARTED = "agent.started";
     public static final String STEP_START = "step.start";
     public static final String STEP_END = "step.end";
-    public static final String LLM_CALL = "llm.call";
+    public static final String MODEL_CALL = "llm.call";
     public static final String TOOL_CALL = "tool.call";
     public static final String FINAL_ANSWER = "agent.final_answer";
     public static final String COMPLETED = "agent.completed";

@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Unlike OPAR's periodic reflection, Reflexion critiques EVERY step,
  * produces a concrete improvement plan, and passes it to the next cycle.
- * The improvement is injected as context so the LLM learns from its mistakes.
+ * The improvement is injected as context so the Model learns from its mistakes.
  *
  * <p>Reference: Shinn et al. "Reflexion: Language Agents with Verbal Reinforcement Learning"
  *
@@ -88,7 +88,7 @@ public class ReflexionLoop<I, O> implements AgentLoop<I, O> {
                 }
             }
 
-            // 2. Act — LLM call + tool execution
+            // 2. Act — Model call + tool execution
             long stepStart = System.currentTimeMillis();
             result = stepExecutor.execute(step, input, memory);
             long stepMs = System.currentTimeMillis() - stepStart;

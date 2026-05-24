@@ -3,8 +3,8 @@
 
 package io.sketch.mochaagents.context;
 
-import io.sketch.mochaagents.llm.LLM;
-import io.sketch.mochaagents.llm.LLMRequest;
+import io.sketch.mochaagents.model.Model;
+import io.sketch.mochaagents.model.ModelRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,23 +13,23 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * LLM 上下文压缩器 — 将旧消息用 LLM 压缩为语义摘要，节省 token 预算.
+ * Model 上下文压缩器 — 将旧消息用 Model 压缩为语义摘要，节省 token 预算.
  *
- * <p>压缩策略：从尾部保留最近 50% 的消息，其余用 LLM 生成摘要替代.
+ * <p>压缩策略：从尾部保留最近 50% 的消息，其余用 Model 生成摘要替代.
  * @author lanxia39@163.com
  */
-public class LLMContextCompressor implements ContextCompressor {
+public class ModelContextCompressor implements ContextCompressor {
 
-    private static final Logger log = LoggerFactory.getLogger(LLMContextCompressor.class);
+    private static final Logger log = LoggerFactory.getLogger(ModelContextCompressor.class);
     private static final int SUMMARY_MAX_TOKENS = 256;
 
-    private final LLM llm;
+    private final Model model;
     private final double keepRatio;
 
-    public LLMContextCompressor(LLM llm) { this(llm, 0.5); }
+    public ModelContextCompressor(Model model) { this(model, 0.5); }
 
-    public LLMContextCompressor(LLM llm, double keepRatio) {
-        this.llm = llm;
+    public ModelContextCompressor(Model model, double keepRatio) {
+        this.model = model;
         this.keepRatio = Math.min(0.9, Math.max(0.1, keepRatio));
     }
 
@@ -48,7 +48,7 @@ public class LLMContextCompressor implements ContextCompressor {
         List<ContextChunk> toKeep = chunks.subList(splitIdx, chunks.size());
 
         String summary = "[Compressed context]\n"
-                + ContextSummarizer.summarize(llm, toSummarize, SUMMARY_MAX_TOKENS);
+                + ContextSummarizer.summarize(model, toSummarize, SUMMARY_MAX_TOKENS);
 
         List<ContextChunk> result = new ArrayList<>();
         result.add(new ContextChunk("compressed-" + UUID.randomUUID().toString().substring(0, 8),
@@ -56,7 +56,7 @@ public class LLMContextCompressor implements ContextCompressor {
                 Math.max(1, summary.length() / 4)));
         result.addAll(toKeep);
 
-        log.debug("LLMContextCompressor: {} chunks → summary ({} chars) + {} recent chunks",
+        log.debug("ModelContextCompressor: {} chunks → summary ({} chars) + {} recent chunks",
                 toSummarize.size(), summary.length(), toKeep.size());
         return result;
     }

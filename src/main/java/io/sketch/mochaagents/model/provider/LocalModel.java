@@ -1,28 +1,28 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2024-2026 MochaAgents Authors
 
-package io.sketch.mochaagents.llm.provider;
+package io.sketch.mochaagents.model.provider;
 
 /**
- * 本地 LLM 提供者 — Ollama / vLLM 等本地部署模型的便捷封装.
+ * 本地 Model 提供者 — Ollama / vModel 等本地部署模型的便捷封装.
  *
- * <p>继承自 {@link OpenAICompatibleLLM}, 默认连接 localhost.
+ * <p>继承自 {@link OpenAICompatibleModel}, 默认连接 localhost.
  *
  * <pre>{@code
  * // 默认: Ollama @ localhost:11434, model=llama3.2
- * LocalLLM llm = LocalLLM.builder().build();
+ * LocalModel model = LocalModel.builder().build();
  *
- * // vLLM @ localhost:8000
- * LocalLLM vllm = LocalLLM.builder()
+ * // vModel @ localhost:8000
+ * LocalModel vllm = LocalModel.builder()
  *         .modelId("meta-llama/Llama-3.1-70B-Instruct")
  *         .endpoint("http://localhost:8000/v1")
  *         .build();
  * }</pre>
  * @author lanxia39@163.com
  */
-public class LocalLLM extends OpenAICompatibleLLM {
+public class LocalModel extends OpenAICompatibleModel {
 
-    protected LocalLLM(LocalBuilder builder) {
+    protected LocalModel(LocalBuilder builder) {
         super(new CompatibleBuilder()
                 .modelId(builder.modelId)
                 .maxContextTokens(builder.maxContextTokens)
@@ -38,7 +38,7 @@ public class LocalLLM extends OpenAICompatibleLLM {
     /**
      * 快捷工厂 — 使用默认配置 (Ollama llama3.2 @ localhost:11434).
      */
-    public static LocalLLM create() {
+    public static LocalModel create() {
         return localBuilder().build();
     }
 
@@ -55,8 +55,8 @@ public class LocalLLM extends OpenAICompatibleLLM {
         public LocalBuilder readTimeout(int seconds) { this.readTimeoutSeconds = seconds; return this; }
         public LocalBuilder endpoint(String url) { this.endpoint = url; return this; }
 
-        public LocalLLM build() {
-            return new LocalLLM(this);
+        public LocalModel build() {
+            return new LocalModel(this);
         }
     }
 }
