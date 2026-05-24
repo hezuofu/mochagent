@@ -18,10 +18,14 @@ import io.sketch.mochaagents.reasoning.ThinkingConfig;
 import io.sketch.mochaagents.safety.SafetyManager;
 import io.sketch.mochaagents.tool.ToolRegistry;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Minimal agent base — name, state, tools, safety, and memory.
@@ -119,6 +123,69 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
     protected static ContextChunk newChunk(String role, String content) {
         int tokens = content != null ? Math.max(1, content.length() / 4) : 1;
         return new ContextChunk(UUID.randomUUID().toString(), role, content, tokens);
+    }
+
+    // ── Tool calling (shared by all agents) ──
+
+    protected static final Pattern ACTION_PATTERN =
+            Pattern.compile("Action:\\s*(\\w+)\\((.*?)\\)", Pattern.DOTALL);
+    protected static final Pattern JSON_ACTION_PATTERN =
+            Pattern.compile("\"name\"\\s*:\\s*\"(\\w+)\"\\s*,\\s*\"arguments\"\\s*:\\s*(\\{[^}]+\\})");
+    protected static final Pattern LOOSE_TOOL_PATTERN =
+            Pattern.compile("(\\w+)\\s*\\(([^)]*)\\)");
+    private static final Pattern KV_PAIR = Pattern.compile("(\\w+)\\s*=\\s*\"([^\"]*)\"");
+    private static final Pattern JSON_PAIR = Pattern.compile("\"(\\w+)\"\\s*:\\s*\"([^\"]*)\"");
+
+    protected record ParsedAction(String name, Map<String, Object> arguments) {}
+
+    /** Parse tool call from LLM output: JSON → "Action:" format → loose match. */
+    protected ParsedAction parseAction(String modelOutput) {
+        Matcher jm = JSON_ACTION_PATTERN.matcher(modelOutput);
+        if (jm.find())
+            return new ParsedAction(jm.group(1), parseJsonArgs(jm.group(2)));
+
+        Matcher am = ACTION_PATTERN.matcher(modelOutput);
+        if (am.find())
+            return new ParsedAction(am.group(1), parseKvArgs(am.group(2).trim()));
+
+        Matcher lm = LOOSE_TOOL_PATTERN.matcher(modelOutput);
+        String lastName = null, lastArgs = null;
+        while (lm.find()) { lastName = lm.group(1); lastArgs = lm.group(2); }
+        if (lastName != null && toolRegistry != null && toolRegistry.has(lastName))
+            return new ParsedAction(lastName, parseKvArgs(lastArgs != null ? lastArgs.trim() : ""));
+
+        return null;
+    }
+
+    protected Map<String, Object> parseKvArgs(String args) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        Matcher m = KV_PAIR.matcher(args);
+        while (m.find()) result.put(m.group(1), m.group(2));
+        if (result.isEmpty() && !args.isEmpty())
+            result.put("input", args.replace("\"", "").trim());
+        return result;
+    }
+
+    protected Map<String, Object> parseJsonArgs(String json) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        Matcher m = JSON_PAIR.matcher(json);
+        while (m.find()) result.put(m.group(1), m.group(2));
+        return result;
+    }
+
+    protected <T> T withLlmRetry(java.util.function.Supplier<T> call, String step) {
+        RuntimeException last = null;
+        for (int i = 0; i < 3; i++) {
+            try { return call.get(); }
+            catch (RuntimeException e) {
+                last = e;
+                if (i < 2) {
+                    try { Thread.sleep(1000L * (i + 1)); }
+                    catch (InterruptedException ie) { Thread.currentThread().interrupt(); throw e; }
+                }
+            }
+        }
+        throw last;
     }
 
     // ── Builder ──
