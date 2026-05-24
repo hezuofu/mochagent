@@ -34,14 +34,11 @@ public interface Agent<I, O> {
         return execute(input, AgentContext.of(input != null ? input.toString() : ""));
     }
 
-    /**
-     * 异步执行（主入口）.
-     */
-    CompletableFuture<O> executeAsync(I input, AgentContext ctx);
+    /** Async execution — defaults to sync in a CompletableFuture. */
+    default CompletableFuture<O> executeAsync(I input, AgentContext ctx) {
+        return CompletableFuture.supplyAsync(() -> execute(input, ctx));
+    }
 
-    /**
-     * 向后兼容 — 使用默认 AgentContext 异步执行.
-     */
     default CompletableFuture<O> executeAsync(I input) {
         return executeAsync(input, AgentContext.of(input != null ? input.toString() : ""));
     }

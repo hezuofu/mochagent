@@ -75,11 +75,6 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
         }
     }
 
-    @Override
-    public CompletableFuture<O> executeAsync(I input, AgentContext ctx) {
-        return CompletableFuture.supplyAsync(() -> execute(input, ctx));
-    }
-
     // ── Metadata / listeners ──
 
     @Override
