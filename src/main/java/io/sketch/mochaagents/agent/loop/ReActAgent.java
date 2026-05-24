@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.agent.loop;
 
 import io.sketch.mochaagents.agent.AgentContext;
@@ -91,9 +94,10 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     /** Pluggable execution paradigm — defaults to ReActLoop. */
     protected final AgentLoop<String, String> agentLoop;
 
-    // ── Self-learning (GenericAgent pattern, via AgentMemory) ──
+    // ── Self-learning (GenericAgent pattern) ──
 
     private int turnCount;
+    protected io.sketch.mochaagents.learn.LearningLoop learningLoop;
 
     // ── Cognitive capabilities (moved from BaseAgent — live here, not in base) ──
 
@@ -197,6 +201,11 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
         setupManagedAgents(builder.managedAgents);
         setupTools(builder.tools);
+
+        this.learningLoop = io.sketch.mochaagents.learn.LearningLoop.configure(memory)
+                .withGlobalMemory()
+                .withSummaryRequired()
+                .withAntiForgetting(10, 65);
     }
 
     protected LLM resolveLlm(LLMRequest request) {
@@ -361,6 +370,10 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
         // ===== Post-loop: final evaluation, memory storage, and learning =====
         autoCompact();
+        learningLoop.onTaskComplete(result);
+        // Turn-end: persist to session, sync memory plugins
+        memory.appendToSession("assistant", result);
+        memory.sync(task, result);
         EvaluationResult eval = evaluate(task, result, evaluator, ctx);
         storeMemories(task, result);
         ctx.compress();
