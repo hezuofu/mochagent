@@ -202,4 +202,32 @@ public class PluginLoader {
 
     /** Discovered plugins. */
     public Map<String, PluginDescriptor> plugins() { return Collections.unmodifiableMap(discovered); }
+
+    // ── Dynamic loading ──
+
+    /** Load a plugin from its class, activating it immediately. */
+    public <T extends Plugin> T loadPlugin(Class<T> pluginClass) {
+        try {
+            T plugin = pluginClass.getDeclaredConstructor().newInstance();
+            PluginDescriptor desc = PluginDescriptor.of(plugin.name(), plugin.version(), plugin.description());
+            for (ExtensionPoint<?> ext : plugin.extensions()) {
+                desc = desc.withExtension(ext);
+            }
+            discovered.put(desc.name(), desc);
+            applyPluginExtensions(desc);
+            plugin.onActivate();
+            log.info("Plugin loaded: {} v{}", plugin.name(), plugin.version());
+            return plugin;
+        } catch (Exception e) {
+            log.error("Failed to load plugin {}: {}", pluginClass.getName(), e.getMessage());
+            return null;
+        }
+    }
+
+    /** Load all Plugin implementations found via Java ServiceLoader. */
+    public void loadFromServiceLoader() {
+        for (Plugin plugin : java.util.ServiceLoader.load(Plugin.class)) {
+            loadPlugin(plugin.getClass());
+        }
+    }
 }

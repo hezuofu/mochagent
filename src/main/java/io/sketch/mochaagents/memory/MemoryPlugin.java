@@ -3,26 +3,28 @@
 
 package io.sketch.mochaagents.memory;
 
+import io.sketch.mochaagents.plugin.ExtensionPoint;
+import io.sketch.mochaagents.plugin.Plugin;
+
+import java.util.List;
+
 /**
- * Pluggable memory provider — hermes-agent MemoryProvider pattern.
+ * Memory plugin — extends the unified Plugin system for memory backends.
  *
- * <p>Register via {@link MemoryManager#withPlugin(MemoryPlugin)}.
+ * <p>Implementations register via {@link MemoryManager#withPlugin(MemoryPlugin)}
+ * or via the plugin loader as ExtensionPoint("MEMORY", ...).
  * Only ONE external plugin is recommended (prevents schema bloat).
  */
-public interface MemoryPlugin {
+public interface MemoryPlugin extends Plugin {
 
-    /** Short identifier (e.g. "chroma", "pinecone"). */
     default String name() { return getClass().getSimpleName(); }
-
-    /** Build memory section for system prompt. Return "" if nothing. */
     default String buildSystemPrompt() { return ""; }
-
-    /** Pre-fetch relevant context before Model call. */
     default String prefetch(String userMessage) { return ""; }
-
-    /** Sync conversation after Model response. */
     default void sync(String userMessage, String assistantResponse) {}
-
-    /** Called at start of each turn. */
     default void onTurnStart(int turnCount, String userMessage) {}
+
+    /** Expose this plugin as a MEMORY extension point for the unified plugin system. */
+    default List<ExtensionPoint<?>> extensions() {
+        return List.of(ExtensionPoint.memory(this, 0));
+    }
 }

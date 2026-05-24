@@ -64,6 +64,11 @@ public interface ExtensionPoint<T> {
         return new Simple<>("EVALUATOR", "Evaluator: " + e.getClass().getSimpleName(), e, priority);
     }
 
+    static ExtensionPoint<io.sketch.mochaagents.memory.MemoryPlugin> memory(
+            io.sketch.mochaagents.memory.MemoryPlugin p, int priority) {
+        return new Simple<>("MEMORY", "Memory: " + p.name(), p, priority);
+    }
+
     static ExtensionPoint<io.sketch.mochaagents.agent.AgentLoop<String, String>> loop(
             io.sketch.mochaagents.agent.AgentLoop<String, String> l, int priority) {
         return new Simple<>("LOOP", "Loop: " + l.getClass().getSimpleName(), l, priority);

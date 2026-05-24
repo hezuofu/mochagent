@@ -62,6 +62,20 @@ public final class PluginDescriptor {
         return isAvailable != null ? isAvailable.get() : true;
     }
 
+    // ==================== Convenience factory ====================
+
+    public static PluginDescriptor of(String name, String version, String description) {
+        return new Builder(name, description).version(version).build();
+    }
+
+    public PluginDescriptor withExtension(ExtensionPoint<?> ext) {
+        List<ExtensionPoint<?>> updated = new java.util.ArrayList<>(this.extensionPoints);
+        updated.add(ext);
+        return new Builder(name, description).version(version)
+                .skills(skills).extensionPoints(updated)
+                .defaultEnabled(defaultEnabled).isAvailable(isAvailable).build();
+    }
+
     // ==================== Builder ====================
 
     public static Builder builder(String name, String description) {
