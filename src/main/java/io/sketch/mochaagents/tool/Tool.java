@@ -3,6 +3,9 @@
 
 package io.sketch.mochaagents.tool;
 
+import io.sketch.mochaagents.plugin.ExtensionPoint;
+import io.sketch.mochaagents.plugin.Plugin;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +19,7 @@ import java.util.concurrent.CompletableFuture;
  * sensible defaults.
   * @author lanxia39@163.com
  */
-public interface Tool {
+public interface Tool extends Plugin {
 
     // ── Core (abstract) ──
 
@@ -67,6 +70,12 @@ public interface Tool {
     default boolean isConcurrencySafe() { return false; }
     default List<String> getAliases() { return Collections.emptyList(); }
     default String getSearchHint() { return ""; }
+
+    default String name() { return getName(); }
+    default String description() { return getDescription(); }
+    default String version() { return "1.0"; }
+
+    default List<ExtensionPoint<?>> extensions() { return List.of(ExtensionPoint.tool(this, 0)); }
 
     enum SecurityLevel { LOW, MEDIUM, HIGH, CRITICAL }
 }
