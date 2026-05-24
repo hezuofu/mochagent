@@ -17,7 +17,7 @@ import java.util.*;
  * ToolCallingAgent — LLM generates text, framework parses and executes tools.
  *
  * <p>Tool call parsing (parseAction/parseKvArgs/parseJsonArgs) is inherited
- * from {@link io.sketch.mochaagents.agent.impl.BaseAgent}.
+ * from {@link io.sketch.mochaagents.agent.internal.BaseAgent}.
  */
 public final class ToolCallingAgent extends ReActAgent {
 

@@ -4,7 +4,7 @@ import io.sketch.mochaagents.agent.AgentContext;
 import io.sketch.mochaagents.agent.AgentLoop;
 import io.sketch.mochaagents.agent.event.AgentEvents;
 import java.util.function.Predicate;
-import io.sketch.mochaagents.agent.impl.BaseAgent;
+import io.sketch.mochaagents.agent.internal.BaseAgent;
 import io.sketch.mochaagents.memory.MemoryProvider;
 import io.sketch.mochaagents.prompt.SystemPromptProvider;
 import io.sketch.mochaagents.agent.loop.StepResult;
@@ -822,10 +822,10 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         }
         // Register self-learning tools (GenericAgent pattern, via AgentMemory)
         if (!toolRegistry.has("update_checkpoint")) {
-            toolRegistry.register(new io.sketch.mochaagents.tool.impl.LearnTools.UpdateCheckpoint(memory));
+            toolRegistry.register(new io.sketch.mochaagents.tool.internal.LearnTools.UpdateCheckpoint(memory));
         }
         if (!toolRegistry.has("start_long_term_update")) {
-            toolRegistry.register(new io.sketch.mochaagents.tool.impl.LearnTools.SettleLongTerm(memory));
+            toolRegistry.register(new io.sketch.mochaagents.tool.internal.LearnTools.SettleLongTerm(memory));
         }
         // Register managed agents as callable tools
         for (var entry : managedAgents.entrySet()) {

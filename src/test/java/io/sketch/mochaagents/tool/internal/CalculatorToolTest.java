@@ -1,4 +1,4 @@
-package io.sketch.mochaagents.tool.impl;
+package io.sketch.mochaagents.tool.internal;
 
 import org.junit.jupiter.api.Test;
 import java.util.Map;

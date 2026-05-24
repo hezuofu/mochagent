@@ -3,7 +3,7 @@ package io.sketch.mochaagents;
 import io.sketch.mochaagents.agent.loop.ToolCallingAgent;
 import io.sketch.mochaagents.llm.LLM;
 import io.sketch.mochaagents.tool.ToolRegistry;
-import io.sketch.mochaagents.tool.impl.*;
+import io.sketch.mochaagents.tool.internal.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +47,7 @@ public final class AgentBootstrap {
                 io.sketch.mochaagents.skill.SkillManager.bootstrap(toolRegistry).skillRegistry());
     }
 
-    public io.sketch.mochaagents.tool.impl.AgentTool agentTool() { return null; }
+    public io.sketch.mochaagents.tool.internal.AgentTool agentTool() { return null; }
 
     // ── Optional add-ons ──
 

@@ -1,4 +1,4 @@
-package io.sketch.mochaagents.tool.impl;
+package io.sketch.mochaagents.tool.internal;
 
 import io.sketch.mochaagents.memory.MemoryManager;
 import io.sketch.mochaagents.tool.AbstractTool;

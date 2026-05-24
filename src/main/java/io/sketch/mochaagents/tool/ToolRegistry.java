@@ -1,7 +1,7 @@
 package io.sketch.mochaagents.tool;
 
 import io.sketch.mochaagents.skill.SkillRegistry;
-import io.sketch.mochaagents.tool.impl.SkillTool;
+import io.sketch.mochaagents.tool.internal.SkillTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
