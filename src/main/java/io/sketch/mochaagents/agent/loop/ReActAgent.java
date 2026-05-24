@@ -747,35 +747,44 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         }
     }
 
-    /** Convert memory to LLM messages (used by subclasses). */
+    private int lastSerializedStep = 0;
+    private final List<Map<String, String>> cachedMessages = new ArrayList<>();
+
+    /** Convert memory to LLM messages — incremental, O(steps since last call). */
     protected List<Map<String, String>> writeMemoryToMessages() {
-        List<Map<String, String>> messages = new ArrayList<>();
-
-        if (memory.systemPrompt() != null && !memory.systemPrompt().isEmpty()) {
-            messages.add(Map.of("role", "system", "content", memory.systemPrompt()));
+        if (cachedMessages.isEmpty() && memory.systemPrompt() != null
+                && !memory.systemPrompt().isEmpty()) {
+            cachedMessages.add(Map.of("role", "system", "content", memory.systemPrompt()));
         }
 
-        int stepCount = memory.steps().size();
-        for (MemoryStep step : memory.steps()) {
-            if (step instanceof ContentStep cs && cs.isSystemPrompt()) {
-                messages.add(Map.of("role", "system", "content", cs.text()));
-            } else if (step instanceof ContentStep cs && cs.isTask()) {
-                messages.add(Map.of("role", "user", "content", cs.text()));
-            } else if (step instanceof PlanningStep ps) {
-                messages.add(Map.of("role", "assistant", "content", "Plan:\n" + ps.plan()));
-            } else if (step instanceof ActionStep as) {
-                if (as.modelOutput() != null && !as.modelOutput().isEmpty()) {
-                    messages.add(Map.of("role", "assistant", "content", as.modelOutput()));
-                }
-                if (as.observation() != null && !as.observation().isEmpty()) {
-                    messages.add(Map.of("role", "user",
-                            "content", "Observation:\n" + as.observation()));
-                }
-            }
+        List<MemoryStep> steps = memory.steps();
+        int total = steps.size();
+        for (int i = lastSerializedStep; i < total; i++) {
+            cachedMessages.addAll(stepToMessages(steps.get(i)));
         }
+        lastSerializedStep = total;
 
-        log.debug("Agent '{}' built {} LLM messages from {} steps", name, messages.size(), stepCount);
-        return messages;
+        log.debug("Agent '{}' messages: {} total ({} new)", name, cachedMessages.size(),
+                total - lastSerializedStep > 0 ? total - lastSerializedStep : 0);
+        return cachedMessages;
+    }
+
+    private static List<Map<String, String>> stepToMessages(MemoryStep step) {
+        if (step instanceof ContentStep cs && cs.isSystemPrompt()) {
+            return List.of(Map.of("role", "system", "content", cs.text()));
+        } else if (step instanceof ContentStep cs && cs.isTask()) {
+            return List.of(Map.of("role", "user", "content", cs.text()));
+        } else if (step instanceof PlanningStep ps) {
+            return List.of(Map.of("role", "assistant", "content", "Plan:\n" + ps.plan()));
+        } else if (step instanceof ActionStep as) {
+            List<Map<String, String>> msgs = new ArrayList<>();
+            if (as.modelOutput() != null && !as.modelOutput().isEmpty())
+                msgs.add(Map.of("role", "assistant", "content", as.modelOutput()));
+            if (as.observation() != null && !as.observation().isEmpty())
+                msgs.add(Map.of("role", "user", "content", "Observation:\n" + as.observation()));
+            return msgs;
+        }
+        return List.of();
     }
 
     // ============ Init helpers ============
