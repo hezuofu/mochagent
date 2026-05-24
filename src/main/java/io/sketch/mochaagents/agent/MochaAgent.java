@@ -74,6 +74,7 @@ public final class MochaAgent implements Agent<String, String> {
         private EffortLevel effortLevel;
         private AgentLoop<String, String> loop;
         private Orchestrator orchestrator;
+        private final List<Faculty<String, String>> faculties = new ArrayList<>();
 
         Builder(String name, LLM llm) { this.name = name; this.llm = llm; }
 
@@ -90,6 +91,9 @@ public final class MochaAgent implements Agent<String, String> {
         public Builder loop(AgentLoop<String, String> l) { loop = l; return this; }
         public Builder orchestrator(Orchestrator o) { orchestrator = o; return this; }
 
+        /** Layer a Faculty onto this agent. */
+        public Builder with(Faculty<String, String> f) { faculties.add(f); return this; }
+
         public Builder reflexionLoop() { loop = new ReflexionLoop<>(null, ReflectionEngine.noop()); return this; }
         public Builder rewooLoop(ReWOOLoop.Reasoner r, ReWOOLoop.ToolExecutor e, ReWOOLoop.Synthesizer s) {
             loop = new ReWOOLoop<>(r, e, s); return this;
@@ -105,7 +109,9 @@ public final class MochaAgent implements Agent<String, String> {
             if (loop != null) b.agentLoop(loop);
             if (orchestrator != null) b.orchestrator(orchestrator);
             if (systemPrompt != null) b.systemPromptTemplate(PromptTemplate.of(systemPrompt));
-            return new MochaAgent(b.build());
+            Agent<String, String> agent = b.build();
+            for (Faculty<String, String> f : faculties) agent = f.apply(agent);
+            return new MochaAgent(agent);
         }
     }
 }
