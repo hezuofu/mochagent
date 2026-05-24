@@ -134,7 +134,7 @@ public class ReActLoop<I, O> implements AgentLoop<I, O> {
 
     private static MemoryManager getMemory(Agent<?, ?> agent) {
         if (agent instanceof MemoryProvider mp) {
-            return mp.memory();
+            return MemoryProvider.of(agent);
         }
         return null;
     }

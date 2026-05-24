@@ -127,12 +127,12 @@ public class StdioMcpClient implements McpClient {
             JsonNode content = resp.get("result").get("content");
             String text = content != null && content.isArray() && !content.isEmpty()
                     ? content.get(0).get("text").asText() : resp.get("result").toString();
-            return ToolResult.success(toolName, text);
+            return ToolResult.Builder.success(toolName, text, 0);
         }
 
         String err = resp != null && resp.has("error")
                 ? resp.get("error").get("message").asText() : "Unknown MCP error";
-        return ToolResult.failure(toolName, err);
+        return ToolResult.Builder.failure(toolName, err, null);
     }
 
     private void send(ObjectNode msg) {

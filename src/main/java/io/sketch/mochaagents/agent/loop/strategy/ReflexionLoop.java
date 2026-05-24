@@ -81,7 +81,7 @@ public class ReflexionLoop<I, O> implements AgentLoop<I, O> {
                     String ctx = "[Reflexion Improvement #" + improvementCount + "]:\n"
                             + improvement.summary() + "\n"
                             + "Adjustments: " + adjustments;
-                    memory.append(new io.sketch.mochaagents.agent.loop.step.ContentStep(
+                    memory.remember(new io.sketch.mochaagents.agent.loop.step.ContentStep(
                             "reflection", ctx, null, java.util.List.of()));
                     log.info("[{}] improvement #{} injected: {}", agentName,
                             improvementCount, improvement.summary());
@@ -131,7 +131,7 @@ public class ReflexionLoop<I, O> implements AgentLoop<I, O> {
     }
 
     private static MemoryManager getMemory(Agent<?, ?> agent) {
-        if (agent instanceof MemoryProvider mp) return mp.memory();
+        if (agent instanceof MemoryProvider mp) return MemoryProvider.of(agent);
         return null;
     }
 }

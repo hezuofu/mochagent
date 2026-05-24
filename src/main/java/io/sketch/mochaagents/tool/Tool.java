@@ -31,7 +31,7 @@ public interface Tool {
     }
 
     /** @deprecated use {@link #getSchema()} */
-    @Deprecated default Map<String, ToolInput> getInputs() { return Collections.emptyMap(); }
+    default Map<String, ToolInput> getInputs() { return Collections.emptyMap(); }
     /** @deprecated use {@link #getSchema()} */
     @Deprecated default String getOutputType() { return "any"; }
 

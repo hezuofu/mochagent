@@ -29,10 +29,8 @@ public class MemoryManager {
     private final List<MemoryStep> steps = new CopyOnWriteArrayList<>();
 
     public void remember(MemoryStep step) { steps.add(step); }
-    @Deprecated public void append(MemoryStep step) { remember(step); }
     public List<MemoryStep> steps() { return Collections.unmodifiableList(steps); }
     public int stepCount() { return steps.size(); }
-    @Deprecated public int size() { return stepCount(); }
     public void reset(String sp) { steps.clear(); this.systemPrompt = sp; }
     public void setSystemPrompt(String sp) { this.systemPrompt = sp; }
     public String systemPrompt() { return systemPrompt; }

@@ -68,7 +68,7 @@ public class ObservePlanActReflect<I, O> implements AgentLoop<I, O> {
             if (observer != null && memory != null) {
                 String obs = observer.observe(step, input, memory);
                 if (obs != null && !obs.isEmpty()) {
-                    memory.append(new io.sketch.mochaagents.agent.loop.step.ContentStep(
+                    memory.remember(new io.sketch.mochaagents.agent.loop.step.ContentStep(
                             "observation", obs, null, java.util.List.of()));
                 }
             }
@@ -114,7 +114,7 @@ public class ObservePlanActReflect<I, O> implements AgentLoop<I, O> {
 
 
     private static MemoryManager getMemory(Agent<?, ?> agent) {
-        if (agent instanceof MemoryProvider mp) return mp.memory();
+        if (agent instanceof MemoryProvider mp) return MemoryProvider.of(agent);
         return null;
     }
 }

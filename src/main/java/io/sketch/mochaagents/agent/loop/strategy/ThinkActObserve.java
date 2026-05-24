@@ -78,7 +78,7 @@ public class ThinkActObserve<I, O> implements AgentLoop<I, O> {
 
 
     private static MemoryManager getMemory(Agent<?, ?> agent) {
-        if (agent instanceof MemoryProvider mp) return mp.memory();
+        if (agent instanceof MemoryProvider mp) return MemoryProvider.of(agent);
         return null;
     }
 }

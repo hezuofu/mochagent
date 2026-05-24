@@ -101,7 +101,7 @@ public class ReWOOLoop<I, O> implements AgentLoop<I, O> {
                     toolResults.add(placeholder + " = " + truncate(result, 200));
 
                     if (memory != null) {
-                        memory.append(new io.sketch.mochaagents.agent.loop.step.ActionStep(
+                        memory.remember(new io.sketch.mochaagents.agent.loop.step.ActionStep(
                                 i + 1, plan, tc.toolName + "(" + tc.arguments + ")",
                                 tc.toolName, "Observation[" + i + "]: " + result,
                                 null, 0, 0, false));
@@ -133,7 +133,7 @@ public class ReWOOLoop<I, O> implements AgentLoop<I, O> {
         } catch (Exception e) {
             log.error("[{}] ReWOO loop failed: {}", agentName, e.getMessage());
             if (memory != null) {
-                memory.append(new io.sketch.mochaagents.agent.loop.step.ActionStep(
+                memory.remember(new io.sketch.mochaagents.agent.loop.step.ActionStep(
                         0, "", "", "rewwo_error", e.getMessage(), null, 0, 0, true));
             }
             @SuppressWarnings("unchecked")
@@ -215,7 +215,7 @@ public class ReWOOLoop<I, O> implements AgentLoop<I, O> {
     record ToolCall(String toolName, Map<String, Object> arguments) {}
 
     private static MemoryManager getMemory(Agent<?, ?> agent) {
-        if (agent instanceof MemoryProvider mp) return mp.memory();
+        if (agent instanceof MemoryProvider mp) return MemoryProvider.of(agent);
         return null;
     }
 

@@ -38,18 +38,6 @@ public final class ToolResult {
         this.newMessages = Collections.unmodifiableList(builder.newMessages);
     }
 
-    /** @deprecated 使用 Builder 模式替代. */
-    @Deprecated
-    public ToolResult(String toolName, Object output, String error, long durationMs) {
-        this.toolName = toolName;
-        this.output = output;
-        this.structuredContent = null;
-        this.error = error;
-        this.durationMs = durationMs;
-        this.validationResult = null;
-        this.newMessages = Collections.emptyList();
-    }
-
     public String toolName() { return toolName; }
     public Object output() { return output; }
     public Object structuredContent() { return structuredContent; }
@@ -59,18 +47,6 @@ public final class ToolResult {
     public List<Map<String, Object>> newMessages() { return newMessages; }
     public boolean isError() { return error != null && !error.isEmpty(); }
     public boolean isValidated() { return validationResult != null; }
-
-    /** @deprecated 使用 Builder.success() 替代. */
-    @Deprecated
-    public static ToolResult success(String toolName, Object output) {
-        return new ToolResult(toolName, output, null, 0);
-    }
-
-    /** @deprecated 使用 Builder.failure() 替代. */
-    @Deprecated
-    public static ToolResult failure(String toolName, String error) {
-        return new ToolResult(toolName, null, error, 0);
-    }
 
     // ---- Builder ----
 
