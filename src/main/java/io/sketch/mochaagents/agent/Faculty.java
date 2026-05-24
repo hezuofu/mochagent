@@ -9,18 +9,16 @@ import io.sketch.mochaagents.plan.PlanningRequest;
 import io.sketch.mochaagents.reasoning.Reasoner;
 import io.sketch.mochaagents.reasoning.ReasoningChain;
 
+import java.util.function.BiFunction;
+
 /**
  * Faculty — a composable cognitive capability that wraps an Agent.
  *
- * <p>Each Faculty is a single-responsibility decorator: perception observes
- * input, reasoning analyzes it, planning builds a blueprint, evaluation
- * assesses output. Faculties compose via {@link #then(Faculty)}.
- *
  * <pre>{@code
- * var agent = MochaAgent.builder().llm(llm).tools(tools).build()
+ * var agent = MochaAgent.builder("a", llm).addTool(t)
  *     .with(Faculty.Perception.of(perceptor))
  *     .with(Faculty.Reasoning.of(reasoner))
- *     .with(Faculty.Planning.of(planner));
+ *     .build();
  * }</pre>
  */
 @FunctionalInterface
@@ -32,30 +30,36 @@ public interface Faculty<I, O> {
         return agent -> next.apply(apply(agent));
     }
 
+    // ── Helpers ──
+
+    /** Pre-hook: enrich context before delegating to inner agent. */
+    static <I, O> Faculty<I, O> pre(BiFunction<I, AgentContext, AgentContext> enrich) {
+        return agent -> new AgentWrapper<>(agent) {
+            @Override public O execute(I input, AgentContext ctx) {
+                return inner.execute(input, enrich.apply(input, ctx));
+            }
+        };
+    }
+
     // ── Built-in faculties ──
 
     final class Perception {
         private Perception() {}
         public static <I, O> Faculty<I, O> of(Perceptor<I, O> p) {
-            return agent -> new AgentWrapper<>(agent) {
-                @Override public O execute(I input, AgentContext ctx) {
-                    PerceptionResult<O> r = p.perceive(input);
-                    return inner.execute(input, ctx.withPerception(r));
-                }
-            };
+            return pre((input, ctx) -> {
+                PerceptionResult<O> r = p.perceive(input);
+                return ctx.withPerception(r);
+            });
         }
     }
 
     final class Reasoning {
         private Reasoning() {}
         public static <I, O> Faculty<I, O> of(Reasoner r) {
-            return agent -> new AgentWrapper<>(agent) {
-                @Override public O execute(I input, AgentContext ctx) {
-                    ReasoningChain chain = r.reason(
-                            input != null ? input.toString() : "");
-                    return inner.execute(input, ctx.withReasoning(chain));
-                }
-            };
+            return pre((input, ctx) -> {
+                ReasoningChain chain = r.reason(input != null ? input.toString() : "");
+                return ctx.withReasoning(chain);
+            });
         }
     }
 
@@ -63,13 +67,11 @@ public interface Faculty<I, O> {
         private Planning() {}
         @SuppressWarnings("unchecked")
         public static <I, O> Faculty<I, O> of(Planner<O> planner) {
-            return agent -> new AgentWrapper<>(agent) {
-                @Override public O execute(I input, AgentContext ctx) {
-                    Plan<O> plan = planner.generatePlan(
-                            PlanningRequest.<O>builder().goal((O) input).build());
-                    return inner.execute(input, ctx.withPlan(plan));
-                }
-            };
+            return pre((input, ctx) -> {
+                Plan<O> plan = planner.generatePlan(
+                        PlanningRequest.<O>builder().goal((O) input).build());
+                return ctx.withPlan(plan);
+            });
         }
     }
 
