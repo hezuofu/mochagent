@@ -71,20 +71,20 @@ public class AgentMemory {
     public void save(Memory entry) { store.store(entry); }
 
     /** Recall a specific memory by id. */
-    public Optional<Memory> recall(String id) { return store.get(id); }
+    public Optional<MemoryRecord> recall(String id) { return store.get(id); }
 
     /** Forget a memory by id. */
     public void forget(String id) { store.forget(id); }
 
     /** Search persistent memories by query. */
-    public List<Memory> search(String query) { return store.search(query); }
+    public List<MemoryRecord> search(String query) { return store.search(query); }
 
     /** All persistent entries. */
-    public List<Memory> entries() { return store.entries().collect(Collectors.toList()); }
+    public List<MemoryRecord> entries() { return store.entries().collect(Collectors.toList()); }
 
     /** Export execution trace as persistent Memory entries. */
-    public List<Memory> snapshot() {
-        List<Memory> entries = new ArrayList<>();
+    public List<MemoryRecord> snapshot() {
+        List<MemoryRecord> entries = new ArrayList<>();
         for (MemoryStep s : steps) {
             if (s instanceof ActionStep act) {
                 String content = "[Step " + act.stepNumber() + "] "
@@ -102,8 +102,8 @@ public class AgentMemory {
     }
 
     /** Restore historical entries into current execution trace. */
-    public void restore(List<Memory> entries) {
-        for (Memory e : entries) {
+    public void restore(List<MemoryRecord> entries) {
+        for (MemoryRecord e : entries) {
             ActionStep step = ActionStep.empty(steps.size() + 1);
             steps.add(new ActionStep(step.stepNumber(), "", "",
                     "restored", e.content(), null, 0, 0, false));
@@ -112,4 +112,56 @@ public class AgentMemory {
 
     /** Underlying store for direct access (advanced use). */
     public MemoryStore store() { return store; }
+
+    // ── Working memory (GenericAgent: update_checkpoint) ──
+
+    private String keyInfo = "";
+    private String relatedSop = "";
+
+    public void checkpoint(String ki, String sop) {
+        if (ki != null && !ki.isBlank()) this.keyInfo = ki;
+        if (sop != null && !sop.isBlank()) this.relatedSop = sop;
+    }
+
+    public String workingContext() {
+        if (keyInfo.isEmpty() && relatedSop.isEmpty()) return "";
+        StringBuilder sb = new StringBuilder("\n## Working Memory\n");
+        if (!keyInfo.isEmpty()) sb.append("<key_info>").append(keyInfo).append("</key_info>\n");
+        if (!relatedSop.isEmpty()) sb.append("Check ").append(relatedSop).append(" if unclear.\n");
+        return sb.toString();
+    }
+
+    // ── Global memory (GenericAgent: start_long_term_update) ──
+
+    private GlobalMemory globalMemory;
+
+    public void settle(String verifiedFact) {
+        if (globalMemory == null)
+            globalMemory = new GlobalMemory();
+        globalMemory.append(verifiedFact);
+    }
+
+    public String globalContext() {
+        if (globalMemory == null) return "";
+        String content = globalMemory.read();
+        return content.isEmpty() ? "" : "\n## Global Memory\n" + content;
+    }
+
+    // ── Composition ──
+
+    public AgentMemory withPersistence(MemoryStore s) {
+        return new AgentMemory(s);
+    }
+
+    public AgentMemory withGlobalMemory() {
+        AgentMemory m = new AgentMemory(store);
+        m.globalMemory = new GlobalMemory();
+        return m;
+    }
+
+    public AgentMemory withGlobalMemory(java.nio.file.Path file) {
+        AgentMemory m = new AgentMemory(store);
+        m.globalMemory = new GlobalMemory(file);
+        return m;
+    }
 }

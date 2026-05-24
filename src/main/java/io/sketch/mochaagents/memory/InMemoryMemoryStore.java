@@ -11,18 +11,18 @@ import java.util.stream.Stream;
  * 由 {@link MemoryManager} 无参构造时自动创建.
  * @author lanxia39@163.com
  */
-public class InMemoryMemoryStore implements MemoryStore {
+public class InMemoryMemoryStore implements MemoryRecordStore {
 
-    private final Map<String, Memory> store = new ConcurrentHashMap<>();
+    private final Map<String, MemoryRecord> store = new ConcurrentHashMap<>();
 
     @Override
-    public void store(Memory memory) {
+    public void store(MemoryRecord memory) {
         store.put(memory.id(), memory);
     }
 
     @Override
-    public Optional<Memory> get(String id) {
-        Memory m = store.get(id);
+    public Optional<MemoryRecord> get(String id) {
+        MemoryRecord m = store.get(id);
         if (m != null) m.touch();
         return Optional.ofNullable(m);
     }
@@ -43,30 +43,30 @@ public class InMemoryMemoryStore implements MemoryStore {
     }
 
     @Override
-    public List<Memory> search(String query) {
+    public List<MemoryRecord> search(String query) {
         String lower = query.toLowerCase();
         return sorted(store.values().stream()
                 .filter(m -> m.content().toLowerCase().contains(lower)));
     }
 
     @Override
-    public List<Memory> getByType(String type) {
+    public List<MemoryRecord> getByType(String type) {
         return sorted(store.values().stream()
                 .filter(m -> m.type().equals(type)));
     }
 
     @Override
-    public List<Memory> searchByTag(String tag) {
+    public List<MemoryRecord> searchByTag(String tag) {
         return sorted(store.values().stream()
                 .filter(m -> m.tags().contains(tag)));
     }
 
     @Override
-    public Stream<Memory> entries() {
+    public Stream<MemoryRecord> entries() {
         return store.values().stream();
     }
 
-    private static List<Memory> sorted(Stream<Memory> stream) {
-        return stream.sorted(Comparator.comparingDouble(Memory::importance).reversed()).toList();
+    private static List<MemoryRecord> sorted(Stream<MemoryRecord> stream) {
+        return stream.sorted(Comparator.comparingDouble(MemoryRecord::importance).reversed()).toList();
     }
 }

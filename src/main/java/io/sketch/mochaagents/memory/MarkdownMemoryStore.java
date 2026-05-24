@@ -35,14 +35,14 @@ import java.util.stream.Stream;
  * }</pre>
  * @author lanxia39@163.com
  */
-public class MarkdownMemoryStore implements MemoryStore {
+public class MarkdownMemoryStore implements MemoryRecordStore {
 
     private static final Logger log = LoggerFactory.getLogger(MarkdownMemoryStore.class);
     private static final String EXT = ".md";
     private static final String FRONTMATTER_DELIM = "---";
 
     private final Path dir;
-    private final Map<String, Memory> cache = new ConcurrentHashMap<>();
+    private final Map<String, MemoryRecord> cache = new ConcurrentHashMap<>();
 
     /**
      * @param dir 存储目录，不存在则自动创建
@@ -60,14 +60,14 @@ public class MarkdownMemoryStore implements MemoryStore {
     // ============ MemoryStore 实现 ============
 
     @Override
-    public void store(Memory memory) {
+    public void store(MemoryRecord memory) {
         cache.put(memory.id(), memory);
         writeFile(memory);
     }
 
     @Override
-    public Optional<Memory> get(String id) {
-        Memory m = cache.get(id);
+    public Optional<MemoryRecord> get(String id) {
+        MemoryRecord m = cache.get(id);
         if (m != null) m.touch();
         return Optional.ofNullable(m);
     }
@@ -85,7 +85,7 @@ public class MarkdownMemoryStore implements MemoryStore {
     @Override
     public void clear(String type) {
         List<String> toRemove = new ArrayList<>();
-        for (Memory m : cache.values()) {
+        for (MemoryRecord m : cache.values()) {
             if (m.type().equals(type)) {
                 toRemove.add(m.id());
             }
@@ -101,26 +101,26 @@ public class MarkdownMemoryStore implements MemoryStore {
     }
 
     @Override
-    public List<Memory> search(String query) {
+    public List<MemoryRecord> search(String query) {
         String lower = query.toLowerCase();
         return sorted(cache.values().stream()
                 .filter(m -> m.content().toLowerCase().contains(lower)));
     }
 
     @Override
-    public List<Memory> getByType(String type) {
+    public List<MemoryRecord> getByType(String type) {
         return sorted(cache.values().stream()
                 .filter(m -> m.type().equals(type)));
     }
 
     @Override
-    public List<Memory> searchByTag(String tag) {
+    public List<MemoryRecord> searchByTag(String tag) {
         return sorted(cache.values().stream()
                 .filter(m -> m.tags().contains(tag)));
     }
 
     @Override
-    public Stream<Memory> entries() {
+    public Stream<MemoryRecord> entries() {
         return cache.values().stream();
     }
 
@@ -134,7 +134,7 @@ public class MarkdownMemoryStore implements MemoryStore {
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*" + EXT)) {
             for (Path file : stream) {
                 try {
-                    Memory entry = parseFile(file);
+                    MemoryRecord entry = parseFile(file);
                     cache.put(entry.id(), entry);
                 } catch (Exception e) {
                     // 跳过损坏文件，不阻塞整体加载
@@ -154,7 +154,7 @@ public class MarkdownMemoryStore implements MemoryStore {
         MemoryEntry.Builder b = MemoryEntry.builder()
                 .id(fm.getOrDefault("id", UUID.randomUUID().toString()))
                 .content(content)
-                .type(fm.getOrDefault("type", Memory.TYPE_WORKING))
+                .type(fm.getOrDefault("type", MemoryRecord.TYPE_WORKING))
                 .importance(parseDouble(fm.get("importance"), 0.5))
                 .tags(parseSet(fm.get("tags")))
                 .concepts(parseSet(fm.get("concepts")))
@@ -172,7 +172,7 @@ public class MarkdownMemoryStore implements MemoryStore {
         return b.build();
     }
 
-    private void writeFile(Memory memory) {
+    private void writeFile(MemoryRecord memory) {
         StringBuilder sb = new StringBuilder();
         sb.append(FRONTMATTER_DELIM).append('\n');
         sb.append("id: ").append(memory.id()).append('\n');
@@ -280,7 +280,7 @@ public class MarkdownMemoryStore implements MemoryStore {
         try { return Integer.parseInt(s); } catch (NumberFormatException e) { return fallback; }
     }
 
-    private static List<Memory> sorted(Stream<Memory> stream) {
-        return stream.sorted(Comparator.comparingDouble(Memory::importance).reversed()).toList();
+    private static List<MemoryRecord> sorted(Stream<MemoryRecord> stream) {
+        return stream.sorted(Comparator.comparingDouble(MemoryRecord::importance).reversed()).toList();
     }
 }

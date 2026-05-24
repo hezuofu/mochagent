@@ -12,7 +12,7 @@ import java.util.*;
  * {@link Memory#TYPE_SEMANTIC}.
  * @author lanxia39@163.com
  */
-public final class MemoryEntry implements Memory {
+public final class MemoryEntry implements MemoryRecord {
 
     private final String id;
     private final String content;

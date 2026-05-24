@@ -90,6 +90,10 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     /** Pluggable execution paradigm — defaults to ReActLoop. */
     protected final AgentLoop<String, String> agentLoop;
 
+    // ── Self-learning (GenericAgent pattern, via AgentMemory) ──
+
+    private int turnCount;
+
     // ── Cognitive capabilities (moved from BaseAgent — live here, not in base) ──
 
     protected final io.sketch.mochaagents.perception.Perceptor<String, String> perceptor;
@@ -212,7 +216,11 @@ public abstract class ReActAgent extends BaseAgent<String, String>
                 "instructions", description != null ? description : ""
         ));
         // Use LayeredContextBuilder to add system context (git, platform)
-        return contextBuilder.buildFullContext(base, "");
+        String full = contextBuilder.buildFullContext(base, "");
+        // Inject working memory + global memory (GenericAgent pattern)
+        full += memory.workingContext();
+        full += memory.globalContext();
+        return full;
     }
 
     // ============ Execution entry points ============
@@ -810,6 +818,13 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         }
         if (!toolRegistry.has("final_answer")) {
             toolRegistry.register(new FinalAnswerTool());
+        }
+        // Register self-learning tools (GenericAgent pattern, via AgentMemory)
+        if (!toolRegistry.has("update_checkpoint")) {
+            toolRegistry.register(new io.sketch.mochaagents.tool.impl.LearnTools.UpdateCheckpoint(memory));
+        }
+        if (!toolRegistry.has("start_long_term_update")) {
+            toolRegistry.register(new io.sketch.mochaagents.tool.impl.LearnTools.SettleLongTerm(memory));
         }
         // Register managed agents as callable tools
         for (var entry : managedAgents.entrySet()) {

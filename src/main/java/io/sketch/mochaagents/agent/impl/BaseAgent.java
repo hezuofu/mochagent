@@ -10,7 +10,7 @@ import io.sketch.mochaagents.context.ContextChunk;
 import io.sketch.mochaagents.context.Context;
 import io.sketch.mochaagents.evaluation.EvaluationResult;
 import io.sketch.mochaagents.evaluation.Evaluator;
-import io.sketch.mochaagents.memory.Memory;
+import io.sketch.mochaagents.memory.MemoryRecord;
 import io.sketch.mochaagents.memory.MemoryManager;
 import io.sketch.mochaagents.reasoning.EffortLevel;
 import io.sketch.mochaagents.reasoning.RecoveryStateMachine;
@@ -116,7 +116,7 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
 
     protected void injectMemories(String task, Context ctx) {
         if (memoryManager == null) return;
-        for (Memory m : memoryManager.search(task != null ? task : ""))
+        for (MemoryRecord m : memoryManager.search(task != null ? task : ""))
             ctx.addChunk(newChunk("memory", m.content()));
     }
 
