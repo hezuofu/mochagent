@@ -56,6 +56,9 @@ public final class ToolCallingAgent extends ReActAgent {
                 - If a tool fails, try a different approach.
                 - If a tool returns empty results, retry with different parameters.
                 - When info is missing, use a tool to look it up — don't guess.
+                - Don't add features or abstractions beyond what the task requires.
+                - Don't add error handling for scenarios that can't happen.
+                - Default to no comments — only explain non-obvious WHY.
 
                 ## Verification
                 Before final_answer, verify:
