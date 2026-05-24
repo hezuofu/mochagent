@@ -53,6 +53,11 @@ public final class AgentBootstrap {
     @Deprecated
     public io.sketch.mochaagents.tool.internal.AgentTool agentTool() { return null; }
 
+    public io.sketch.mochaagents.plugin.PluginBootstrap pluginBootstrap() {
+        return io.sketch.mochaagents.plugin.PluginBootstrap.bootstrap(
+                io.sketch.mochaagents.skill.SkillManager.bootstrap(toolRegistry).skillRegistry());
+    }
+
     // ── Optional add-ons ──
 
     public AgentBootstrap withSkills() {
