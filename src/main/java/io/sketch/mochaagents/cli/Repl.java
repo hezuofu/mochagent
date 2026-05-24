@@ -161,7 +161,8 @@ final class Repl implements CliCommand {
             currentRunHasDiff = false;
 
             // Real-time event display (claude-code style)
-            var unsub = a.onEvent(e -> {
+            var ra = (io.sketch.mochaagents.agent.loop.ReActAgent) a.inner();
+            var unsub = ra.onEvent(e -> {
                 switch (e.type()) {
                     case io.sketch.mochaagents.agent.event.AgentEvents.STARTED ->
                         out.print(dim("  Thinking"));
@@ -372,8 +373,8 @@ final class Repl implements CliCommand {
     }
 
     private void compactContext() {
-        if (agent != null) {
-            agent.autoCompact();
+        if (agent != null && agent.inner() instanceof io.sketch.mochaagents.agent.loop.ReActAgent ra) {
+            ra.autoCompact();
             out.println(green("✓ Context compacted"));
         } else {
             out.println(dim("No active session to compact"));

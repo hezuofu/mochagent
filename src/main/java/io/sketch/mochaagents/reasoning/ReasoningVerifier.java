@@ -10,6 +10,8 @@ import io.sketch.mochaagents.reasoning.ReasoningChain;
  * @author lanxia39@163.com
  */
 public interface ReasoningVerifier {
+
     boolean verify(ReasoningChain chain);
+
     String explain(ReasoningChain chain);
 }
