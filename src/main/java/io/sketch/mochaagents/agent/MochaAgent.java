@@ -79,6 +79,10 @@ public final class MochaAgent implements Agent<String, String> {
         private AgentLoop<String, String> loop;
         private Orchestrator orchestrator;
         private final List<Faculty<String, String>> faculties = new ArrayList<>();
+        private io.sketch.mochaagents.memory.MemoryPlugin memoryPlugin;
+        private io.sketch.mochaagents.event.EventBus eventBus;
+        private boolean globalMemory;
+        private boolean antiForgetting;
 
         Builder(String name, Model model) { this.name = name; this.model = model; }
 
@@ -94,9 +98,11 @@ public final class MochaAgent implements Agent<String, String> {
         public Builder effortLevel(EffortLevel e) { effortLevel = e; return this; }
         public Builder loop(AgentLoop<String, String> l) { loop = l; return this; }
         public Builder orchestrator(Orchestrator o) { orchestrator = o; return this; }
-
-        /** Layer a Faculty onto this agent. */
         public Builder with(Faculty<String, String> f) { faculties.add(f); return this; }
+        public Builder memoryPlugin(io.sketch.mochaagents.memory.MemoryPlugin p) { memoryPlugin = p; return this; }
+        public Builder eventBus(io.sketch.mochaagents.event.EventBus bus) { eventBus = bus; return this; }
+        public Builder globalMemory(boolean v) { globalMemory = v; return this; }
+        public Builder antiForgetting(boolean v) { antiForgetting = v; return this; }
 
         public Builder reflexionLoop() { loop = new ReflexionLoop<>(null, ReflectionEngine.noop()); return this; }
         public Builder rewooLoop(ReWOOLoop.Reasoner r, ReWOOLoop.ToolExecutor e, ReWOOLoop.Synthesizer s) {
@@ -115,6 +121,11 @@ public final class MochaAgent implements Agent<String, String> {
             if (systemPrompt != null) b.systemPromptTemplate(PromptTemplate.of(systemPrompt));
             Agent<String, String> agent = b.build();
             for (Faculty<String, String> f : faculties) agent = f.apply(agent);
+            // Wire memory plugin + global memory
+            if (agent instanceof ReActAgent ra) {
+                if (memoryPlugin != null) ra.memory().withPlugin(memoryPlugin);
+                if (globalMemory) ra.memory().withGlobalMemory();
+            }
             return new MochaAgent(agent);
         }
     }
