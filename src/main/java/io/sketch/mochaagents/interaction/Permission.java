@@ -3,9 +3,6 @@
 
 package io.sketch.mochaagents.interaction;
 
-import io.sketch.mochaagents.interaction.PermissionLevel;
-import io.sketch.mochaagents.interaction.PermissionRequest;
-
 /**
  * 权限控制 — Agent 操作权限的授权与管控.
  * @author lanxia39@163.com

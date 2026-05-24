@@ -3,7 +3,6 @@
 
 package io.sketch.mochaagents.interaction;
 
-import io.sketch.mochaagents.interaction.Permission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

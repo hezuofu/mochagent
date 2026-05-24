@@ -3,6 +3,7 @@
 
 package io.sketch.mochaagents.model;
 
+import io.sketch.mochaagents.MochaException;
 import io.sketch.mochaagents.model.Model;
 import io.sketch.mochaagents.model.ModelRequest;
 import java.util.*;
@@ -35,7 +36,7 @@ public class ModelRouter {
     /** 路由请求到最佳 Model */
     public Model route(ModelRequest request) {
         // 简单路由：选择第一个可用的，或基于成本优化
-        if (providers.isEmpty()) throw new IllegalStateException("No Model providers registered");
+        if (providers.isEmpty()) throw new MochaException.ConfigException("No Model providers registered");
 
         List<Model> candidates = new ArrayList<>(providers.values());
         return costOptimizer.select(candidates, request);

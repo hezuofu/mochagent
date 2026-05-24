@@ -2,6 +2,7 @@
 // Copyright 2024-2026 MochaAgents Authors
 
 package io.sketch.mochaagents.model;
+import io.sketch.mochaagents.MochaException;
 
 import io.sketch.mochaagents.model.Model;
 import java.util.List;

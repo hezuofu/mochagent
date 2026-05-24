@@ -3,11 +3,6 @@
 
 package io.sketch.mochaagents.interaction;
 
-import io.sketch.mochaagents.interaction.InteractionMode;
-import io.sketch.mochaagents.interaction.Interactor;
-import io.sketch.mochaagents.interaction.Permission;
-import io.sketch.mochaagents.interaction.PermissionLevel;
-import io.sketch.mochaagents.interaction.PermissionRequest;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
