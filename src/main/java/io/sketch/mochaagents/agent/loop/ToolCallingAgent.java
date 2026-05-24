@@ -185,8 +185,12 @@ public final class ToolCallingAgent extends ReActAgent {
 
     // ============ 动作解析 ============
 
+    /** Fallback: extract tool_name(...) from any position in text. */
+    private static final Pattern LOOSE_TOOL_PATTERN =
+            Pattern.compile("(\\w+)\\s*\\(([^)]*)\\)");
+
     private ParsedAction parseAction(String modelOutput) {
-        // 尝试 JSON 格式
+        // 1. 尝试 JSON 格式 {"name": "...", "arguments": {...}}
         Matcher jsonMatcher = JSON_ACTION_PATTERN.matcher(modelOutput);
         if (jsonMatcher.find()) {
             String name = jsonMatcher.group(1);
@@ -195,13 +199,25 @@ public final class ToolCallingAgent extends ReActAgent {
             return new ParsedAction(name, args);
         }
 
-        // 尝试 "Action: tool_name(arguments)" 格式
+        // 2. 尝试 "Action: tool_name(arguments)" 格式
         Matcher m = ACTION_PATTERN.matcher(modelOutput);
         if (m.find()) {
             String name = m.group(1);
             String argsStr = m.group(2).trim();
             Map<String, Object> args = parseKeyValueArgs(argsStr);
             return new ParsedAction(name, args);
+        }
+
+        // 3. 回退: 找到最后一个 tool_name(...) — 模型可能在闲聊中嵌入了调用
+        Matcher loose = LOOSE_TOOL_PATTERN.matcher(modelOutput);
+        String lastName = null, lastArgs = null;
+        while (loose.find()) {
+            lastName = loose.group(1);
+            lastArgs = loose.group(2);
+        }
+        if (lastName != null && toolRegistry != null && toolRegistry.has(lastName)) {
+            Map<String, Object> args = parseKeyValueArgs(lastArgs != null ? lastArgs.trim() : "");
+            return new ParsedAction(lastName, args);
         }
 
         return null;
