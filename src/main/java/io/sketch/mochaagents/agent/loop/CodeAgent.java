@@ -55,6 +55,10 @@ public final class CodeAgent extends ReActAgent {
     /** 无引号变量引用 final_answer(varname) */
     private static final Pattern FINAL_ANSWER_BARE_PATTERN =
             Pattern.compile("final_answer\\s*\\((\\w+)\\s*\\)");
+    private static final Pattern TOOL_CALL_PATTERN =
+            Pattern.compile("(\\w+)\\s*=\\s*(\\w+)\\((.+)\\)");
+    private static final Pattern KEY_VALUE_PATTERN =
+            Pattern.compile("(\\w+)\\s*=\\s*\"([^\"]*)\"");
 
     private final Set<String> authorizedImports;
     private final String codeLanguage;
@@ -394,9 +398,7 @@ public final class CodeAgent extends ReActAgent {
             }
 
             // 匹配: var = tool_name(...)
-            Pattern toolCallPattern = Pattern.compile(
-                    "(\\w+)\\s*=\\s*(\\w+)\\((.+)\\)");
-            Matcher tm = toolCallPattern.matcher(line);
+            Matcher tm = TOOL_CALL_PATTERN.matcher(line);
             if (tm.find()) {
                 String varName = tm.group(1);
                 String toolName = tm.group(2);
@@ -421,8 +423,7 @@ public final class CodeAgent extends ReActAgent {
     /** 解析工具参数字符串 key="value", ... */
     private Map<String, Object> parseToolArgs(String argsStr) {
         Map<String, Object> result = new LinkedHashMap<>();
-        Pattern pairPattern = Pattern.compile("(\\w+)\\s*=\\s*\"([^\"]*)\"");
-        Matcher m = pairPattern.matcher(argsStr);
+        Matcher m = KEY_VALUE_PATTERN.matcher(argsStr);
         while (m.find()) {
             result.put(m.group(1), m.group(2));
         }
