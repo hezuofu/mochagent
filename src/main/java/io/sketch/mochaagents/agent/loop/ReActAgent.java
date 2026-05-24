@@ -453,7 +453,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     // ============ Per-step capability hooks ============
 
     /**
-     * Inject current reasoning state and plan progress into AgentMemory
+     * Inject current reasoning state and plan progress into MemoryManager
      * so the Model sees them as part of the conversation context.
      */
     private void injectCapabilityContext(int stepNumber, MemoryManager memory) {
