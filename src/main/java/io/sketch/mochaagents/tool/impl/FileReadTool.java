@@ -1,4 +1,5 @@
 package io.sketch.mochaagents.tool.impl;
+import io.sketch.mochaagents.MochaException;
 
 import io.sketch.mochaagents.tool.AbstractTool;
 import io.sketch.mochaagents.tool.ToolInput;
@@ -79,17 +80,17 @@ public class FileReadTool extends AbstractTool {
 
         Path path = Paths.get(filePath).toAbsolutePath().normalize();
         if (!Files.exists(path)) {
-            throw new RuntimeException("File does not exist: " + filePath);
+            throw new MochaException.ToolException(getName(), "File does not exist: " + filePath);
         }
         if (Files.isDirectory(path)) {
-            throw new RuntimeException("Path is a directory, not a file: " + filePath);
+            throw new MochaException.ToolException(getName(), "Path is a directory, not a file: " + filePath);
         }
 
         try {
             // Check file size
             long size = Files.size(path);
             if (size > MAX_SIZE_BYTES) {
-                throw new RuntimeException("File too large (" + size + " bytes). Maximum: " + MAX_SIZE_BYTES + " bytes.");
+                throw new MochaException.ToolException(getName(), "File too large (" + size + " bytes). Maximum: " + MAX_SIZE_BYTES + " bytes.");
             }
 
             String ext = getExtension(filePath).toLowerCase();
@@ -103,7 +104,7 @@ public class FileReadTool extends AbstractTool {
             return readText(path, filePath, offset, limit);
 
         } catch (IOException e) {
-            throw new RuntimeException("Failed to read file: " + filePath, e);
+            throw new MochaException.ToolException(getName(), "Failed to read file: " + filePath, e);
         }
     }
 
@@ -125,7 +126,7 @@ public class FileReadTool extends AbstractTool {
 
         // Rough token estimate
         if (sb.length() > MAX_TOKENS_ESTIMATE * 4) {
-            throw new RuntimeException("File content exceeds estimated token limit (" + MAX_TOKENS_ESTIMATE
+            throw new MochaException.ToolException(getName(), "File content exceeds estimated token limit (" + MAX_TOKENS_ESTIMATE
                     + "). Use offset and limit to read specific portions.");
         }
 

@@ -1,4 +1,5 @@
 package io.sketch.mochaagents.tool.impl;
+import io.sketch.mochaagents.MochaException;
 
 import io.sketch.mochaagents.tool.AbstractTool;
 import io.sketch.mochaagents.tool.ToolInput;
@@ -156,7 +157,7 @@ public class FileEditTool extends AbstractTool {
             return result;
 
         } catch (IOException e) {
-            throw new RuntimeException("Failed to edit file: " + filePath, e);
+            throw new MochaException.ToolException(getName(), "Failed to edit file: " + filePath, e);
         }
     }
 

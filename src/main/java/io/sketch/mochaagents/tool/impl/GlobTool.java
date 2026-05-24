@@ -1,4 +1,5 @@
 package io.sketch.mochaagents.tool.impl;
+import io.sketch.mochaagents.MochaException;
 
 import io.sketch.mochaagents.tool.AbstractTool;
 import io.sketch.mochaagents.tool.ToolInput;
@@ -120,7 +121,7 @@ public class GlobTool extends AbstractTool {
             return result;
 
         } catch (IOException e) {
-            throw new RuntimeException("Glob search failed: " + e.getMessage(), e);
+            throw new MochaException.ToolException(getName(), "Glob search failed: " + e.getMessage(), e);
         }
     }
 

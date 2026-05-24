@@ -1,4 +1,5 @@
 package io.sketch.mochaagents.llm.provider;
+import io.sketch.mochaagents.MochaException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -112,20 +113,20 @@ public abstract class BaseApiLLM implements LLM {
                 int code = resp.statusCode();
                 String errorBody = resp.body();
                 if (code != 429 && code < 500) {
-                    throw new LLMException("API error " + code + ": " + errorBody, code);
+                    throw new MochaException.LlmException("API error " + code + ": " + errorBody, code, modelId);
                 }
                 if (attempt >= MAX_RETRIES) {
-                    throw new LLMException("API error " + code + " after " + MAX_RETRIES + " retries: " + errorBody, code);
+                    throw new MochaException.LlmException("API error " + code + " after " + MAX_RETRIES + " retries: " + errorBody, code, modelId);
                 }
                 log.warn("{} attempt {}/{} failed with {}: {}. Retrying...",
                         getClass().getSimpleName(), attempt, MAX_RETRIES, code, errorBody);
 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                throw new LLMException("Interrupted during retry", e);
+                throw new MochaException.LlmException("Interrupted during retry", 0, modelId, e);
             } catch (IOException e) {
                 if (attempt >= MAX_RETRIES) {
-                    throw new LLMException("Network error after " + MAX_RETRIES + " retries: " + e.getMessage(), 0, e);
+                    throw new MochaException.LlmException("Network error after " + MAX_RETRIES + " retries: " + e.getMessage(), 0, modelId, e);
                 }
                 log.warn("{} attempt {}/{} network error: {}. Retrying...",
                         getClass().getSimpleName(), attempt, MAX_RETRIES, e.getMessage());
@@ -136,7 +137,7 @@ public abstract class BaseApiLLM implements LLM {
                 Thread.sleep(delay);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                throw new LLMException("Interrupted during retry", e);
+                throw new MochaException.LlmException("Interrupted during retry", 0, modelId, e);
             }
         }
     }
@@ -163,13 +164,13 @@ public abstract class BaseApiLLM implements LLM {
                         HttpResponse.BodyHandlers.ofInputStream());
                 if (resp.statusCode() < 200 || resp.statusCode() >= 300) {
                     String errorBody = new String(resp.body().readAllBytes());
-                    response.error(new LLMException("Stream error " + resp.statusCode() + ": " + errorBody, resp.statusCode()));
+                    response.error(new MochaException.LlmException("Stream error " + resp.statusCode() + ": " + errorBody, resp.statusCode(), modelId));
                     return;
                 }
                 parseSseStream(resp.body(), response);
                 response.complete();
             } catch (IOException e) {
-                response.error(new LLMException("Stream network error: " + e.getMessage(), e));
+                response.error(new MochaException.LlmException("Stream network error: " + e.getMessage(), 0, modelId, e));
             } catch (Exception e) {
                 response.error(e);
             }
@@ -302,16 +303,4 @@ public abstract class BaseApiLLM implements LLM {
         public T requestsPerMinute(int rpm) { this.requestsPerMinute = rpm; return (T) this; }
     }
 
-    // ============ Exception ============
-
-    public static class LLMException extends RuntimeException {
-        private final int statusCode;
-        public LLMException(String msg) { super(msg); this.statusCode = 0; }
-        public LLMException(String msg, int code) { super(msg); this.statusCode = code; }
-        public LLMException(String msg, Throwable cause) { super(msg, cause); this.statusCode = 0; }
-        public LLMException(String msg, int code, Throwable cause) { super(msg, cause); this.statusCode = code; }
-        public int statusCode() { return statusCode; }
-        public boolean isRateLimit() { return statusCode == 429; }
-        public boolean isRetryable() { return statusCode == 429 || statusCode >= 500; }
-    }
 }

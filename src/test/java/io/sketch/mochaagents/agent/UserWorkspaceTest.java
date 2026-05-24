@@ -1,4 +1,5 @@
 package io.sketch.mochaagents.agent;
+import io.sketch.mochaagents.MochaException;
 import io.sketch.mochaagents.context.UserWorkspace;
 
 import io.sketch.mochaagents.llm.FallbackLLM;
@@ -25,14 +26,14 @@ class UserWorkspaceTest {
     }
 
     @Test void exceptionHierarchyHasErrorCodes() {
-        var e = new AgentException.LLMException("test", 429, "gpt-4");
+        var e = new MochaException.LlmException("test", 429, "gpt-4");
         assertTrue(e.isRateLimit());
-        assertTrue(e.retryable());
+        assertTrue(e.isRetryable());
         assertEquals("LLM_ERROR", e.errorCode());
     }
 
     @Test void toolExceptionCarriesContext() {
-        var e = new AgentException.ToolException("rm", "permission denied");
+        var e = new MochaException.ToolException("rm", "permission denied");
         assertEquals("rm", e.toolName());
         assertEquals("TOOL_ERROR", e.errorCode());
     }

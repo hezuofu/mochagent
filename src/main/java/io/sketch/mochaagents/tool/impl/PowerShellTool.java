@@ -1,4 +1,5 @@
 package io.sketch.mochaagents.tool.impl;
+import io.sketch.mochaagents.MochaException;
 
 import io.sketch.mochaagents.tool.AbstractTool;
 import io.sketch.mochaagents.tool.PermissionResult;
@@ -423,7 +424,7 @@ public class PowerShellTool extends AbstractTool {
             boolean completed = process.waitFor(timeout, TimeUnit.SECONDS);
             if (!completed) {
                 process.destroyForcibly();
-                throw new RuntimeException("Command timed out after " + timeout + " seconds");
+                throw new MochaException.ToolException(getName(), "Command timed out after " + timeout + " seconds");
             }
 
             stdoutThread.join(5000);

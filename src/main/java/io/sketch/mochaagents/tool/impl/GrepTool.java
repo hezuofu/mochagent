@@ -1,4 +1,5 @@
 package io.sketch.mochaagents.tool.impl;
+import io.sketch.mochaagents.MochaException;
 
 import io.sketch.mochaagents.tool.AbstractTool;
 import io.sketch.mochaagents.tool.ToolInput;
@@ -121,7 +122,7 @@ public class GrepTool extends AbstractTool {
                     return searchFilesWithMatches(searchPath, regex, globStr, headLimit, offset);
             }
         } catch (IOException e) {
-            throw new RuntimeException("Grep search failed: " + e.getMessage(), e);
+            throw new MochaException.ToolException(getName(), "Grep search failed: " + e.getMessage(), e);
         }
     }
 

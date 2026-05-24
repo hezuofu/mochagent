@@ -1,5 +1,6 @@
 package io.sketch.mochaagents.llm.provider;
 
+import io.sketch.mochaagents.MochaException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -114,7 +115,7 @@ public class OpenAILLM extends BaseApiLLM {
     protected ResponseParseResult parseResponseContent(JsonNode root) {
         JsonNode choices = root.get("choices");
         if (choices == null || !choices.isArray() || choices.isEmpty()) {
-            throw new LLMException("No choices in response: " + root);
+            throw new MochaException.LlmException("No choices in response: " + root, 0, modelId);
         }
 
         JsonNode message = choices.get(0).get("message");

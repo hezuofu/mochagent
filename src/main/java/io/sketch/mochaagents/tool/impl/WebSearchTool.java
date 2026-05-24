@@ -1,4 +1,5 @@
 package io.sketch.mochaagents.tool.impl;
+import io.sketch.mochaagents.MochaException;
 
 import io.sketch.mochaagents.tool.AbstractTool;
 import io.sketch.mochaagents.tool.ToolInput;
@@ -104,7 +105,7 @@ public class WebSearchTool extends AbstractTool {
             return result;
 
         } catch (IOException | InterruptedException e) {
-            throw new RuntimeException("Web search failed: " + e.getMessage(), e);
+            throw new MochaException.ToolException(getName(), "Web search failed: " + e.getMessage(), e);
         }
     }
 
