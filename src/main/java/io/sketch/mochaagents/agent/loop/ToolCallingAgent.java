@@ -1,11 +1,11 @@
 package io.sketch.mochaagents.agent.loop;
 
 import io.sketch.mochaagents.agent.loop.LoopState;
+import io.sketch.mochaagents.memory.MemoryManager;
 import io.sketch.mochaagents.agent.loop.ReActAgent;
 import io.sketch.mochaagents.agent.loop.StepResult;
 import io.sketch.mochaagents.llm.LLMRequest;
 import io.sketch.mochaagents.llm.LLMResponse;
-import io.sketch.mochaagents.memory.AgentMemory;
 import io.sketch.mochaagents.agent.loop.step.ActionStep;
 import io.sketch.mochaagents.tool.Tool;
 import org.slf4j.Logger;
@@ -58,7 +58,7 @@ public final class ToolCallingAgent extends ReActAgent {
     }
 
     @Override
-    protected StepResult executeReActStep(int stepNumber, String input, AgentMemory memory) {
+    protected StepResult executeReActStep(int stepNumber, String input, MemoryManager memory) {
         long start = System.currentTimeMillis();
 
         try {

@@ -38,10 +38,10 @@ public interface MemoryProvider {
 
     /** @deprecated use {@link MemoryManager} for persistence */
     @Deprecated
-    default AgentMemory memory() { return null; }
+    default MemoryManager memory() { return null; }
 
     /** Extract AgentMemory from an agent, or null. */
-    static AgentMemory of(Agent<?, ?> agent) {
+    static MemoryManager of(Agent<?, ?> agent) {
         return agent instanceof MemoryProvider mp ? mp.memory() : null;
     }
 }

@@ -1,6 +1,6 @@
 package io.sketch.mochaagents.agent.loop;
+import io.sketch.mochaagents.memory.MemoryManager;
 
-import io.sketch.mochaagents.memory.AgentMemory;
 import java.util.function.Predicate;
 
 /**
@@ -27,7 +27,7 @@ public final class Termination {
     }
 
     /** Check all termination conditions. */
-    public boolean test(int step, StepResult result, AgentMemory memory) {
+    public boolean test(int step, StepResult result, MemoryManager memory) {
         return step >= maxSteps
                 || result.hasError()
                 || (memory != null && memory.hasFinalAnswer())

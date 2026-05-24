@@ -4,7 +4,7 @@ import io.sketch.mochaagents.agent.Agent;
 import io.sketch.mochaagents.memory.MemoryProvider;
 import io.sketch.mochaagents.agent.AgentLoop;
 import io.sketch.mochaagents.agent.loop.*;
-import io.sketch.mochaagents.memory.AgentMemory;
+import io.sketch.mochaagents.memory.MemoryManager;
 import java.util.function.Predicate;
 import java.util.*;
 import org.slf4j.Logger;
@@ -35,7 +35,7 @@ public class ReWOOLoop<I, O> implements AgentLoop<I, O> {
     @FunctionalInterface
     public interface Reasoner {
         /** Generate the complete execution plan with placeholders like #{E0}, #{E1}. */
-        String reason(String task, AgentMemory memory);
+        String reason(String task, MemoryManager memory);
     }
 
     @FunctionalInterface
@@ -47,7 +47,7 @@ public class ReWOOLoop<I, O> implements AgentLoop<I, O> {
     @FunctionalInterface
     public interface Synthesizer {
         /** Combine all plan + tool results into a final answer. */
-        String synthesize(String plan, List<String> toolResults, AgentMemory memory);
+        String synthesize(String plan, List<String> toolResults, MemoryManager memory);
     }
 
     private final Reasoner reasoner;
@@ -63,7 +63,7 @@ public class ReWOOLoop<I, O> implements AgentLoop<I, O> {
     @Override
     public O run(Agent<I, O> agent, I input, Predicate<StepResult> condition) {
         String agentName = agent.metadata().name();
-        AgentMemory memory = getMemory(agent);
+        MemoryManager memory = getMemory(agent);
         String task = input != null ? input.toString() : "";
         log.info("[{}] ReWOO loop starting, task={}", agentName, truncate(task, 80));
 
@@ -211,7 +211,7 @@ public class ReWOOLoop<I, O> implements AgentLoop<I, O> {
 
     record ToolCall(String toolName, Map<String, Object> arguments) {}
 
-    private static AgentMemory getMemory(Agent<?, ?> agent) {
+    private static MemoryManager getMemory(Agent<?, ?> agent) {
         if (agent instanceof MemoryProvider mp) return mp.memory();
         return null;
     }

@@ -7,7 +7,7 @@ import io.sketch.mochaagents.agent.AgentLoop;
 import io.sketch.mochaagents.agent.loop.*;
 import io.sketch.mochaagents.agent.loop.ReflectionEngine;
 import io.sketch.mochaagents.agent.loop.SelfCritique;
-import io.sketch.mochaagents.memory.AgentMemory;
+import io.sketch.mochaagents.memory.MemoryManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,17 +23,17 @@ public class ObservePlanActReflect<I, O> implements AgentLoop<I, O> {
 
     @FunctionalInterface
     public interface Observer<I> {
-        String observe(int stepNumber, I input, AgentMemory memory);
+        String observe(int stepNumber, I input, MemoryManager memory);
     }
 
     @FunctionalInterface
     public interface StepExecutor<I> {
-        StepResult execute(int stepNumber, I input, AgentMemory memory);
+        StepResult execute(int stepNumber, I input, MemoryManager memory);
     }
 
     @FunctionalInterface
     public interface PlanningFn<I> {
-        String plan(int stepNumber, I input, AgentMemory memory);
+        String plan(int stepNumber, I input, MemoryManager memory);
     }
 
     private final Observer<I> observer;
@@ -55,7 +55,7 @@ public class ObservePlanActReflect<I, O> implements AgentLoop<I, O> {
     @Override
     public O run(Agent<I, O> agent, I input, Predicate<StepResult> condition) {
         String agentName = agent.metadata().name();
-        AgentMemory memory = getMemory(agent);
+        MemoryManager memory = getMemory(agent);
         log.info("[{}] OPAR loop starting", agentName);
 
         int step = 1;
@@ -110,7 +110,7 @@ public class ObservePlanActReflect<I, O> implements AgentLoop<I, O> {
     }
 
 
-    private static AgentMemory getMemory(Agent<?, ?> agent) {
+    private static MemoryManager getMemory(Agent<?, ?> agent) {
         if (agent instanceof MemoryProvider mp) return mp.memory();
         return null;
     }

@@ -4,7 +4,7 @@ import io.sketch.mochaagents.agent.Agent;
 import io.sketch.mochaagents.memory.MemoryProvider;
 import io.sketch.mochaagents.agent.AgentLoop;
 import io.sketch.mochaagents.agent.loop.*;
-import io.sketch.mochaagents.memory.AgentMemory;
+import io.sketch.mochaagents.memory.MemoryManager;
 import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,12 +30,12 @@ public class ReflexionLoop<I, O> implements AgentLoop<I, O> {
 
     @FunctionalInterface
     public interface StepExecutor<I> {
-        StepResult execute(int stepNumber, I input, AgentMemory memory);
+        StepResult execute(int stepNumber, I input, MemoryManager memory);
     }
 
     @FunctionalInterface
     public interface Critic {
-        SelfCritique critique(int stepNumber, StepResult result, AgentMemory memory);
+        SelfCritique critique(int stepNumber, StepResult result, MemoryManager memory);
     }
 
     private final StepExecutor<I> stepExecutor;
@@ -58,7 +58,7 @@ public class ReflexionLoop<I, O> implements AgentLoop<I, O> {
     @Override
     public O run(Agent<I, O> agent, I input, Predicate<StepResult> condition) {
         String agentName = agent.metadata().name();
-        AgentMemory memory = getMemory(agent);
+        MemoryManager memory = getMemory(agent);
         log.info("[{}] Reflexion loop starting (max improvements: {})", agentName, maxImprovements);
 
         int step = 1;
@@ -116,7 +116,7 @@ public class ReflexionLoop<I, O> implements AgentLoop<I, O> {
 
 
     /** Default critique: detect errors and low-quality output. */
-    private static SelfCritique defaultCritique(int step, StepResult result, AgentMemory memory) {
+    private static SelfCritique defaultCritique(int step, StepResult result, MemoryManager memory) {
         boolean hasError = result != null && result.hasError();
         String analysis = result != null && result.observation() != null
                 ? result.observation() : "no observation";
@@ -127,7 +127,7 @@ public class ReflexionLoop<I, O> implements AgentLoop<I, O> {
                 .build();
     }
 
-    private static AgentMemory getMemory(Agent<?, ?> agent) {
+    private static MemoryManager getMemory(Agent<?, ?> agent) {
         if (agent instanceof MemoryProvider mp) return mp.memory();
         return null;
     }

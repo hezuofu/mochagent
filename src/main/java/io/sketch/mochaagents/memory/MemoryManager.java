@@ -1,6 +1,9 @@
 package io.sketch.mochaagents.memory;
 
 import io.sketch.mochaagents.agent.loop.step.*;
+import java.io.IOException;
+import java.util.Map;
+import java.util.UUID;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -23,9 +26,12 @@ public class MemoryManager {
     private final List<MemoryStep> steps = new CopyOnWriteArrayList<>();
 
     public void remember(MemoryStep step) { steps.add(step); }
+    @Deprecated public void append(MemoryStep step) { remember(step); }
     public List<MemoryStep> steps() { return Collections.unmodifiableList(steps); }
     public int stepCount() { return steps.size(); }
+    @Deprecated public int size() { return stepCount(); }
     public void reset(String sp) { steps.clear(); this.systemPrompt = sp; }
+    public void setSystemPrompt(String sp) { this.systemPrompt = sp; }
     public String systemPrompt() { return systemPrompt; }
     public boolean hasFinalAnswer() { return steps.stream().anyMatch(s -> s instanceof ContentStep cs && cs.isFinalAnswer()); }
 
@@ -55,8 +61,15 @@ public class MemoryManager {
     // ── Working memory ──
     private String keyInfo = "", relatedSop = "";
 
-    public void checkpoint(String ki, String sop) { if (ki != null && !ki.isBlank()) this.keyInfo = ki; if (sop != null && !sop.isBlank()) this.relatedSop = sop; }
-    public String workingContext() { if (keyInfo.isEmpty() && relatedSop.isEmpty()) return ""; return "\n## Working Memory\n" + (keyInfo.isEmpty() ? "" : "<key_info>" + keyInfo + "</key_info>\n") + (relatedSop.isEmpty() ? "" : "Check " + relatedSop + " if unclear.\n"); }
+    public void checkpoint(String ki, String sop) {
+        if (ki != null && !ki.isBlank())
+        this.keyInfo = ki;
+        if (sop != null && !sop.isBlank())
+            this.relatedSop = sop;
+    }
+    public String workingContext() {
+        if (keyInfo.isEmpty() && relatedSop.isEmpty()) return "";
+        return "\n## Working Memory\n" + (keyInfo.isEmpty() ? "" : "<key_info>" + keyInfo + "</key_info>\n") + (relatedSop.isEmpty() ? "" : "Check " + relatedSop + " if unclear.\n"); }
 
     // ── Global memory ──
     private GlobalMemory globalMemory;
@@ -73,4 +86,30 @@ public class MemoryManager {
     private MemoryManager(MemoryStore store) { this.store = store != null ? store : new InMemoryMemoryStore(); }
     public static MemoryManager create() { return new MemoryManager(new InMemoryMemoryStore()); }
     public static MemoryManager create(MemoryStore store) { return new MemoryManager(store); }
+    // ── Session persistence ──
+
+    private final SessionStore sessionStore = new SessionStore();
+    private SessionStore.Session currentSession;
+
+    public MemoryManager startSession(String cwd, String userId) {
+        try { currentSession = sessionStore.start(UUID.randomUUID().toString(), cwd, userId); }
+        catch (IOException e) { /* fall through */ }
+        return this;
+    }
+
+    public void appendToSession(String role, String content) {
+        if (currentSession != null) sessionStore.append(currentSession, role, content);
+    }
+
+    public List<SessionStore.SessionMeta> listSessions(String cwd) {
+        try { return sessionStore.listSessions(cwd); }
+        catch (IOException e) { return List.of(); }
+    }
+
+    public List<Map<String, Object>> loadSessionHistory(SessionStore.Session session) {
+        try { return sessionStore.loadTranscript(session); }
+        catch (IOException e) { return List.of(); }
+    }
+
+    public SessionStore.Session currentSession() { return currentSession; }
 }

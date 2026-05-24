@@ -14,7 +14,13 @@
       "Bash(mvn pmd:pmd -q)",
       "Bash(mvn spotbugs:check)",
       "Bash(git rm *)",
-      "Bash(mvn pmd:check)"
+      "Bash(mvn pmd:check)",
+      "Bash(sed -i '/^import io.sketch.mochaagents.memory.MemoryManager;/a\\\\import io.sketch.mochaagents.memory.MemoryRecord;' src/main/java/io/sketch/mochaagents/agent/loop/ReActAgent.java)",
+      "Bash(sed -i 's/List<MemoryRecord> snapshots =/List<MemoryRecord> snapshots =/g' src/main/java/io/sketch/mochaagents/agent/loop/ReActAgent.java)",
+      "Bash(sed -i '/^package/a\\\\import io.sketch.mochaagents.memory.MemoryRecord;' src/main/java/io/sketch/mochaagents/agent/loop/ToolCallingAgent.java)",
+      "Bash(sed -i '/^package/a\\\\import io.sketch.mochaagents.memory.MemoryManager;' src/main/java/io/sketch/mochaagents/agent/loop/Termination.java)",
+      "Bash(MAVEN_OPTS=\"-Xmx512m\" mvn test)",
+      "Bash(MAVEN_OPTS=\"-Xmx384m\" mvn compile)"
     ]
   }
 }

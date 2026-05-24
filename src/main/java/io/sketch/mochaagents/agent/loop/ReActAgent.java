@@ -17,7 +17,8 @@ import io.sketch.mochaagents.evaluation.EvaluationResult;
 import io.sketch.mochaagents.llm.LLM;
 import io.sketch.mochaagents.llm.LLMRequest;
 import io.sketch.mochaagents.llm.LLMResponse;
-import io.sketch.mochaagents.memory.AgentMemory;
+import io.sketch.mochaagents.memory.MemoryManager;
+import io.sketch.mochaagents.memory.MemoryRecord;
 import io.sketch.mochaagents.agent.loop.step.*;
 import io.sketch.mochaagents.perception.LayeredContextBuilder;
 import io.sketch.mochaagents.perception.PerceptionObserver;
@@ -77,7 +78,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     protected final io.sketch.mochaagents.llm.LLMRouter router;
     protected final io.sketch.mochaagents.llm.OptimizationConfig optimization;
     protected final io.sketch.mochaagents.llm.CostTracker costTracker;
-    protected final AgentMemory memory = new AgentMemory();
+    protected final MemoryManager memory = MemoryManager.create();
     protected final int maxSteps;
     protected final int planningInterval;
     protected final boolean addBaseTools;
@@ -207,7 +208,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
     // ============ Public API ============
 
-    public AgentMemory memory() { return memory; }
+    public MemoryManager memory() { return memory; }
 
     public String buildSystemPrompt() {
         String base = systemPromptTemplate.render(Map.of(
@@ -311,7 +312,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     }
 
     protected StepResult executeReActStepStreaming(
-            int stepNumber, String input, AgentMemory memory,
+            int stepNumber, String input, MemoryManager memory,
             java.util.function.Consumer<String> onToken) {
         return executeReActStep(stepNumber, input, memory);
     }
@@ -390,7 +391,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
      *   <li><b>Adapt</b>: replan/re-reason if deviation detected</li>
      * </ol>
      */
-    private StepResult executeIntegratedStep(int stepNumber, String input, AgentMemory memory) {
+    private StepResult executeIntegratedStep(int stepNumber, String input, MemoryManager memory) {
         // 1. Pre-step: inject capability context into system prompt
         injectCapabilityContext(stepNumber, memory);
 
@@ -438,7 +439,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
      * Inject current reasoning state and plan progress into AgentMemory
      * so the LLM sees them as part of the conversation context.
      */
-    private void injectCapabilityContext(int stepNumber, AgentMemory memory) {
+    private void injectCapabilityContext(int stepNumber, MemoryManager memory) {
         StringBuilder ctx = new StringBuilder();
 
         // Reasoning context: where are we in the reasoning chain?
@@ -481,7 +482,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         }
 
         if (!ctx.isEmpty()) {
-            memory.append(ContentStep.systemPrompt(ctx.toString()));
+            memory.remember(ContentStep.systemPrompt(ctx.toString()));
         }
     }
 
@@ -499,7 +500,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
                 String data = pr.data() != null ? pr.data() : "";
                 if (!data.isEmpty()) {
                     perceptionHistory.add(truncate(data, 200));
-                    memory.append(ContentStep.systemPrompt("[Perception Update]:\n" + data
+                    memory.remember(ContentStep.systemPrompt("[Perception Update]:\n" + data
                             + "\n" + perceptionObserver.buildEnrichedContext()));
                 }
             } else {
@@ -507,7 +508,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
                 String data = pr.data() != null ? pr.data() : "";
                 if (!data.isEmpty()) {
                     perceptionHistory.add(truncate(data, 200));
-                    memory.append(ContentStep.systemPrompt("[Perception Update]:\n" + data));
+                    memory.remember(ContentStep.systemPrompt("[Perception Update]:\n" + data));
                 }
             }
             log.debug("Agent '{}' perception update: {}", name, truncate(observation, 100));
@@ -615,11 +616,11 @@ public abstract class ReActAgent extends BaseAgent<String, String>
      * implement the actual LLM call and tool/code execution.
      */
     protected abstract StepResult executeReActStep(
-            int stepNumber, String input, AgentMemory memory);
+            int stepNumber, String input, MemoryManager memory);
 
     // ============ Internal methods ============
 
-    protected String planStep(int stepNumber, String input, AgentMemory memory) {
+    protected String planStep(int stepNumber, String input, MemoryManager memory) {
         if (planningPromptTemplate == null) return null;
 
         log.debug("Agent '{}' planning at step {}", name, stepNumber);
@@ -650,7 +651,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     /** Auto-extract and persist memories after task completion. */
     private void storeMemories(String task, String result) {
         try {
-            List<io.sketch.mochaagents.memory.Memory> snapshots = memory.snapshot();
+            List<MemoryRecord> snapshots = memory.snapshot();
             for (var mem : snapshots) {
                 memory.save(mem);
             }
@@ -668,7 +669,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         PerceptionResult<String> result = perceptor.perceive(input);
         String data = result.data() != null ? result.data() : "";
         if (!data.isEmpty()) {
-            memory.append(ContentStep.systemPrompt("[Initial Perception]:\n" + data));
+            memory.remember(ContentStep.systemPrompt("[Initial Perception]:\n" + data));
             perceptionHistory.add(truncate(data, 200));
         }
         ctx.addChunk(newChunk("perception", data));
@@ -702,9 +703,9 @@ public abstract class ReActAgent extends BaseAgent<String, String>
             line = line.trim();
             if (line.isEmpty()) continue;
             if (line.startsWith("User: ") || line.startsWith("user: ")) {
-                memory.append(ContentStep.task(line.substring(line.indexOf(' ') + 1).trim()));
+                memory.remember(ContentStep.task(line.substring(line.indexOf(' ') + 1).trim()));
             } else if (line.startsWith("Assistant: ") || line.startsWith("assistant: ")) {
-                memory.append(new ActionStep(memory.size() + 1, "",
+                memory.remember(new ActionStep(memory.stepCount() + 1, "",
                         line.substring(line.indexOf(' ') + 1).trim(),
                         "history", "", null, 0, 0, false));
             }
@@ -1011,7 +1012,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
             return b;
         }
 
-        @Override protected StepResult executeReActStep(int step, String input, AgentMemory mem) {
+        @Override protected StepResult executeReActStep(int step, String input, MemoryManager mem) {
             return delegate.executeReActStep(step, input, mem);
         }
         @Override public String buildSystemPrompt() { return delegate.buildSystemPrompt(); }

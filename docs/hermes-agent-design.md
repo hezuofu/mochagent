@@ -472,7 +472,77 @@ focus, or Space. You and the user can share the same Mac at the same time.
   (prompt injection via UI is real).
 ```
 
-## 六、LLM 响应分类机制
+## 六、对话历史记录机制
+
+### 6.1 hermes-agent
+
+**双层存储：**
+
+**A. Session DB (SQLite) — 实时持久化**
+```
+AIAgent._session_db (SQLite)
+├── create_session(session_id, user_id, platform, ...)  ← 首次调用
+├── _flush_messages_to_session_db(messages, history)     ← 每轮后持久化
+├── get_session_title(session_id)                        ← 标题生成
+└── _ensure_db_session()                                 ← 懒创建行
+```
+
+- `_session_db_created` 标志控制延迟创建（首次 `run_conversation()` 调用时才建行）
+- 网关模式每次消息创建新 AIAgent 实例，从 session DB 加载历史
+- 失败时 `_session_db_created` 保持 False，下次重试
+
+**B. Trajectory (JSONL) — 训练/分析用**
+```
+save_trajectory(trajectory, model, completed, filename)
+├── 格式: ShareGPT conversations 格式
+├── 成功: trajectory_samples.jsonl
+├── 失败: failed_trajectories.jsonl
+└── 元数据: timestamp, model, completed
+```
+
+**消息持久化流程** (`_persist_session`, line 3980):
+1. `_flush_messages_to_session_db()` → SQLite 完整历史
+2. `save_trajectory()` → JSONL 轨迹
+3. 消息中 system_prompt 被剥离（从缓存重建）
+
+### 6.2 Claude Code
+
+**三层存储：**
+
+**A. Session JSONL — 完整对话日志**
+```
+sessionStorage.ts
+├── 两层: "lite logs" (metadata only) vs "full logs" (含 messages)
+├── {sessionId}.jsonl — 主会话转录
+├── {sessionId}.meta.json — 标题/标签/时间戳
+└── 格式: 每行 JSON {timestamp, role, content, sessionId}
+```
+
+**B. Transcript 索引 — 快速搜索**
+```
+agenticSessionSearch.ts: extractTranscript(log.messages)
+├── 从 ContentBlock 数组提取纯文本
+├── 截断到 MAX_TRANSCRIPT_CHARS (2000)
+└── 用于跨会话搜索
+```
+
+**C. Session DB — 结构化元数据**
+```
+Project class (sessionStorage.ts)
+├── {dataDir}/projects/{projectHash}/
+│   ├── {sessionId}.jsonl   ← 完整转录
+│   └── {sessionId}.meta.json ← 元数据
+├── listSessions() → 按时间排序
+├── loadTranscript() → 消息顺序列表
+└── updateMeta(title, tags)
+```
+
+**关键差异：**
+- Claude Code 的 JSONL 是**追加写**（每行一条消息），不需要读完整个文件
+- hermes-agent 的 SQLite 支持**索引查询**（按 session_id, user_id）
+- 两者都支持**跨会话搜索**（hermes: `session_search`, Claude: `agenticSessionSearch`）
+
+## 七、LLM 响应分类机制
 
 ### 5.1 内容块类型（Anthropic Messages API）
 

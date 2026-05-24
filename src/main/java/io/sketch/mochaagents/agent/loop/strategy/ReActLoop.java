@@ -6,7 +6,7 @@ import io.sketch.mochaagents.memory.MemoryProvider;
 import io.sketch.mochaagents.agent.loop.StepResult;
 import io.sketch.mochaagents.prompt.SystemPromptProvider;
 import java.util.function.Predicate;
-import io.sketch.mochaagents.memory.AgentMemory;
+import io.sketch.mochaagents.memory.MemoryManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +43,7 @@ public class ReActLoop<I, O> implements AgentLoop<I, O> {
      */
     @FunctionalInterface
     public interface StepExecutor<I> {
-        StepResult execute(int stepNumber, I input, AgentMemory memory);
+        StepResult execute(int stepNumber, I input, MemoryManager memory);
     }
 
     /**
@@ -53,7 +53,7 @@ public class ReActLoop<I, O> implements AgentLoop<I, O> {
      */
     @FunctionalInterface
     public interface PlanningFn<I> {
-        String plan(int stepNumber, I input, AgentMemory memory);
+        String plan(int stepNumber, I input, MemoryManager memory);
     }
 
     private final PlanningFn<I> planningFn;
@@ -82,7 +82,7 @@ public class ReActLoop<I, O> implements AgentLoop<I, O> {
         log.info("[{}] ReAct loop starting", agentName);
 
         // 使用 Agent 内部的 memory
-        AgentMemory memory = getMemory(agent);
+        MemoryManager memory = getMemory(agent);
         if (memory != null) {
             memory.setSystemPrompt(buildSystemPrompt(agent));
         }
@@ -129,7 +129,7 @@ public class ReActLoop<I, O> implements AgentLoop<I, O> {
 
     // ============ 辅助方法 ============
 
-    private static AgentMemory getMemory(Agent<?, ?> agent) {
+    private static MemoryManager getMemory(Agent<?, ?> agent) {
         if (agent instanceof MemoryProvider mp) {
             return mp.memory();
         }
@@ -143,7 +143,7 @@ public class ReActLoop<I, O> implements AgentLoop<I, O> {
         return "";
     }
 
-    private static boolean isFinalAnswer(AgentMemory memory) {
+    private static boolean isFinalAnswer(MemoryManager memory) {
         return memory != null && memory.hasFinalAnswer();
     }
 

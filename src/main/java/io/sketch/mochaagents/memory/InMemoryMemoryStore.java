@@ -11,7 +11,7 @@ import java.util.stream.Stream;
  * 由 {@link MemoryManager} 无参构造时自动创建.
  * @author lanxia39@163.com
  */
-public class InMemoryMemoryStore implements MemoryRecordStore {
+public class InMemoryMemoryStore implements MemoryStore {
 
     private final Map<String, MemoryRecord> store = new ConcurrentHashMap<>();
 

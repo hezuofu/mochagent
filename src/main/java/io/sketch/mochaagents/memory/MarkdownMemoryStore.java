@@ -35,7 +35,7 @@ import java.util.stream.Stream;
  * }</pre>
  * @author lanxia39@163.com
  */
-public class MarkdownMemoryStore implements MemoryRecordStore {
+public class MarkdownMemoryStore implements MemoryStore {
 
     private static final Logger log = LoggerFactory.getLogger(MarkdownMemoryStore.class);
     private static final String EXT = ".md";

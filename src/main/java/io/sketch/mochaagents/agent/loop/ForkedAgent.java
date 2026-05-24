@@ -1,7 +1,6 @@
 package io.sketch.mochaagents.agent.loop;
 
 import io.sketch.mochaagents.agent.AgentContext;
-import io.sketch.mochaagents.memory.AgentMemory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

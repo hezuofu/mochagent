@@ -46,5 +46,5 @@ public interface MemoryStore {
     List<MemoryRecord> searchByTag(String tag);
 
     /** 遍历所有记忆. */
-    Stream<Memory> entries();
+    Stream<MemoryRecord> entries();
 }

@@ -1,6 +1,8 @@
 package io.sketch.mochaagents.agent.loop;
-import io.sketch.mochaagents.memory.MemoryProvider;
+
 import io.sketch.mochaagents.agent.event.AgentEvent;
+import io.sketch.mochaagents.memory.MemoryManager;
+import io.sketch.mochaagents.memory.MemoryProvider;
 import io.sketch.mochaagents.agent.event.AgentEvents;
 import io.sketch.mochaagents.agent.event.AgentListener;
 
@@ -10,7 +12,6 @@ import io.sketch.mochaagents.agent.AgentMetadata;
 import io.sketch.mochaagents.agent.loop.ReflectionEngine;
 import io.sketch.mochaagents.agent.loop.strategy.ObservePlanActReflect;
 import io.sketch.mochaagents.agent.loop.strategy.ThinkActObserve;
-import io.sketch.mochaagents.memory.AgentMemory;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
@@ -21,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class LoopStrategyTest {
 
     private static StepResult doStep(AtomicInteger counter, int stepNumber, String input,
-                                      AgentMemory memory, int maxSteps, boolean produceFinalAnswer) {
+                                      MemoryManager memory, int maxSteps, boolean produceFinalAnswer) {
         counter.incrementAndGet();
         if (memory != null) {
             memory.appendAction(new io.sketch.mochaagents.agent.loop.step.ActionStep(
@@ -43,7 +44,7 @@ class LoopStrategyTest {
         final int maxSteps;
         final boolean finalAnswer;
         TaoExecutor(int max, boolean fa) { this.maxSteps = max; this.finalAnswer = fa; }
-        @Override public StepResult execute(int step, String input, AgentMemory mem) {
+        @Override public StepResult execute(int step, String input, MemoryManager mem) {
             return doStep(count, step, input, mem, maxSteps, finalAnswer);
         }
         int stepsTaken() { return count.get(); }
@@ -54,14 +55,14 @@ class LoopStrategyTest {
         final int maxSteps;
         final boolean finalAnswer;
         OparExecutor(int max, boolean fa) { this.maxSteps = max; this.finalAnswer = fa; }
-        @Override public StepResult execute(int step, String input, AgentMemory mem) {
+        @Override public StepResult execute(int step, String input, MemoryManager mem) {
             return doStep(count, step, input, mem, maxSteps, finalAnswer);
         }
         int stepsTaken() { return count.get(); }
     }
 
     private static final class MemoryProvidingAgent implements Agent<String, String>, MemoryProvider {
-        private final AgentMemory mem = new AgentMemory();
+        private final MemoryManager mem = MemoryManager.create();
         @Override public String execute(String input, AgentContext ctx) { return input; }
         @Override public CompletableFuture<String> executeAsync(String input, AgentContext ctx) {
             return CompletableFuture.completedFuture(input);
@@ -69,7 +70,7 @@ class LoopStrategyTest {
         @Override public AgentMetadata metadata() { return new AgentMetadata("test"); }
         @Override public void addListener(AgentListener<String, String> l) {}
         @Override public void removeListener(AgentListener<String, String> l) {}
-        @Override public AgentMemory memory() { return mem; }
+        @Override public MemoryManager memory() { return mem; }
     }
 
     private static Agent<String, String> dummyAgent() {
