@@ -156,8 +156,7 @@ public class AgentTool extends AbstractTool {
             }
 
             @Override public AgentMetadata metadata() {
-                return AgentMetadata.builder().name("SubAgent-General")
-                        .version("1.0").description("ToolCallingAgent-backed sub-agent").build();
+                return new AgentMetadata("SubAgent-General", "ToolCallingAgent-backed sub-agent");
             }
             @Override public void addListener(io.sketch.mochaagents.agent.event.AgentListener<Map<String, Object>, String> l) {}
             @Override public void removeListener(io.sketch.mochaagents.agent.event.AgentListener<Map<String, Object>, String> l) {}
@@ -172,7 +171,7 @@ public class AgentTool extends AbstractTool {
             @Override public CompletableFuture<String> executeAsync(Map<String, Object> input, io.sketch.mochaagents.agent.AgentContext ctx) {
                 return CompletableFuture.completedFuture(execute(input, ctx));
             }
-            @Override public AgentMetadata metadata() { return AgentMetadata.builder().name("SubAgent-Noop").build(); }
+            @Override public AgentMetadata metadata() { return new AgentMetadata("SubAgent-Noop"); }
             @Override public void addListener(io.sketch.mochaagents.agent.event.AgentListener<Map<String, Object>, String> l) {}
             @Override public void removeListener(io.sketch.mochaagents.agent.event.AgentListener<Map<String, Object>, String> l) {}
         };

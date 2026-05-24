@@ -27,7 +27,7 @@ class OrchestratorIntegrationTest {
                 return CompletableFuture.completedFuture(execute(input, ctx));
             }
             @Override public AgentMetadata metadata() {
-                return AgentMetadata.builder().name(name).build();
+                return new AgentMetadata(name);
             }
             @Override public void addListener(AgentListener<String, String> l) {}
             @Override public void removeListener(AgentListener<String, String> l) {}

@@ -25,7 +25,7 @@ class AgentTest {
         private final AgentMetadata meta;
         private final java.util.List<AgentListener<String, String>> listeners = new java.util.ArrayList<>();
 
-        EchoAgent(String name) { this.meta = AgentMetadata.builder().name(name).build(); }
+        EchoAgent(String name) { this.meta = new AgentMetadata(name); }
 
         @Override public String execute(String input, AgentContext ctx) {
             listeners.forEach(l -> l.onStart(new AgentEvent<>(meta.name(), input, ctx)));
@@ -52,7 +52,7 @@ class AgentTest {
         @Override public CompletableFuture<String> executeAsync(String input, AgentContext ctx) {
             return CompletableFuture.failedFuture(new RuntimeException("intentional failure"));
         }
-        @Override public AgentMetadata metadata() { return AgentMetadata.builder().name("failing").build(); }
+        @Override public AgentMetadata metadata() { return new AgentMetadata("failing"); }
         @Override public void addListener(AgentListener<String, String> l) {}
         @Override public void removeListener(AgentListener<String, String> l) {}
         boolean wasCalled() { return called.get(); }
@@ -68,7 +68,7 @@ class AgentTest {
         @Override public CompletableFuture<String> executeAsync(String input, AgentContext ctx) {
             return CompletableFuture.supplyAsync(() -> execute(input, ctx));
         }
-        @Override public AgentMetadata metadata() { return AgentMetadata.builder().name("slow").build(); }
+        @Override public AgentMetadata metadata() { return new AgentMetadata("slow"); }
         @Override public void addListener(AgentListener<String, String> l) {}
         @Override public void removeListener(AgentListener<String, String> l) {}
     }

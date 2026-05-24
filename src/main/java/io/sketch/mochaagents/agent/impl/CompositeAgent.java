@@ -59,7 +59,7 @@ public class CompositeAgent<I, O> implements Agent<I, List<O>> {
 
     @Override
     public AgentMetadata metadata() {
-        return AgentMetadata.builder().name(name).build();
+        return new AgentMetadata(name);
     }
 
     @Override

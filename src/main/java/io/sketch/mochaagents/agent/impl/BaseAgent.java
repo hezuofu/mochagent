@@ -84,7 +84,7 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
 
     @Override
     public AgentMetadata metadata() {
-        return AgentMetadata.builder().name(name).description(description).build();
+        return new AgentMetadata(name, description);
     }
 
     @Override

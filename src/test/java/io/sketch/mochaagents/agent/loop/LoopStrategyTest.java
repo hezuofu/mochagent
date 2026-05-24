@@ -66,7 +66,7 @@ class LoopStrategyTest {
         @Override public CompletableFuture<String> executeAsync(String input, AgentContext ctx) {
             return CompletableFuture.completedFuture(input);
         }
-        @Override public AgentMetadata metadata() { return AgentMetadata.builder().name("test").build(); }
+        @Override public AgentMetadata metadata() { return new AgentMetadata("test"); }
         @Override public void addListener(AgentListener<String, String> l) {}
         @Override public void removeListener(AgentListener<String, String> l) {}
         @Override public AgentMemory memory() { return mem; }

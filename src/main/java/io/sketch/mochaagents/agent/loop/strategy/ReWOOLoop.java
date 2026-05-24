@@ -139,16 +139,6 @@ public class ReWOOLoop<I, O> implements AgentLoop<I, O> {
         }
     }
 
-    @Override
-    public StepResult step(Agent<I, O> agent, I input, int stepNum) {
-        // ReWOO doesn't have steps — the full run is atomic
-        O result = run(agent, input, r -> true);
-        return StepResult.builder()
-                .stepNumber(stepNum)
-                .state(LoopState.COMPLETE)
-                .output(result != null ? result.toString() : "rewwo complete")
-                .build();
-    }
 
     // ============ Tool call parsing ============
 

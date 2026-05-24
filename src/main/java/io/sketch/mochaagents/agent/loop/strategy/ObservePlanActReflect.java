@@ -109,11 +109,6 @@ public class ObservePlanActReflect<I, O> implements AgentLoop<I, O> {
         return output;
     }
 
-    @Override
-    public StepResult step(Agent<I, O> agent, I input, int stepNum) {
-        AgentMemory memory = getMemory(agent);
-        return stepExecutor.execute(stepNum, input, memory);
-    }
 
     private static AgentMemory getMemory(Agent<?, ?> agent) {
         if (agent instanceof MemoryProvider mp) return mp.memory();

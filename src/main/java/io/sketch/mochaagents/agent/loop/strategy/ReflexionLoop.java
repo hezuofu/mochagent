@@ -114,11 +114,6 @@ public class ReflexionLoop<I, O> implements AgentLoop<I, O> {
         return output;
     }
 
-    @Override
-    public StepResult step(Agent<I, O> agent, I input, int stepNum) {
-        AgentMemory memory = getMemory(agent);
-        return stepExecutor.execute(stepNum, input, memory);
-    }
 
     /** Default critique: detect errors and low-quality output. */
     private static SelfCritique defaultCritique(int step, StepResult result, AgentMemory memory) {
