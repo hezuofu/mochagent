@@ -152,23 +152,18 @@ class AgentTest {
         assertEquals("ok", retrying.execute("ok"));
     }
 
-    // --- withTimeout (async) ---
-
     @Test
-    void withTimeoutCompletesWithinTimeout() throws Exception {
-        Agent<String, String> agent = new EchoAgent("echo").withTimeout(5000);
+    void asyncExecutionCompletes() throws Exception {
+        Agent<String, String> agent = new EchoAgent("echo");
 
         CompletableFuture<String> future = agent.executeAsync("test");
         assertEquals("test", future.get(3, TimeUnit.SECONDS));
     }
 
     @Test
-    void withTimeoutThrowsOnSlowExecution() {
-        Agent<String, String> withTimeout = new SlowAgent(1000).withTimeout(100);
-
-        CompletableFuture<String> future = withTimeout.executeAsync("test");
-        assertThrows(ExecutionException.class,
-                () -> future.get(5, TimeUnit.SECONDS));
+    void slowAgentDoesNotThrowSynchronously() {
+        Agent<String, String> agent = new SlowAgent(100);
+        agent.execute("test"); // just verify it runs
     }
 
     // --- listener ---

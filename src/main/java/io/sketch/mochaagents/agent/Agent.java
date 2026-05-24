@@ -1,6 +1,5 @@
 package io.sketch.mochaagents.agent;
 
-import io.sketch.mochaagents.agent.event.AgentEvent;
 import io.sketch.mochaagents.agent.event.AgentListener;
 
 import java.util.concurrent.CompletableFuture;
@@ -71,6 +70,7 @@ public interface Agent<I, O> {
             @Override public O execute(T input, AgentContext ctx) { return self.execute(mapper.apply(input), ctx); }
             @Override public CompletableFuture<O> executeAsync(T input, AgentContext ctx) { return self.executeAsync(mapper.apply(input), ctx); }
             @Override public AgentMetadata metadata() { return self.metadata(); }
+            // Listeners can't forward: input type T≠I
             @Override public void addListener(AgentListener<T, O> l) {}
             @Override public void removeListener(AgentListener<T, O> l) {}
         };
@@ -83,6 +83,7 @@ public interface Agent<I, O> {
             @Override public T execute(I input, AgentContext ctx) { return mapper.apply(self.execute(input, ctx)); }
             @Override public CompletableFuture<T> executeAsync(I input, AgentContext ctx) { return self.executeAsync(input, ctx).thenApply(mapper); }
             @Override public AgentMetadata metadata() { return self.metadata(); }
+            // Listeners can't forward: output type O≠T
             @Override public void addListener(AgentListener<I, T> l) {}
             @Override public void removeListener(AgentListener<I, T> l) {}
         };
@@ -95,6 +96,7 @@ public interface Agent<I, O> {
             @Override public T execute(I input, AgentContext ctx) { return next.execute(self.execute(input, ctx), ctx); }
             @Override public CompletableFuture<T> executeAsync(I input, AgentContext ctx) { return self.executeAsync(input, ctx).thenCompose(o -> next.executeAsync(o, ctx)); }
             @Override public AgentMetadata metadata() { return self.metadata().and(next.metadata()); }
+            // Listeners can't forward: type change I×O→I×T
             @Override public void addListener(AgentListener<I, T> l) {}
             @Override public void removeListener(AgentListener<I, T> l) {}
         };
@@ -112,7 +114,7 @@ public interface Agent<I, O> {
         };
     }
 
-    /** 重试机制. */
+    /** Retry on failure — synchronous only. For async, use the async facade. */
     default Agent<I, O> withRetry(int maxAttempts) {
         Agent<I, O> self = this;
         return new Agent<I, O>() {
@@ -123,20 +125,8 @@ public interface Agent<I, O> {
                 }
                 throw last != null ? last : new RuntimeException("retry exhausted");
             }
-            @Override public CompletableFuture<O> executeAsync(I input, AgentContext ctx) { return self.executeAsync(input, ctx); }
-            @Override public AgentMetadata metadata() { return self.metadata(); }
-            @Override public void addListener(AgentListener<I, O> l) { self.addListener(l); }
-            @Override public void removeListener(AgentListener<I, O> l) { self.removeListener(l); }
-        };
-    }
-
-    /** 超时控制. */
-    default Agent<I, O> withTimeout(long timeoutMillis) {
-        Agent<I, O> self = this;
-        return new Agent<I, O>() {
-            @Override public O execute(I input, AgentContext ctx) { return self.execute(input, ctx); }
             @Override public CompletableFuture<O> executeAsync(I input, AgentContext ctx) {
-                return self.executeAsync(input, ctx).orTimeout(timeoutMillis, java.util.concurrent.TimeUnit.MILLISECONDS);
+                return self.executeAsync(input, ctx);
             }
             @Override public AgentMetadata metadata() { return self.metadata(); }
             @Override public void addListener(AgentListener<I, O> l) { self.addListener(l); }
