@@ -19,6 +19,7 @@ import java.util.Map;
  *     .withAntiForgetting(10, 65)
  *     .withSummaryRequired();
  * }</pre>
+  * @author lanxia39@163.com
  */
 public final class LearningLoop {
 

@@ -3,7 +3,10 @@
 
 package io.sketch.mochaagents.event;
 
-/** All agent lifecycle event types. */
+/** All agent lifecycle event types.
+ *
+ * @author lanxia39@163.com
+ */
 public enum EventType {
     STARTED, STEP_START, STEP_END,
     MODEL_CALL, TOOL_CALL,

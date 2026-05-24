@@ -8,6 +8,7 @@ package io.sketch.mochaagents;
  *
  * <p>All framework exceptions extend this class. Standard Java exceptions
  * (IllegalArgumentException, etc.) remain for pure logic errors.
+  * @author lanxia39@163.com
  */
 public class MochaException extends RuntimeException {
     private final String errorCode;

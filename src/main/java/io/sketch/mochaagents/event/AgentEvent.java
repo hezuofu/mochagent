@@ -5,7 +5,10 @@ package io.sketch.mochaagents.event;
 
 import java.time.Instant;
 
-/** Unified event — single record type for all agent lifecycle events. */
+/** Unified event — single record type for all agent lifecycle events.
+ *
+ * @author lanxia39@163.com
+ */
 public record AgentEvent(EventType type, String agentName, Object data,
                          long elapsedMs, Instant timestamp) {
 

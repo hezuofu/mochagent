@@ -7,6 +7,7 @@ import io.sketch.mochaagents.agent.Agent;
 
 /**
  * Memory plugin — hermes-agent compatible provider interface.
+  * @author lanxia39@163.com
  */
 public interface MemoryProvider {
 

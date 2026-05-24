@@ -14,6 +14,7 @@ import java.util.List;
  * <p>Implementations register via {@link MemoryManager#withPlugin(MemoryPlugin)}
  * or via the plugin loader as ExtensionPoint("MEMORY", ...).
  * Only ONE external plugin is recommended (prevents schema bloat).
+  * @author lanxia39@163.com
  */
 public interface MemoryPlugin extends Plugin {
 

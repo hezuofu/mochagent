@@ -5,6 +5,7 @@ package io.sketch.mochaagents.reasoning;
 
 /**
  * Minimal reasoning — analyze a question and return a reasoning chain.
+  * @author lanxia39@163.com
  */
 @FunctionalInterface
 public interface Reasoner {

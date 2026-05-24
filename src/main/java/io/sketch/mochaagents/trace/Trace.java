@@ -10,6 +10,7 @@ import java.util.Map;
  *
  * <p>All agent telemetry flows through this one interface.
  * Default no-op implementation via {@link #noop()}.
+  * @author lanxia39@163.com
  */
 public interface Trace {
 

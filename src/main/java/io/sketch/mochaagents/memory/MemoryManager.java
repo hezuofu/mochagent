@@ -22,6 +22,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *     .withGlobalMemory();
  * String ctx = mem.workingContext() + mem.globalContext() + mem.buildPluginPrompt();
  * }</pre>
+  * @author lanxia39@163.com
  */
 public class MemoryManager {
 

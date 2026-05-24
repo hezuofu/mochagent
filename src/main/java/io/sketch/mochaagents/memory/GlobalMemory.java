@@ -19,6 +19,7 @@ import java.util.List;
  * <p>Pattern from GenericAgent's global_mem.txt + global_mem_insight.txt.
  * Only stores VERIFIED information (action-proven, not guessed).
  * Injected into system prompt every N turns to prevent context decay.
+  * @author lanxia39@163.com
  */
 public class GlobalMemory {
 

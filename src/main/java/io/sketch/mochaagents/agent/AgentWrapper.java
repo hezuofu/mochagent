@@ -9,6 +9,7 @@ import io.sketch.mochaagents.agent.event.AgentListener;
 /**
  * Decorator base — delegates all Agent methods to an inner agent.
  * Subclasses override only the methods they need to intercept.
+  * @author lanxia39@163.com
  */
 public abstract class AgentWrapper<I, O> implements Agent<I, O> {
 

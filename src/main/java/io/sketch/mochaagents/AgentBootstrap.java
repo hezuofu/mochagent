@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Skills, plugins, and MCP are loaded lazily via {@link #withSkills()},
  * {@link #withPlugins()}, {@link #withMcp()}.
+  * @author lanxia39@163.com
  */
 public final class AgentBootstrap {
 

@@ -23,6 +23,7 @@ import java.util.function.BiFunction;
  *     .with(Faculty.Reasoning.of(reasoner))
  *     .build();
  * }</pre>
+  * @author lanxia39@163.com
  */
 @FunctionalInterface
 public interface Faculty<I, O> {

@@ -19,6 +19,7 @@ import java.util.*;
  * context management under a single abstraction. Use {@link #of(String)}
  * for simple cases (ephemeral token window), or {@link #of(String, int)}
  * with explicit token budget.
+  * @author lanxia39@163.com
  */
 public final class AgentContext implements Context {
 

@@ -19,6 +19,7 @@ import java.util.List;
  *     }
  * }
  * }</pre>
+  * @author lanxia39@163.com
  */
 public interface Plugin {
 

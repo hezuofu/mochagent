@@ -6,6 +6,7 @@ package io.sketch.mochaagents.agent;
 /**
  * Minimal agent identity — name and description.
  * Merged via {@link #and(AgentMetadata)} when composing agents.
+  * @author lanxia39@163.com
  */
 public record AgentMetadata(String name, String description) {
 

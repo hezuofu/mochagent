@@ -7,7 +7,11 @@ package io.sketch.mochaagents.learn;
  * 学习策略接口 — 定义 Agent 如何从经验中提取模式和调整行为.
  */
 @FunctionalInterface
-/** @author lanxia39@163.com */
+/**
+ * LearningStrategy strategy interface.
+ *
+ * @author lanxia39@163.com
+ */
 public interface LearningStrategy {
 
     /** 学习策略的权重更新 */

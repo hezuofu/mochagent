@@ -14,6 +14,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * Runnable unsub = bus.subscribe(e -> log.info("{}: {}", e.type(), e.data()));
  * bus.fire(new AgentEvent(EventType.TOOL_CALL, "agent1", result, 42));
  * }</pre>
+  * @author lanxia39@163.com
  */
 public class EventBus {
 

@@ -7,6 +7,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * Minimal Model — send a request, get a response.
+  * @author lanxia39@163.com
  */
 @FunctionalInterface
 public interface Model {

@@ -11,6 +11,7 @@ import java.util.List;
  *
  * <p>{@link ContextManager} is the default implementation.
  * Use {@link #of(int)} or {@link #of(int, ContextStrategy, ContextCompressor)} to create one.
+  * @author lanxia39@163.com
  */
 public interface Context {
 

@@ -8,6 +8,7 @@ package io.sketch.mochaagents.memory;
  *
  * <p>Pattern from GenericAgent's do_update_working_checkpoint().
  * Injected into every turn via the anchor prompt.
+  * @author lanxia39@163.com
  */
 public class WorkingMemory {
     private String keyInfo = "";

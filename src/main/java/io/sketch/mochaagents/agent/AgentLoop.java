@@ -14,6 +14,7 @@ import java.util.function.Predicate;
  *
  * @param <I> input type
  * @param <O> output type
+  * @author lanxia39@163.com
  */
 @FunctionalInterface
 public interface AgentLoop<I, O> {

@@ -12,6 +12,7 @@ package io.sketch.mochaagents.agent.loop.step;
  *   <li>{@link PlanningStep} — 规划步骤</li>
  *   <li>{@link ActionStep} — 行动步骤</li>
  * </ul>
+  * @author lanxia39@163.com
  */
 public sealed interface MemoryStep
         permits ContentStep, PlanningStep, ActionStep {

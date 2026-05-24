@@ -8,6 +8,7 @@ import java.util.function.Predicate;
 
 /**
  * Minimal perception — observe input and return structured result.
+  * @author lanxia39@163.com
  */
 @FunctionalInterface
 public interface Perceptor<I, O> {

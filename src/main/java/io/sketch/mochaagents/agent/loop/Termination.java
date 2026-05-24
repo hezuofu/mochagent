@@ -14,6 +14,7 @@ import java.util.function.Predicate;
  * var stop = new Termination(20).or(r -> r.output().contains("DONE"));
  * while (!stop.test(step, result, memory)) { ... }
  * }</pre>
+  * @author lanxia39@163.com
  */
 public final class Termination {
     private final int maxSteps;

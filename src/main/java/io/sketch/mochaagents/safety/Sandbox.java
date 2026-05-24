@@ -5,6 +5,7 @@ package io.sketch.mochaagents.safety;
 
 /**
  * Minimal sandbox — execute untrusted code in isolation.
+  * @author lanxia39@163.com
  */
 @FunctionalInterface
 public interface Sandbox {

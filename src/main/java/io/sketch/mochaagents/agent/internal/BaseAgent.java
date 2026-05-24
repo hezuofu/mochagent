@@ -35,6 +35,7 @@ import java.util.regex.Pattern;
  *
  * <p>Cognitive capabilities (perception, reasoning, planning, evaluation)
  * live in concrete loop strategies or are assembled via {@link io.sketch.mochaagents.agent.Faculty}.
+  * @author lanxia39@163.com
  */
 public abstract class BaseAgent<I, O> implements Agent<I, O> {
 

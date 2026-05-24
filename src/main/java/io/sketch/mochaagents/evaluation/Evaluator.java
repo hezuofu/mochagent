@@ -5,6 +5,7 @@ package io.sketch.mochaagents.evaluation;
 
 /**
  * Minimal evaluation — assess agent output quality.
+  * @author lanxia39@163.com
  */
 @FunctionalInterface
 public interface Evaluator {

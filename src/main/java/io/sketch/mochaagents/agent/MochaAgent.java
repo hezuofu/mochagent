@@ -26,6 +26,7 @@ import java.util.concurrent.CompletableFuture;
  *     .build();
  * String result = agent.run("What is the weather?");
  * }</pre>
+  * @author lanxia39@163.com
  */
 public final class MochaAgent implements Agent<String, String> {
 

@@ -7,7 +7,8 @@ import java.io.PrintStream;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** Routes argv[0] to a registered CliCommand, or falls back to a default. */
+/** Routes argv[0] to a registered CliCommand, or falls back to a default.  * @author lanxia39@163.com
+ */
 public class Dispatcher {
 
     private final Map<String, CliCommand> routes = new LinkedHashMap<>();
