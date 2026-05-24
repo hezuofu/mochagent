@@ -212,19 +212,26 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
     public MemoryManager memory() { return memory; }
 
+    private String cachedStaticPrefix;
+
     public String buildSystemPrompt() {
-        String base = systemPromptTemplate.render(Map.of(
-                "tools", formatTools(),
-                "managed_agents", formatManagedAgents(),
-                "instructions", description != null ? description : ""
-        ));
-        // Use LayeredContextBuilder to add system context (git, platform)
-        String full = contextBuilder.buildFullContext(base, "");
-        // Inject working memory + global memory (GenericAgent pattern)
-        full += memory.workingContext();
-        full += memory.globalContext();
-        return full;
+        // Build static prefix once — maximizes API prompt cache hits
+        if (cachedStaticPrefix == null) {
+            String base = systemPromptTemplate.render(Map.of(
+                    "tools", formatTools(),
+                    "managed_agents", formatManagedAgents(),
+                    "instructions", description != null ? description : ""
+            ));
+            cachedStaticPrefix = contextBuilder.buildFullContext(base, "");
+        }
+        // Dynamic suffix appends fresh each call
+        return cachedStaticPrefix
+                + memory.workingContext()
+                + memory.globalContext();
     }
+
+    /** Invalidate cached prompt (call after tool changes or skill updates). */
+    public void invalidatePromptCache() { cachedStaticPrefix = null; }
 
     // ============ Execution entry points ============
 
