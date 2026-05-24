@@ -10,7 +10,7 @@ import java.util.List;
  * @param result       final answer
  * @param steps        total ReAct steps taken
  * @param durationMs   wall-clock time
- * @param llmCost      estimated Model cost (USD)
+ * @param modelCost    estimated Model cost (USD)
  * @param inputTokens  total input tokens consumed
  * @param outputTokens total output tokens produced
  * @param errors       any errors encountered
@@ -21,7 +21,7 @@ public record ExecutionReport(
         String result,
         int steps,
         long durationMs,
-        double llmCost,
+        double modelCost,
         long inputTokens,
         long outputTokens,
         List<String> errors,
