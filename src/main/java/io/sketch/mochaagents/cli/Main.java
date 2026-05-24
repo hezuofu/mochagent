@@ -69,36 +69,22 @@ public final class Main {
         };
 
         CliCommand doctor = (a, o, e) -> {
-            o.println("=== MochaAgents Doctor ===");
-            o.println("Version: " + VERSION);
-            o.println("Java: " + System.getProperty("java.version"));
-            o.println("OS: " + System.getProperty("os.name"));
-            o.println("All checks passed.");
+            o.println("=== MochaAgents v" + VERSION + " ===");
+            o.println("Java:    " + System.getProperty("java.version")
+                    + " | OS: " + System.getProperty("os.name"));
+            o.println("Cores:   " + Runtime.getRuntime().availableProcessors()
+                    + " | Mem: " + (Runtime.getRuntime().maxMemory() >> 20) + "MB");
+            var bootstrap = AgentBootstrap.init();
+            o.println("Tools:   " + bootstrap.toolRegistry().size());
+            o.println("Skills:  " + bootstrap.pluginBootstrap().pluginManager().size());
+            o.println("Status:  OK");
             return 0;
-        };
-
-        CliCommand update = (a, o, e) -> {
-            o.println("Current version: " + VERSION);
-            o.println("MochaAgents is up to date!");
-            return 0;
-        };
-
-        CliCommand auth = (a, o, e) -> {
-            if (a.length == 0) { o.println("Usage: mocha auth <login|logout|status>"); return 1; }
-            switch (a[0]) {
-                case "login": o.println("Login flow not yet implemented."); return 0;
-                case "logout": o.println("Logged out."); return 0;
-                case "status": o.println("Not authenticated."); return 0;
-                default: o.println("Unknown auth subcommand: " + a[0]); return 1;
-            }
         };
 
         Dispatcher d = new Dispatcher()
                 .on("mcp", mcp)
                 .on("plugin", plugin).on("plugins", plugin)
                 .on("doctor", doctor)
-                .on("update", update)
-                .on("auth", auth)
                 .otherwise(repl);
 
         log.info("Dispatching: {}", args[0]);
@@ -129,8 +115,7 @@ public final class Main {
         out.println("Commands:");
         out.println("  (default)       Interactive REPL");
         out.println("  mcp serve       Start MCP server on stdio");
-        out.println("  plugin          Manage plugins");
-        out.println("  update          Check for updates");
+        out.println("  plugin list     List loaded plugins");
         out.println("  doctor          Run diagnostics");
         out.println();
         out.println("Model Options:");
