@@ -42,6 +42,7 @@ public class ConcurrentSafeBatcher {
     private final int maxConcurrency;
     private final long timeoutMs;
     private final ToolExecutor baseExecutor;
+    private final ExecutorService pool;
 
     public ConcurrentSafeBatcher(ToolRegistry registry) {
         this(registry, 10, 60_000);
@@ -52,6 +53,7 @@ public class ConcurrentSafeBatcher {
         this.maxConcurrency = maxConcurrency;
         this.timeoutMs = timeoutMs;
         this.baseExecutor = new ToolExecutor(registry, timeoutMs, 2, 500);
+        this.pool = Executors.newFixedThreadPool(maxConcurrency);
     }
 
     /**
@@ -70,27 +72,21 @@ public class ConcurrentSafeBatcher {
         // 2. Execute batches sequentially; within each batch, tools run in parallel
         Map<Integer, ToolResult> resultsByIndex = new LinkedHashMap<>();
         AtomicBoolean abortSiblings = new AtomicBoolean(false);
-        ExecutorService pool = Executors.newFixedThreadPool(maxConcurrency);
 
-        try {
-            for (Batch batch : batches) {
-                if (abortSiblings.get()) {
-                    // Fill remaining results with abort errors
-                    for (ToolCall tc : batch.calls) {
-                        resultsByIndex.put(tc.index, ToolResult.Builder.failure(
-                                tc.name, "Aborted: sibling tool error", null));
-                    }
-                    continue;
+        for (Batch batch : batches) {
+            if (abortSiblings.get()) {
+                for (ToolCall tc : batch.calls) {
+                    resultsByIndex.put(tc.index, ToolResult.Builder.failure(
+                            tc.name, "Aborted: sibling tool error", null));
                 }
-
-                if (batch.isConcurrent && batch.calls.size() > 1) {
-                    executeConcurrentBatch(batch, resultsByIndex, abortSiblings, pool);
-                } else {
-                    executeSerialBatch(batch, resultsByIndex, abortSiblings);
-                }
+                continue;
             }
-        } finally {
-            pool.shutdownNow();
+
+            if (batch.isConcurrent && batch.calls.size() > 1) {
+                executeConcurrentBatch(batch, resultsByIndex, abortSiblings, pool);
+            } else {
+                executeSerialBatch(batch, resultsByIndex, abortSiblings);
+            }
         }
 
         // Sort results by original index
