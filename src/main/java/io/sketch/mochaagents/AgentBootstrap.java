@@ -44,14 +44,14 @@ public final class AgentBootstrap {
     /** Build a fully-featured MochaAgent with learning + global memory. */
     public MochaAgent buildAgent(String name) {
         return MochaAgent.builder(name, model)
+                .toolRegistry(toolRegistry)
+                .globalMemory(true)
+                .build();
+    }
 
     /** One-liner: create agent and run a task. */
     public String run(String task) {
         return buildAgent("mocha").run(task);
-    }
-                .toolRegistry(toolRegistry)
-                .globalMemory(true)
-                .build();
     }
 
     /** @deprecated sub-agents are spawned via AgentTool registered in ToolRegistry */
