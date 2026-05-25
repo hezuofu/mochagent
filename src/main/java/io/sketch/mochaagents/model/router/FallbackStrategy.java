@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2024-2026 MochaAgents Authors
 
-package io.sketch.mochaagents.model;
+package io.sketch.mochaagents.model.router;
 import io.sketch.mochaagents.MochaException;
 
 import io.sketch.mochaagents.model.Model;

@@ -72,7 +72,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     // ── Core components ──
 
     protected final Model model;
-    protected final io.sketch.mochaagents.model.ModelRouter router;
+    protected final io.sketch.mochaagents.model.router.ModelRouter router;
     protected final io.sketch.mochaagents.model.OptimizationConfig optimization;
     protected final io.sketch.mochaagents.model.CostTracker costTracker;
     protected final MemoryManager memory = MemoryManager.create();
@@ -952,7 +952,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
             extends BaseAgent.Builder<String, String, T> {
 
         protected Model model;
-        protected io.sketch.mochaagents.model.ModelRouter router;
+        protected io.sketch.mochaagents.model.router.ModelRouter router;
         protected io.sketch.mochaagents.orchestration.Orchestrator orchestrator;
         protected List<Tool> tools = new ArrayList<>();
         protected List<ReActAgent> managedAgents = new ArrayList<>();
@@ -976,7 +976,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
         public T model(Model model) { this.model = model; return (T) this; }
         public T optimization(io.sketch.mochaagents.model.OptimizationConfig cfg) { this.optimization = cfg; return (T) this; }
-        public T router(io.sketch.mochaagents.model.ModelRouter router) { this.router = router; return (T) this; }
+        public T router(io.sketch.mochaagents.model.router.ModelRouter router) { this.router = router; return (T) this; }
         public T orchestrator(io.sketch.mochaagents.orchestration.Orchestrator o) { this.orchestrator = o; return (T) this; }
         public T tools(List<Tool> tools) { this.tools = tools; return (T) this; }
         public T managedAgents(List<ReActAgent> agents) { this.managedAgents = agents; return (T) this; }

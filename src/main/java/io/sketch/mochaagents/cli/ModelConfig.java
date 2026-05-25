@@ -7,9 +7,8 @@ import io.sketch.mochaagents.model.Model;
 import io.sketch.mochaagents.model.ModelRequest;
 import io.sketch.mochaagents.model.ModelResponse;
 import io.sketch.mochaagents.model.provider.*;
-import io.sketch.mochaagents.model.ModelRouter;
-import io.sketch.mochaagents.model.CostOptimizer;
-import io.sketch.mochaagents.model.FallbackStrategy;
+import io.sketch.mochaagents.model.router.ModelRouter;
+import io.sketch.mochaagents.model.router.CostOptimizer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,8 +50,7 @@ public class ModelConfig {
         }
 
         // Multiple models: use ModelRouter for cost-optimized selection
-        ModelRouter router = new ModelRouter(new io.sketch.mochaagents.model.CostOptimizer(),
-                new io.sketch.mochaagents.model.FallbackStrategy());
+        ModelRouter router = new ModelRouter(new CostOptimizer());
         for (Entry e : models) {
             router.register(e.modelId(), buildOne(e));
         }
