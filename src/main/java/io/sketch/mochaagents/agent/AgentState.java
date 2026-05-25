@@ -3,6 +3,8 @@
 
 package io.sketch.mochaagents.agent;
 
-/** Agent lifecycle.  * @author lanxia39@163.com
+/** Agent lifecycle.
+ *
+ * @author lanxia39@163.com
  */
 public enum AgentState { IDLE, RUNNING, COMPLETED, FAILED }

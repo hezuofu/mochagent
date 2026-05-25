@@ -5,7 +5,10 @@ package io.sketch.mochaagents.model;
 
 import java.util.concurrent.CompletableFuture;
 
-/** Default Model when no API key is configured. Returns helpful message.  * @author lanxia39@163.com
+/**
+ * Default Model when no API key is configured. Returns helpful message.
+ *
+ * @author lanxia39@163.com
  */
 public class FallbackModel implements Model {
     @Override public ModelResponse complete(ModelRequest r) { return ModelResponse.of("No Model configured. Use --model flag or set API key."); }
