@@ -66,7 +66,7 @@ public class ToolExecutor {
             }
             if (decision instanceof io.sketch.mochaagents.interaction.Decision.Deny d) {
                 if (session != null && session.recordDenial(toolName))
-                    log.warn("Tool '{}' auto-blocked after {} denials", toolName, session.maxDenialsBeforeBlock());
+                    log.warn("Tool '{}' blocked: max denials reached", toolName);
                 return ToolResult.Builder.failure(toolName, "Permission denied: " + d.reason(), null);
             }
             if (decision instanceof io.sketch.mochaagents.interaction.Decision.Ask a && broker != null) {
