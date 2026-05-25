@@ -42,4 +42,9 @@ public final class Termination {
 
     public static Predicate<StepResult> maxSteps(int max) { return r -> r.stepNumber() >= max; }
     public static Predicate<StepResult> onError() { return StepResult::hasError; }
+
+    /** True when agent may continue — no final answer yet. */
+    public static boolean notDone(MemoryManager memory) {
+        return memory == null || !memory.hasFinalAnswer();
+    }
 }

@@ -68,7 +68,7 @@ public class ThinkActObserve<I, O> implements AgentLoop<I, O> {
                     result != null ? result.state() : "?", stepMs);
             step++;
 
-        } while (!condition.test(result) && (memory == null || !memory.hasFinalAnswer()));
+        } while (!condition.test(result) && Termination.notDone(memory));
 
         @SuppressWarnings("unchecked")
         O output = result != null ? (O) result.output() : null;

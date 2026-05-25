@@ -116,7 +116,7 @@ public class ReActLoop<I, O> implements AgentLoop<I, O> {
                     stepMs);
             step++;
 
-        } while (!condition.test(result) && !isFinalAnswer(memory));
+        } while (!condition.test(result) && !Termination.notDone(memory));
 
         long loopMs = System.currentTimeMillis() - loopStart;
         log.info("[{}] loop finished: {} steps in {}ms, final_state={}, terminated={}",
@@ -130,9 +130,6 @@ public class ReActLoop<I, O> implements AgentLoop<I, O> {
     }
 
 
-    private static boolean isFinalAnswer(MemoryManager memory) {
-        return memory != null && memory.hasFinalAnswer();
-    }
 
     private static String agentName(Agent<?, ?> agent) {
         return agent.metadata().name();
