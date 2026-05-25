@@ -86,7 +86,7 @@ class LoopStrategyTest {
     void taoLoopRunsMultipleSteps() {
         TaoExecutor executor = new TaoExecutor(3, true);
         ThinkActObserve<String, String> loop = new ThinkActObserve<>(null, executor);
-        loop.run(dummyAgent(), "task", Termination.maxSteps(5));
+        loop.run(dummyAgent(), "task", new Termination(4));
         assertTrue(executor.stepsTaken() >= 1);
     }
 
@@ -94,7 +94,7 @@ class LoopStrategyTest {
     void taoLoopTerminatesOnCondition() {
         TaoExecutor executor = new TaoExecutor(10, false);
         ThinkActObserve<String, String> loop = new ThinkActObserve<>(null, executor);
-        loop.run(dummyAgent(), "task", Termination.maxSteps(3));
+        loop.run(dummyAgent(), "task", new Termination(4));
         assertEquals(3, executor.stepsTaken());
     }
 
@@ -105,7 +105,7 @@ class LoopStrategyTest {
         ThinkActObserve<String, String> loop = new ThinkActObserve<>(
                 (step, input, mem) -> { planCount.incrementAndGet(); return "plan-" + step; },
                 executor);
-        loop.run(dummyAgent(), "task", Termination.maxSteps(3));
+        loop.run(dummyAgent(), "task", new Termination(4));
         assertTrue(planCount.get() >= 1);
     }
 
@@ -118,7 +118,7 @@ class LoopStrategyTest {
                 (step, input, mem) -> "observed " + step,
                 (step, input, mem) -> "plan " + step,
                 executor, ReflectionEngine.noop(), 1);
-        loop.run(dummyAgent(), "task", Termination.maxSteps(3));
+        loop.run(dummyAgent(), "task", new Termination(4));
         assertTrue(executor.stepsTaken() >= 1);
     }
 
@@ -127,7 +127,7 @@ class LoopStrategyTest {
         OparExecutor executor = new OparExecutor(100, false);
         ObservePlanActReflect<String, String> loop = new ObservePlanActReflect<>(
                 null, null, executor, ReflectionEngine.noop(), 5);
-        loop.run(dummyAgent(), "task", Termination.maxSteps(2));
+        loop.run(dummyAgent(), "task", new Termination(4));
         assertEquals(2, executor.stepsTaken());
     }
 
@@ -135,16 +135,16 @@ class LoopStrategyTest {
 
     @Test
     void terminationOnError() {
-        java.util.function.Predicate<StepResult> cond = Termination.onError();
+        Termination cond = new Termination(100);
         StepResult errorResult = StepResult.builder().state(LoopState.ERROR)
                 .error("something failed").build();
-        assertTrue(cond.test(errorResult));
+        assertTrue(cond.test(0, errorResult, null));
     }
 
     @Test
     void terminationOnMaxSteps() {
-        java.util.function.Predicate<StepResult> cond = Termination.maxSteps(3);
-        assertFalse(cond.test(
-                StepResult.builder().state(LoopState.ACT).build()));
+        Termination cond = new Termination(4);
+        assertFalse(cond.test(0,
+                StepResult.builder().state(LoopState.ACT).build(), null));
     }
 }
