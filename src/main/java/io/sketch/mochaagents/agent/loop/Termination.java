@@ -32,11 +32,18 @@ public final class Termination {
 
     /** Check all termination conditions. */
     public boolean test(int step, StepResult result, MemoryManager memory) {
+        if (sessionId != null && io.sketch.mochaagents.interaction.InterruptSignal.isInterrupted(sessionId))
+            return true;
         return step >= maxSteps
                 || result.hasError()
                 || (memory != null && memory.hasFinalAnswer())
                 || (custom != null && custom.test(result));
     }
+
+    private String sessionId;
+
+    /** Bind to a session for interrupt checking. */
+    public Termination withSession(String id) { this.sessionId = id; return this; }
 
     // ── Static factories ──
 
