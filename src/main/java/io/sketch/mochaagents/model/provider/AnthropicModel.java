@@ -23,7 +23,7 @@ import java.util.Map;
  * }</pre>
  * @author lanxia39@163.com
  */
-public class AnthropicModel extends BaseApiModel {
+public class AnthropicModel extends BaseApiModel implements Model.NativeTools {
 
     private final String apiKey;
     private final String baseUrl;
@@ -62,7 +62,6 @@ public class AnthropicModel extends BaseApiModel {
         return buildRequestBody(request, true);
     }
 
-    @Override public boolean supportsNativeTools() { return true; }
 
     private String buildRequestBody(ModelRequest request, boolean stream) {
         ObjectNode body = JSON.createObjectNode();

@@ -3,12 +3,11 @@
 
 package io.sketch.mochaagents.model;
 
-import io.sketch.mochaagents.tool.Tool;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
  * Minimal Model — send a request, get a response.
+ * Capabilities via {@code instanceof} checks, not interface pollution.
  *
  * @author lanxia39@163.com
  */
@@ -25,23 +24,6 @@ public interface Model {
         throw new UnsupportedOperationException("streaming not supported by " + modelName());
     }
 
-    /** Whether this model supports native tool_use blocks (not text-parsed). */
-    default boolean supportsNativeTools() { return false; }
-
-    /** Complete with tool schemas — builds a request with tools included. */
-    default ModelResponse completeWithTools(ModelRequest request, List<Tool> tools) {
-        ModelRequest req = ModelRequest.builder()
-                .messages(request.messages())
-                .typedMessages(request.typedMessages())
-                .temperature(request.temperature())
-                .maxTokens(request.maxTokens())
-                .thinkingConfig(request.thinkingConfig())
-                .effort(request.effort())
-                .tools(tools)
-                .build();
-        return complete(req);
-    }
-
     default String modelName() { return "unknown"; }
     default int maxContextTokens() { return 128000; }
 
@@ -51,5 +33,18 @@ public interface Model {
         if (n.contains("gpt") || n.contains("codex")) return "openai";
         if (n.contains("gemini") || n.contains("gemma")) return "google";
         return "other";
+    }
+
+    /** Capability: supports native tool_use blocks (Anthropic, OpenAI). */
+    interface NativeTools extends Model {
+        default ModelResponse completeWithTools(ModelRequest request, java.util.List<io.sketch.mochaagents.tool.Tool> tools) {
+            if (!request.hasTools()) return complete(request);
+            return complete(request);
+        }
+    }
+
+    /** Capability: supports streaming responses. */
+    interface Streaming extends Model {
+        StreamingResponse stream(ModelRequest request);
     }
 }

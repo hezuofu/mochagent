@@ -31,7 +31,7 @@ import java.util.Map;
  * }</pre>
  * @author lanxia39@163.com
  */
-public class OpenAIModel extends BaseApiModel {
+public class OpenAIModel extends BaseApiModel implements Model.NativeTools {
 
     private final String apiKey;
     private final String baseUrl;
@@ -140,7 +140,6 @@ public class OpenAIModel extends BaseApiModel {
 
     @Override public String modelName() { return modelId; }
 
-    @Override public boolean supportsNativeTools() { return true; }
 
     // ============ Builder ============
 
