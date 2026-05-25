@@ -431,9 +431,30 @@ final class Repl implements CliCommand {
 
     private io.sketch.mochaagents.agent.MochaAgent agent() {
         if (agent == null) {
-            bootstrap = AgentBootstrap.init();
             model = modelCfg.build();
-            agent = AgentBootstrap.init(model).buildAgent("repl-agent");
+            // Wire permissions + CLI approval
+            bootstrap = AgentBootstrap.init(model)
+                    .withPermissions(io.sketch.mochaagents.interaction.InteractionMode.COLLABORATIVE)
+                    .withApprovalHandler((use, sid) -> {
+                        out.print(bold("\n  Allow ") + cyan(use.toolName())
+                                + dim(" ? [y/n/s(ession)/a(lways)] "));
+                        out.flush();
+                        try {
+                            String line = in.readLine();
+                            if (line == null) return java.util.concurrent.CompletableFuture
+                                    .completedFuture(io.sketch.mochaagents.interaction.Decision.deny("EOF"));
+                            return java.util.concurrent.CompletableFuture.completedFuture(switch (line.trim().toLowerCase()) {
+                                case "y", "yes" -> io.sketch.mochaagents.interaction.Decision.allow("user");
+                                case "s", "session" -> io.sketch.mochaagents.interaction.Decision.allow("session", true);
+                                case "a", "always" -> io.sketch.mochaagents.interaction.Decision.allow("always", true);
+                                default -> io.sketch.mochaagents.interaction.Decision.deny("user said no");
+                            });
+                        } catch (IOException e) {
+                            return java.util.concurrent.CompletableFuture
+                                    .completedFuture(io.sketch.mochaagents.interaction.Decision.deny("error"));
+                        }
+                    });
+            agent = bootstrap.buildAgent("repl-agent");
             log.info("REPL agent created — model: {}", model.modelName());
         }
         return agent;
