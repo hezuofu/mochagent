@@ -440,7 +440,8 @@ final class Repl implements CliCommand {
                                 + dim(" ? [y/n/s(ession)/a(lways)] "));
                         out.flush();
                         try {
-                            String line = in.readLine();
+                            var console = System.console();
+                            String line = console != null ? console.readLine() : null;
                             if (line == null) return java.util.concurrent.CompletableFuture
                                     .completedFuture(io.sketch.mochaagents.interaction.Decision.deny("EOF"));
                             return java.util.concurrent.CompletableFuture.completedFuture(switch (line.trim().toLowerCase()) {
