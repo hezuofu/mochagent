@@ -837,7 +837,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         if (!toolRegistry.has("final_answer")) {
             toolRegistry.register(new FinalAnswerTool());
         }
-        // Register self-learning tools (GenericAgent pattern, via AgentMemory)
+        // Register self-learning tools (GenericAgent pattern, via MemoryManager)
         if (!toolRegistry.has("update_checkpoint")) {
             toolRegistry.register(new io.sketch.mochaagents.tool.internal.LearnTools.UpdateCheckpoint(memory));
         }
