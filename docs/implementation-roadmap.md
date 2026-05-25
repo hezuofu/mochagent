@@ -26,26 +26,13 @@ LLM 响应 → ContentBlock 分类：
 - 需要改造 AgentLoop 的终止条件：`有 tool_use → continue, 无 → break`
 - 去掉 `buildSystemPrompt()` 中的 `## Response Format (MANDATORY)` 强制格式
 
-### 2. 对话中断与并发
+### 2. 对话中断与并发 ✅
 
-**现状：** 无中断机制
-**目标：** 用户可在对话进行中发送新消息，优雅中断当前执行
-
-```
-hermes-agent 模式:
-  _interrupted_threads: Set<thread_id>
-  工具内调用 is_interrupted() 自检
-
-Claude Code 模式:
-  abortController.signal.aborted 多检查点
-  消息队列: now > next > later
-```
-
-**实现要点：**
-- `AgentContext` 增加 `AbortController abortController`
-- AgentLoop 每轮开始检查 `abortController.signal.aborted`
-- 工具执行前/后检查中断信号
-- `messageQueueManager` 优先级队列
+**已完成：**
+- `InterruptSignal` — 会话级中断信号 (hermes per-thread 模式)
+- `Termination.withSession()` — 每步检查中断
+- `MessageQueue` — 优先级队列 NOW > NEXT > LATER (Claude Code 模式)
+- `MessagePriority` — 三级枚举
 
 ---
 
@@ -100,7 +87,12 @@ Every response should either (a) contain tool calls that make progress, or
 <missing_context> — 信息缺失时查工具，不幻想
 ```
 
-### 5. 多 agent 协作
+### 5. 多 agent 协作 ✅ (部分)
+
+**已完成：**
+- `DelegateTaskTool` — 子Agent委派 (hermes Mode A)
+- `BackgroundReviewer` — 后台审查 (hermes Mode B)
+- `KanbanBoard` — SQLite看板 (hermes Mode C)
 
 **参考：** hermes-agent delegate_task + Kanban
 
@@ -160,7 +152,7 @@ turn % 5  == 0 (plan模式) → 确认当前步骤
 turn % 90 == 0 (plan模式) → 必须 ask_user
 ```
 
-### 8. 消息队列 + 优先级
+### 8. 消息队列 + 优先级 ✅
 
 **参考：** Claude Code `messageQueueManager.ts`
 
@@ -198,7 +190,7 @@ ContentBlock:
 
 **参考：** Claude Code `utils/messages.ts` — normalizeMessagesForAPI, ensureToolResultPairing
 
-### 10. 多级上下文压缩
+### 10. 多级上下文压缩 ✅
 
 ```
 4 级压缩 (Claude Code 模式):
