@@ -3,8 +3,6 @@
 
 package io.sketch.mochaagents.evaluation;
 
-import io.sketch.mochaagents.evaluation.AutomatedJudge;
-import io.sketch.mochaagents.evaluation.ModelJudge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

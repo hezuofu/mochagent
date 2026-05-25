@@ -3,10 +3,6 @@
 
 package io.sketch.mochaagents.evaluation;
 
-import io.sketch.mochaagents.evaluation.EvaluationCriteria;
-import io.sketch.mochaagents.evaluation.EvaluationResult;
-import io.sketch.mochaagents.evaluation.Evaluator;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;

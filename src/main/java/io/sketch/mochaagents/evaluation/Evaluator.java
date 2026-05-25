@@ -9,5 +9,6 @@ package io.sketch.mochaagents.evaluation;
  */
 @FunctionalInterface
 public interface Evaluator {
+
     EvaluationResult evaluate(String input, String output, String expected);
 }
