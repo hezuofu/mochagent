@@ -147,12 +147,16 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
         public boolean isFinalAnswer() { return "final_answer".equals(name); }
     }
 
-    /** Parse tool calls from ContentBlocks (native tool calling). */
-    protected List<ParsedAction> parseContentBlocks(List<io.sketch.mochaagents.skill.ContentBlock> blocks) {
+    /** Parse tool calls from typed Messages (native tool calling). */
+    @SuppressWarnings("unchecked")
+    protected List<ParsedAction> parseContentBlocks(List<io.sketch.mochaagents.agent.message.Message> messages) {
         List<ParsedAction> actions = new ArrayList<>();
-        for (var block : blocks) {
-            if ("tool_use".equals(block.type()) && block.input() != null) {
-                actions.add(new ParsedAction(block.name(), block.input()));
+        for (var msg : messages) {
+            if (!"assistant".equals(msg.role())) continue;
+            for (var block : msg.content()) {
+                if ("tool_use".equals(block.type()) && block.data() instanceof Map<?,?> m) {
+                    actions.add(new ParsedAction((String) m.get("name"), (Map<String, Object>) m.get("input")));
+                }
             }
         }
         return actions;

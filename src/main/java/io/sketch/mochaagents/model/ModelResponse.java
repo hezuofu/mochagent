@@ -3,7 +3,7 @@
 
 package io.sketch.mochaagents.model;
 
-import io.sketch.mochaagents.skill.ContentBlock;
+import io.sketch.mochaagents.agent.message.Message;
 import java.util.*;
 
 /**
@@ -14,7 +14,7 @@ import java.util.*;
 public class ModelResponse {
 
     private final String content;
-    private final List<ContentBlock> contentBlocks;
+    private final List<Message> contentBlocks;
     private final String model;
     private final int promptTokens;
     private final int completionTokens;
@@ -27,10 +27,10 @@ public class ModelResponse {
         this(content, List.of(), model, promptTokens, completionTokens, latencyMs, metadata);
     }
 
-    public ModelResponse(String content, List<ContentBlock> blocks, String model, int promptTokens,
+    public ModelResponse(String content, List<Message> blocks, String model, int promptTokens,
                        int completionTokens, long latencyMs, Map<String, Object> metadata) {
         this.content = content;
-        this.contentBlocks = List.copyOf(blocks);
+        this.contentBlocks = blocks != null ? List.copyOf(blocks) : List.of();
         this.model = model;
         this.promptTokens = promptTokens;
         this.completionTokens = completionTokens;
@@ -40,7 +40,7 @@ public class ModelResponse {
     }
 
     public String content() { return content; }
-    public List<ContentBlock> contentBlocks() { return contentBlocks; }
+    public List<Message> contentBlocks() { return contentBlocks; }
     public boolean hasContentBlocks() { return !contentBlocks.isEmpty(); }
     public String model() { return model; }
     public int promptTokens() { return promptTokens; }
