@@ -98,6 +98,10 @@ public final class AgentBootstrap {
         lsp.register(serverName, extension,
                 new io.sketch.mochaagents.lsp.LspServer.LspServerConfig(command, args));
         toolRegistry.register(new LspTool(lsp));
+
+        var diag = new io.sketch.mochaagents.lsp.LspDiagnostics();
+        io.sketch.mochaagents.lsp.LspDiagnosticBridge.install(lsp, diag);
+        log.info("LSP diagnostics enabled for .{}", extension);
         return this;
     }
 

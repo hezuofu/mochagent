@@ -152,6 +152,9 @@ public class FileEditTool extends AbstractTool {
             Files.writeString(path, updated, StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
+            io.sketch.mochaagents.lsp.LspDiagnosticBridge.didChange(filePath, updated);
+            io.sketch.mochaagents.lsp.LspDiagnosticBridge.didSave(filePath);
+
             Map<String, Object> result = new LinkedHashMap<>();
             result.put("filePath", filePath);
             result.put("oldString", actualOld);

@@ -104,6 +104,9 @@ public class FileWriteTool extends AbstractTool {
             Files.writeString(path, content, StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
+            io.sketch.mochaagents.lsp.LspDiagnosticBridge.didChange(filePath, content);
+            io.sketch.mochaagents.lsp.LspDiagnosticBridge.didSave(filePath);
+
             Map<String, Object> result = new LinkedHashMap<>();
             result.put("type", exists ? "update" : "create");
             result.put("filePath", filePath);
