@@ -93,6 +93,7 @@ public final class AgentBootstrap {
         return this;
     }
 
+    /** Register LSP for one extension. */
     public AgentBootstrap withLsp(String extension, String serverName, String command, String... args) {
         io.sketch.mochaagents.lsp.LspManager lsp = getOrCreateLsp();
         lsp.register(serverName, extension,
@@ -103,6 +104,17 @@ public final class AgentBootstrap {
         io.sketch.mochaagents.lsp.LspDiagnosticBridge.install(lsp, diag);
         log.info("LSP diagnostics enabled for .{}", extension);
         return this;
+    }
+
+    /** Register TypeScript LSP. */
+    public AgentBootstrap withTypeScriptLsp() {
+        return withLsp("ts", "typescript", "typescript-language-server", "--stdio")
+               .withLsp("tsx", "typescript", "typescript-language-server", "--stdio");
+    }
+
+    /** Register Python LSP. */
+    public AgentBootstrap withPythonLsp() {
+        return withLsp("py", "python", "pyright-langserver", "--stdio");
     }
 
     private io.sketch.mochaagents.lsp.LspManager lspManager;
