@@ -2,6 +2,7 @@
 // Copyright 2024-2026 MochaAgents Authors
 
 package io.sketch.mochaagents.agent.loop.strategy;
+import io.sketch.mochaagents.agent.loop.Termination;
 
 import io.sketch.mochaagents.agent.Agent;
 import io.sketch.mochaagents.agent.AgentLoop;
