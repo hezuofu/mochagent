@@ -59,6 +59,7 @@ public final class LspTool implements Tool {
         try {
             CompletableFuture<JsonNode> req = (CompletableFuture<JsonNode>) (Object) manager.request(filePath, method, params);
             JsonNode result = req.get(30, TimeUnit.SECONDS);
+            result = filterGitIgnored(result);
             return formatResult(operation, result);
         } catch (InterruptedException | java.util.concurrent.ExecutionException e) {
             return Map.of("error", e.getMessage());
@@ -114,6 +115,28 @@ public final class LspTool implements Tool {
             output.put("result", result);
         }
         return output;
+    }
+
+    private static JsonNode filterGitIgnored(JsonNode result) {
+        if (!result.isArray() || result.size() == 0) return result;
+        var filtered = JSON.createArrayNode();
+        for (JsonNode item : result) {
+            String uri = item.has("uri") ? item.get("uri").asText()
+                    : item.has("targetUri") ? item.get("targetUri").asText() : null;
+            if (uri == null || !uri.startsWith("file://") || !isGitIgnored(uri.substring(7))) {
+                filtered.add(item);
+            }
+        }
+        return filtered;
+    }
+
+    private static boolean isGitIgnored(String path) {
+        try {
+            Process p = new ProcessBuilder("git", "check-ignore", "-q", "--", path)
+                    .redirectError(ProcessBuilder.Redirect.DISCARD)
+                    .start();
+            return p.waitFor() == 0;
+        } catch (Exception e) { return false; }
     }
 
     // ── Factory ──
