@@ -2,6 +2,7 @@
 // Copyright 2024-2026 MochaAgents Authors
 
 package io.sketch.mochaagents.memory;
+import java.util.stream.Stream;
 
 import io.sketch.mochaagents.plugin.ExtensionPoint;
 import io.sketch.mochaagents.plugin.Plugin;
@@ -25,7 +26,7 @@ public interface MemoryPlugin extends Plugin {
     default void onTurnStart(int turnCount, String userMessage) {}
 
     /** Expose this plugin as a MEMORY extension point for the unified plugin system. */
-    default List<ExtensionPoint<?>> extensions() {
-        return List.of(ExtensionPoint.memory(this, 0));
+    default Stream<ExtensionPoint<?>> extensions() {
+        return Stream.of(ExtensionPoint.memory(this, 0));
     }
 }

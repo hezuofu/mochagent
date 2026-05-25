@@ -208,15 +208,18 @@ public class PluginLoader {
     /** Load a plugin from its class, activating it immediately. */
     public <T extends Plugin> T loadPlugin(Class<T> pluginClass) {
         try {
+            PluginInfo info = pluginClass.getAnnotation(PluginInfo.class);
+            if (info == null) throw new IllegalArgumentException(
+                    "@PluginInfo required on " + pluginClass.getName());
+
             T plugin = pluginClass.getDeclaredConstructor().newInstance();
-            PluginDescriptor desc = PluginDescriptor.of(plugin.name(), plugin.version(), plugin.description());
-            for (ExtensionPoint<?> ext : plugin.extensions()) {
-                desc = desc.withExtension(ext);
-            }
+            PluginDescriptor desc = PluginDescriptor.of(info.name(), info.version(), info.description());
+            var ref = new java.util.concurrent.atomic.AtomicReference<>(desc);
+            plugin.extensions().forEach(ext -> ref.set(ref.get().withExtension(ext)));
+            desc = ref.get();
             discovered.put(desc.name(), desc);
             applyPluginExtensions(desc);
-            plugin.onActivate();
-            log.info("Plugin loaded: {} v{}", plugin.name(), plugin.version());
+            log.info("Plugin loaded: {} v{}", info.name(), info.version());
             return plugin;
         } catch (Exception e) {
             log.error("Failed to load plugin {}: {}", pluginClass.getName(), e.getMessage());

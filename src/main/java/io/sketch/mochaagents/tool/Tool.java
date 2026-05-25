@@ -2,6 +2,7 @@
 // Copyright 2024-2026 MochaAgents Authors
 
 package io.sketch.mochaagents.tool;
+import java.util.stream.Stream;
 
 import io.sketch.mochaagents.plugin.ExtensionPoint;
 import io.sketch.mochaagents.plugin.Plugin;
@@ -75,7 +76,7 @@ public interface Tool extends Plugin {
     default String description() { return getDescription(); }
     default String version() { return "1.0"; }
 
-    default List<ExtensionPoint<?>> extensions() { return List.of(ExtensionPoint.tool(this, 0)); }
+    default Stream<ExtensionPoint<?>> extensions() { return Stream.of(ExtensionPoint.tool(this, 0)); }
 
     enum SecurityLevel { LOW, MEDIUM, HIGH, CRITICAL }
 }

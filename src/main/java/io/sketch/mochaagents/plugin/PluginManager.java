@@ -44,14 +44,16 @@ public class PluginManager {
         log.debug("Plugin registered: {} (enabled={})", descriptor.name(), initialEnabled);
     }
 
-    /** Register a Plugin instance directly. */
+    /** Register a Plugin instance — reads @PluginInfo for metadata. */
     public void registerPlugin(Plugin plugin) {
-        PluginDescriptor desc = PluginDescriptor.of(plugin.name(), plugin.version(), plugin.description());
-        for (ExtensionPoint<?> ext : plugin.extensions()) {
-            desc = desc.withExtension(ext);
-        }
-        register(desc);
-        plugin.onActivate();
+        PluginInfo info = plugin.getClass().getAnnotation(PluginInfo.class);
+        if (info == null) throw new IllegalArgumentException(
+                "@PluginInfo required on " + plugin.getClass().getName());
+        PluginDescriptor desc = PluginDescriptor.of(info.name(), info.version(), info.description());
+        var ref = new java.util.concurrent.atomic.AtomicReference<>(desc);
+        plugin.extensions().forEach(e -> ref.set(ref.get().withExtension(e)));
+        register(ref.get());
+        if (plugin instanceof AutoCloseable ac) { /* lifecycle managed by caller */ }
     }
 
     /** 注销插件. */

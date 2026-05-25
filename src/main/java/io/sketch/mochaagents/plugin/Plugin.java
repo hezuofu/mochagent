@@ -3,41 +3,39 @@
 
 package io.sketch.mochaagents.plugin;
 
-import java.util.List;
+import java.util.stream.Stream;
 
 /**
- * Base interface for ALL plugins — memory, skill, tool, provider, loop.
- *
- * <p>Every plugin provides zero or more {@link ExtensionPoint}s. The plugin
- * manager discovers, loads, and activates plugins at runtime.
+ * Plugin — provide extension points. Metadata from {@link PluginInfo} annotation.
  *
  * <pre>{@code
- * public class ChromaMemoryPlugin implements Plugin {
- *     public String name() { return "chroma-memory"; }
- *     public List<ExtensionPoint<?>> extensions() {
- *         return List.of(ExtensionPoint.of("MEMORY", new ChromaStore()));
+ * @PluginInfo(name = "my-tools", description = "Custom tool set")
+ * class MyPlugin implements Plugin {
+ *     public Stream<ExtensionPoint<?>> extensions() {
+ *         return Stream.of(ExtensionPoint.tool(new MyTool(), 0));
  *     }
  * }
  * }</pre>
-  * @author lanxia39@163.com
+ *
+ * @author lanxia39@163.com
  */
+@FunctionalInterface
 public interface Plugin {
+    Stream<ExtensionPoint<?>> extensions();
 
-    /** Unique plugin identifier. */
-    String name();
+    /** Derived from @PluginInfo annotation. */
+    default String name() {
+        PluginInfo info = getClass().getAnnotation(PluginInfo.class);
+        return info != null ? info.name() : getClass().getSimpleName();
+    }
 
-    /** Human-readable description. */
-    default String description() { return ""; }
+    default String description() {
+        PluginInfo info = getClass().getAnnotation(PluginInfo.class);
+        return info != null ? info.description() : "";
+    }
 
-    /** Plugin version. */
-    default String version() { return "1.0"; }
-
-    /** Extension points this plugin provides. */
-    List<ExtensionPoint<?>> extensions();
-
-    /** Called when plugin is activated. */
-    default void onActivate() {}
-
-    /** Called when plugin is deactivated. */
-    default void onDeactivate() {}
+    default String version() {
+        PluginInfo info = getClass().getAnnotation(PluginInfo.class);
+        return info != null ? info.version() : "1.0";
+    }
 }

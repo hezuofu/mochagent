@@ -5,6 +5,7 @@ package io.sketch.mochaagents.skill;
 
 import io.sketch.mochaagents.plugin.ExtensionPoint;
 import io.sketch.mochaagents.plugin.Plugin;
+import java.util.stream.Stream;
 
 import java.util.Collections;
 import java.util.List;
@@ -34,7 +35,7 @@ public interface Skill extends Plugin {
     default boolean disableModelInvocation() { return false; }
     List<ContentBlock> getPromptForCommand(String args);
 
-    default List<ExtensionPoint<?>> extensions() {
-        return List.of(ExtensionPoint.skill(this, 0));
+    default Stream<ExtensionPoint<?>> extensions() {
+        return Stream.of(ExtensionPoint.skill(this, 0));
     }
 }
