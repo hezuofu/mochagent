@@ -23,6 +23,8 @@ public class ToolExecutor {
     private final long retryDelayMs;
     private io.sketch.mochaagents.tool.Hooks hooks;
     private io.sketch.mochaagents.interaction.PermissionRules permissions;
+    private io.sketch.mochaagents.interaction.DecisionPipeline pipeline;
+    private io.sketch.mochaagents.interaction.ApprovalBroker broker;
     private io.sketch.mochaagents.agent.event.AgentEvents events;
 
     public ToolExecutor(ToolRegistry registry, long timeoutMs, int maxRetries, long retryDelayMs) {
@@ -38,6 +40,10 @@ public class ToolExecutor {
     public ToolExecutor withHooks(io.sketch.mochaagents.tool.Hooks hooks) { this.hooks = hooks; return this; }
     /** Inject permission rules for tool gating. */
     public ToolExecutor withPermissions(io.sketch.mochaagents.interaction.PermissionRules permissions) { this.permissions = permissions; return this; }
+    /** Inject decision pipeline (rules + safety + mode). */
+    public ToolExecutor withPipeline(io.sketch.mochaagents.interaction.DecisionPipeline pipeline) { this.pipeline = pipeline; return this; }
+    /** Inject approval broker for ASK decisions. */
+    public ToolExecutor withBroker(io.sketch.mochaagents.interaction.ApprovalBroker broker) { this.broker = broker; return this; }
     /** Inject event bus for real-time tool call notifications (diff display etc.). */
     public ToolExecutor withEvents(io.sketch.mochaagents.agent.event.AgentEvents events) { this.events = events; return this; }
 
@@ -48,10 +54,29 @@ public class ToolExecutor {
             return ToolResult.Builder.failure(toolName, "Tool not found: " + toolName, null);
         }
 
-        // Permission check
-        if (permissions != null) {
-            var perm = permissions.resolve(toolName);
-            if (perm == io.sketch.mochaagents.interaction.PermissionRules.Behavior.DENY) {
+        // Permission check — pipeline or simple rules
+        if (pipeline != null && permissions != null) {
+            var use = new io.sketch.mochaagents.interaction.ToolUse(toolName, arguments);
+            var decision = pipeline.evaluate(use, permissions);
+            if (decision instanceof io.sketch.mochaagents.interaction.Decision.HardDeny hd) {
+                return ToolResult.Builder.failure(toolName, "BLOCKED: " + hd.reason(), null);
+            }
+            if (decision instanceof io.sketch.mochaagents.interaction.Decision.Deny d) {
+                return ToolResult.Builder.failure(toolName, "Permission denied: " + d.reason(), null);
+            }
+            if (decision instanceof io.sketch.mochaagents.interaction.Decision.Ask a && broker != null) {
+                String sessionId = "default"; // TODO: wire from AgentContext
+                var approval = broker.request(use, sessionId);
+                try {
+                    decision = approval.get(30, java.util.concurrent.TimeUnit.SECONDS);
+                    if (decision instanceof io.sketch.mochaagents.interaction.Decision.Deny d)
+                        return ToolResult.Builder.failure(toolName, "User denied: " + d.reason(), null);
+                } catch (Exception e) {
+                    return ToolResult.Builder.failure(toolName, "Approval failed: " + e.getMessage(), null);
+                }
+            }
+        } else if (permissions != null) {
+            if (permissions.resolve(toolName) == io.sketch.mochaagents.interaction.PermissionRules.Behavior.DENY) {
                 return ToolResult.Builder.failure(toolName, "Permission denied: " + toolName, null);
             }
         }
