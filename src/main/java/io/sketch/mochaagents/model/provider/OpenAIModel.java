@@ -4,6 +4,7 @@
 package io.sketch.mochaagents.model.provider;
 
 import io.sketch.mochaagents.MochaException;
+import io.sketch.mochaagents.model.Model;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
