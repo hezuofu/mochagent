@@ -93,6 +93,23 @@ public final class AgentBootstrap {
         return this;
     }
 
+    public AgentBootstrap withLsp(String extension, String serverName, String command, String... args) {
+        io.sketch.mochaagents.lsp.LspManager lsp = getOrCreateLsp();
+        lsp.register(serverName, extension,
+                new io.sketch.mochaagents.lsp.LspServer.LspServerConfig(command, args));
+        toolRegistry.register(new LspTool(lsp));
+        return this;
+    }
+
+    private io.sketch.mochaagents.lsp.LspManager lspManager;
+
+    private io.sketch.mochaagents.lsp.LspManager getOrCreateLsp() {
+        if (lspManager == null) lspManager = new io.sketch.mochaagents.lsp.LspManager();
+        return lspManager;
+    }
+
+    public io.sketch.mochaagents.lsp.LspManager lspManager() { return lspManager; }
+
     private void registerBaseTools() {
         toolRegistry.register(new BashTool());
         toolRegistry.register(new FileReadTool());
