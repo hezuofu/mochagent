@@ -148,14 +148,14 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
     }
 
     /** Parse tool calls from typed Messages (native tool calling). */
-    @SuppressWarnings("unchecked")
     protected List<ParsedAction> parseContentBlocks(List<io.sketch.mochaagents.agent.message.Message> messages) {
         List<ParsedAction> actions = new ArrayList<>();
         for (var msg : messages) {
-            if (!"assistant".equals(msg.role())) continue;
-            for (var block : msg.content()) {
-                if ("tool_use".equals(block.type()) && block.data() instanceof Map<?,?> m) {
-                    actions.add(new ParsedAction((String) m.get("name"), (Map<String, Object>) m.get("input")));
+            if (msg instanceof io.sketch.mochaagents.agent.message.Message.AssistantMessage am) {
+                for (var block : am.content()) {
+                    if (block instanceof io.sketch.mochaagents.agent.message.ContentBlock.ToolUseBlock t) {
+                        actions.add(new ParsedAction(t.name(), t.input()));
+                    }
                 }
             }
         }
