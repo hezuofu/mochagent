@@ -9,7 +9,7 @@ import io.sketch.mochaagents.memory.MemoryProvider;
 import io.sketch.mochaagents.agent.AgentLoop;
 import io.sketch.mochaagents.agent.loop.*;
 import io.sketch.mochaagents.memory.MemoryManager;
-import java.util.function.Predicate;
+
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,7 +65,7 @@ public class ReWOOLoop<I, O> implements AgentLoop<I, O> {
     }
 
     @Override
-    public O run(Agent<I, O> agent, I input, Predicate<StepResult> condition) {
+    public O run(Agent<I, O> agent, I input, Termination condition) {
         String agentName = agent.metadata().name();
         MemoryManager memory = MemoryProvider.of(agent);
         String task = input != null ? input.toString() : "";

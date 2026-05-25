@@ -4,20 +4,17 @@
 package io.sketch.mochaagents.agent;
 
 import io.sketch.mochaagents.agent.loop.StepResult;
-import java.util.function.Predicate;
+import io.sketch.mochaagents.agent.loop.Termination;
 
 /**
- * Agent execution loop — the Think-Act-Observe cycle.
- *
- * <p>Pluggable strategies (ReAct, Reflexion, ReWOO, TAO, OPAR) implement
- * this to control how an agent reasons, acts, and decides when to stop.
+ * Agent execution loop with unified termination.
  *
  * @param <I> input type
  * @param <O> output type
-  * @author lanxia39@163.com
+ * @author lanxia39@163.com
  */
 @FunctionalInterface
 public interface AgentLoop<I, O> {
 
-    O run(Agent<I, O> agent, I input, Predicate<StepResult> done);
+    O run(Agent<I, O> agent, I input, Termination done);
 }

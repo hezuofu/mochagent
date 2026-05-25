@@ -5,7 +5,7 @@ package io.sketch.mochaagents.agent.loop.strategy;
 import io.sketch.mochaagents.agent.loop.Termination;
 
 import io.sketch.mochaagents.agent.Agent;
-import java.util.function.Predicate;
+
 import io.sketch.mochaagents.memory.MemoryProvider;
 import io.sketch.mochaagents.agent.AgentLoop;
 import io.sketch.mochaagents.agent.loop.*;
@@ -57,7 +57,7 @@ public class ObservePlanActReflect<I, O> implements AgentLoop<I, O> {
     }
 
     @Override
-    public O run(Agent<I, O> agent, I input, Predicate<StepResult> condition) {
+    public O run(Agent<I, O> agent, I input, Termination condition) {
         String agentName = agent.metadata().name();
         MemoryManager memory = MemoryProvider.of(agent);
         log.info("[{}] OPAR loop starting", agentName);
@@ -105,7 +105,7 @@ public class ObservePlanActReflect<I, O> implements AgentLoop<I, O> {
                     result != null ? result.state() : "?", stepMs);
             step++;
 
-        } while (!condition.test(result) && Termination.notDone(memory));
+        } while (!condition.test(step, result, memory) && Termination.notDone(memory));
 
         @SuppressWarnings("unchecked")
         O output = result != null ? (O) result.output() : null;

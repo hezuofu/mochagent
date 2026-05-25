@@ -9,7 +9,7 @@ import io.sketch.mochaagents.memory.MemoryProvider;
 import io.sketch.mochaagents.agent.AgentLoop;
 import io.sketch.mochaagents.agent.loop.*;
 import io.sketch.mochaagents.memory.MemoryManager;
-import java.util.function.Predicate;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +60,7 @@ public class ReflexionLoop<I, O> implements AgentLoop<I, O> {
     }
 
     @Override
-    public O run(Agent<I, O> agent, I input, Predicate<StepResult> condition) {
+    public O run(Agent<I, O> agent, I input, Termination condition) {
         String agentName = agent.metadata().name();
         MemoryManager memory = MemoryProvider.of(agent);
         log.info("[{}] Reflexion loop starting (max improvements: {})", agentName, maxImprovements);
@@ -109,7 +109,7 @@ public class ReflexionLoop<I, O> implements AgentLoop<I, O> {
                     stepMs);
             step++;
 
-        } while (!condition.test(result) && Termination.notDone(memory));
+        } while (!condition.test(step, result, memory) && Termination.notDone(memory));
 
         @SuppressWarnings("unchecked")
         O output = result != null ? (O) result.output() : null;
