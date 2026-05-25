@@ -450,7 +450,7 @@ final class Repl implements CliCommand {
                                 case "a", "always" -> io.sketch.mochaagents.interaction.Decision.allow("always", true);
                                 default -> io.sketch.mochaagents.interaction.Decision.deny("user said no");
                             });
-                        } catch (IOException e) {
+                        } catch (Exception e) {
                             return java.util.concurrent.CompletableFuture
                                     .completedFuture(io.sketch.mochaagents.interaction.Decision.deny("error"));
                         }
