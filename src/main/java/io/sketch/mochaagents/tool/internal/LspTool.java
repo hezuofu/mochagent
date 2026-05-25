@@ -57,7 +57,7 @@ public final class LspTool implements Tool {
         ObjectNode params = buildParams(filePath, method, line, character);
 
         try {
-            CompletableFuture<JsonNode> req = (CompletableFuture<JsonNode>) (Object) manager.request(filePath, method, params);
+            CompletableFuture<JsonNode> req = manager.request(filePath, method, params);
             JsonNode result = req.get(30, TimeUnit.SECONDS);
             result = filterGitIgnored(result);
             return formatResult(operation, result);

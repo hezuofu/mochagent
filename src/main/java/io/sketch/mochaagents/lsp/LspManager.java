@@ -61,7 +61,7 @@ public class LspManager implements AutoCloseable {
         return server.start();
     }
 
-    public <T> CompletableFuture<T> request(String filePath, String method, ObjectNode params) {
+    public CompletableFuture<JsonNode> request(String filePath, String method, ObjectNode params) {
         LspServer server = getServerForFile(filePath);
         if (server == null)
             return CompletableFuture.failedFuture(new IllegalStateException("No LSP server for " + filePath));

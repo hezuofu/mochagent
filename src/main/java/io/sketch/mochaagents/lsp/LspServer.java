@@ -77,19 +77,18 @@ public class LspServer implements AutoCloseable {
     }
 
     /** Send request with ContentModified retry (-32801). */
-    public <T> CompletableFuture<T> sendRequest(String method, JsonNode params) {
+    public CompletableFuture<JsonNode> sendRequest(String method, JsonNode params) {
         if (state.get() != State.RUNNING || client == null)
             return CompletableFuture.failedFuture(new IllegalStateException("Server not running: " + name));
         return sendWithRetry(method, params, 0);
     }
 
-    private <T> CompletableFuture<T> sendWithRetry(String method, JsonNode params, int attempt) {
-        return client.sendRequest(method, params).thenApply(r -> (T) r).exceptionallyCompose(ex -> {
-            if (ex.getCause() instanceof LspClient.LspException le && le.getMessage() != null
-                    && le.getMessage().contains("-32801") && attempt < RETRY_BACKOFF_MS.length) {
+    private CompletableFuture<JsonNode> sendWithRetry(String method, JsonNode params, int attempt) {
+        return client.sendRequest(method, params).exceptionallyCompose(ex -> {
+            if (isContentModified(ex) && attempt < RETRY_BACKOFF_MS.length) {
                 int delay = RETRY_BACKOFF_MS[attempt];
                 log.debug("LSP {} ContentModified, retry in {}ms", name, delay);
-                CompletableFuture<T> retry = new CompletableFuture<>();
+                CompletableFuture<JsonNode> retry = new CompletableFuture<>();
                 CompletableFuture.runAsync(() -> {
                     try { Thread.sleep(delay); }
                     catch (InterruptedException ie) { Thread.currentThread().interrupt(); return; }
@@ -100,6 +99,11 @@ public class LspServer implements AutoCloseable {
             }
             return CompletableFuture.failedFuture(ex);
         });
+    }
+
+    private static boolean isContentModified(Throwable ex) {
+        return ex.getCause() instanceof LspClient.LspException le
+                && le.getMessage() != null && le.getMessage().contains("-32801");
     }
 
     public void sendNotification(String method, JsonNode params) {
