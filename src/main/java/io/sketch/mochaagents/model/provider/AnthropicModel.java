@@ -62,6 +62,8 @@ public class AnthropicModel extends BaseApiModel {
         return buildRequestBody(request, true);
     }
 
+    @Override public boolean supportsNativeTools() { return true; }
+
     private String buildRequestBody(ModelRequest request, boolean stream) {
         ObjectNode body = JSON.createObjectNode();
         body.put("model", modelId);

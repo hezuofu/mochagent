@@ -141,6 +141,7 @@ public class OpenAIModel extends BaseApiModel {
     @Override
     public String modelName() {
         return modelId;
+        @Override public boolean supportsNativeTools() { return true; }
     }
 
     // ============ Builder ============

@@ -3,11 +3,14 @@
 
 package io.sketch.mochaagents.model;
 
+import io.sketch.mochaagents.tool.Tool;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
  * Minimal Model — send a request, get a response.
-  * @author lanxia39@163.com
+ *
+ * @author lanxia39@163.com
  */
 @FunctionalInterface
 public interface Model {
@@ -22,10 +25,17 @@ public interface Model {
         throw new UnsupportedOperationException("streaming not supported by " + modelName());
     }
 
+    /** Whether this model supports native tool_use blocks (not text-parsed). */
+    default boolean supportsNativeTools() { return false; }
+
+    /** Complete with tool schemas passed to the API for native tool calling. */
+    default ModelResponse completeWithTools(ModelRequest request, List<Tool> tools) {
+        return complete(request); // default: ignore tools, use text parsing
+    }
+
     default String modelName() { return "unknown"; }
     default int maxContextTokens() { return 128000; }
 
-    /** Model family for tailored prompts: "anthropic", "openai", "google", "other". */
     default String modelFamily() {
         String n = modelName().toLowerCase();
         if (n.contains("claude")) return "anthropic";
