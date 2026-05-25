@@ -61,6 +61,15 @@ public final class MochaAgent implements Agent<String, String> {
         return this;
     }
 
+    // ── Delegation — no need to unwrap inner ──
+
+    private ReActAgent ra() { return (ReActAgent) inner; }
+
+    public io.sketch.mochaagents.memory.MemoryManager memory() { return ra().memory(); }
+    public Runnable onEvent(io.sketch.mochaagents.agent.event.AgentEvents.Listener l) { return ra().onEvent(l); }
+    public void autoCompact() { ra().autoCompact(); }
+    public io.sketch.mochaagents.tool.Hooks hooks() { return ra().hooks(); }
+
     // ── Builder ──
 
     public static Builder builder(String name, Model model) { return new Builder(name, model); }
