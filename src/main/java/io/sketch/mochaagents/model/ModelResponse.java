@@ -3,15 +3,18 @@
 
 package io.sketch.mochaagents.model;
 
-import java.util.Map;
+import io.sketch.mochaagents.skill.ContentBlock;
+import java.util.*;
 
 /**
- * Model 响应 — 封装模型返回的文本、token 统计等信息.
+ * Model response — content, tokens, optional structured ContentBlocks.
+ *
  * @author lanxia39@163.com
  */
 public class ModelResponse {
 
     private final String content;
+    private final List<ContentBlock> contentBlocks;
     private final String model;
     private final int promptTokens;
     private final int completionTokens;
@@ -21,7 +24,13 @@ public class ModelResponse {
 
     public ModelResponse(String content, String model, int promptTokens,
                        int completionTokens, long latencyMs, Map<String, Object> metadata) {
+        this(content, List.of(), model, promptTokens, completionTokens, latencyMs, metadata);
+    }
+
+    public ModelResponse(String content, List<ContentBlock> blocks, String model, int promptTokens,
+                       int completionTokens, long latencyMs, Map<String, Object> metadata) {
         this.content = content;
+        this.contentBlocks = List.copyOf(blocks);
         this.model = model;
         this.promptTokens = promptTokens;
         this.completionTokens = completionTokens;
@@ -31,6 +40,8 @@ public class ModelResponse {
     }
 
     public String content() { return content; }
+    public List<ContentBlock> contentBlocks() { return contentBlocks; }
+    public boolean hasContentBlocks() { return !contentBlocks.isEmpty(); }
     public String model() { return model; }
     public int promptTokens() { return promptTokens; }
     public int completionTokens() { return completionTokens; }

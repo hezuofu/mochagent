@@ -143,7 +143,20 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
     private static final Pattern KV_PAIR = Pattern.compile("(\\w+)\\s*=\\s*\"([^\"]*)\"");
     private static final Pattern JSON_PAIR = Pattern.compile("\"(\\w+)\"\\s*:\\s*\"([^\"]*)\"");
 
-    protected record ParsedAction(String name, Map<String, Object> arguments) {}
+    protected record ParsedAction(String name, Map<String, Object> arguments) {
+        public boolean isFinalAnswer() { return "final_answer".equals(name); }
+    }
+
+    /** Parse tool calls from ContentBlocks (native tool calling). */
+    protected List<ParsedAction> parseContentBlocks(List<io.sketch.mochaagents.skill.ContentBlock> blocks) {
+        List<ParsedAction> actions = new ArrayList<>();
+        for (var block : blocks) {
+            if ("tool_use".equals(block.type()) && block.input() != null) {
+                actions.add(new ParsedAction(block.name(), block.input()));
+            }
+        }
+        return actions;
+    }
 
     /** Parse tool call from Model output: JSON → "Action:" format → loose match. */
     protected ParsedAction parseAction(String modelOutput) {
