@@ -25,6 +25,7 @@ public class ToolExecutor {
     private io.sketch.mochaagents.interaction.PermissionRules permissions;
     private io.sketch.mochaagents.interaction.DecisionPipeline pipeline;
     private io.sketch.mochaagents.interaction.ApprovalBroker broker;
+    private io.sketch.mochaagents.interaction.Session session;
     private io.sketch.mochaagents.agent.event.AgentEvents events;
 
     public ToolExecutor(ToolRegistry registry, long timeoutMs, int maxRetries, long retryDelayMs) {
@@ -46,6 +47,8 @@ public class ToolExecutor {
     public ToolExecutor withBroker(io.sketch.mochaagents.interaction.ApprovalBroker broker) { this.broker = broker; return this; }
     /** Inject event bus for real-time tool call notifications (diff display etc.). */
     public ToolExecutor withEvents(io.sketch.mochaagents.agent.event.AgentEvents events) { this.events = events; return this; }
+    /** Inject session for denial tracking. */
+    public ToolExecutor withSession(io.sketch.mochaagents.interaction.Session session) { this.session = session; return this; }
 
     public ToolResult execute(String toolName, Map<String, Object> arguments) {
         Tool tool = registry.get(toolName);
@@ -62,6 +65,8 @@ public class ToolExecutor {
                 return ToolResult.Builder.failure(toolName, "BLOCKED: " + hd.reason(), null);
             }
             if (decision instanceof io.sketch.mochaagents.interaction.Decision.Deny d) {
+                if (session != null && session.recordDenial(toolName))
+                    log.warn("Tool '{}' auto-blocked after {} denials", toolName, session.maxDenialsBeforeBlock());
                 return ToolResult.Builder.failure(toolName, "Permission denied: " + d.reason(), null);
             }
             if (decision instanceof io.sketch.mochaagents.interaction.Decision.Ask a && broker != null) {
