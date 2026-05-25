@@ -28,9 +28,18 @@ public interface Model {
     /** Whether this model supports native tool_use blocks (not text-parsed). */
     default boolean supportsNativeTools() { return false; }
 
-    /** Complete with tool schemas passed to the API for native tool calling. */
+    /** Complete with tool schemas — builds a request with tools included. */
     default ModelResponse completeWithTools(ModelRequest request, List<Tool> tools) {
-        return complete(request); // default: ignore tools, use text parsing
+        ModelRequest req = ModelRequest.builder()
+                .messages(request.messages())
+                .typedMessages(request.typedMessages())
+                .temperature(request.temperature())
+                .maxTokens(request.maxTokens())
+                .thinkingConfig(request.thinkingConfig())
+                .effort(request.effort())
+                .tools(tools)
+                .build();
+        return complete(req);
     }
 
     default String modelName() { return "unknown"; }

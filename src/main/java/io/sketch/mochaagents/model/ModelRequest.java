@@ -26,6 +26,7 @@ public class ModelRequest {
     private final Map<String, Object> extraParams;
     private final ThinkingConfig thinkingConfig;
     private final EffortLevel effort;
+    private final List<io.sketch.mochaagents.tool.Tool> tools;
 
     private ModelRequest(Builder builder) {
         this.prompt = builder.prompt;
@@ -40,6 +41,7 @@ public class ModelRequest {
         this.extraParams = Map.copyOf(builder.extraParams);
         this.thinkingConfig = builder.thinkingConfig;
         this.effort = builder.effort;
+        this.tools = builder.tools;
     }
 
     public String prompt() { return prompt; }
@@ -56,6 +58,8 @@ public class ModelRequest {
     public Map<String, Object> extraParams() { return extraParams; }
     public ThinkingConfig thinkingConfig() { return thinkingConfig; }
     public EffortLevel effort() { return effort; }
+    public List<io.sketch.mochaagents.tool.Tool> tools() { return tools; }
+    public boolean hasTools() { return tools != null && !tools.isEmpty(); }
 
     public static Builder builder() { return new Builder(); }
 
@@ -72,6 +76,7 @@ public class ModelRequest {
         private Map<String, Object> extraParams = new HashMap<>();
         private ThinkingConfig thinkingConfig;
         private EffortLevel effort;
+        private List<io.sketch.mochaagents.tool.Tool> tools;
 
         public Builder prompt(String prompt) { this.prompt = prompt; return this; }
         public Builder messages(List<Map<String, String>> messages) { this.messages = messages; return this; }
@@ -92,6 +97,7 @@ public class ModelRequest {
         public Builder extraParams(Map<String, Object> params) { this.extraParams = params; return this; }
         public Builder thinkingConfig(ThinkingConfig config) { this.thinkingConfig = config; return this; }
         public Builder effort(EffortLevel effort) { this.effort = effort; return this; }
+        public Builder tools(List<io.sketch.mochaagents.tool.Tool> tools) { this.tools = tools; return this; }
 
         public ModelRequest build() { return new ModelRequest(this); }
     }
