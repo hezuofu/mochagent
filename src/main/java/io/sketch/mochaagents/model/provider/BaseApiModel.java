@@ -226,19 +226,19 @@ public abstract class BaseApiModel implements Model {
         return arr;
     }
 
-    protected static ArrayNode typedMessagesToJson(List<io.sketch.mochaagents.agent.message.Message> messages) {
+    protected static ArrayNode typedMessagesToJson(List<io.sketch.mochaagents.message.Message> messages) {
         ArrayNode arr = JSON.createArrayNode();
         for (var msg : messages) {
             ObjectNode node = JSON.createObjectNode();
             node.put("role", msg.role());
-            if (msg instanceof io.sketch.mochaagents.agent.message.Message.UserMessage u) {
+            if (msg instanceof io.sketch.mochaagents.message.Message.UserMessage u) {
                 if (u.toolResults().isEmpty()) node.put("content", u.content());
                 else {
                     ArrayNode content = arr.arrayNode();
                     if (u.content() != null && !u.content().isEmpty())
                         content.addObject().put("type", "text").put("text", u.content());
                     for (var tr : u.toolResults())
-                        if (tr instanceof io.sketch.mochaagents.agent.message.ContentBlock.ToolResultBlock tb) {
+                        if (tr instanceof io.sketch.mochaagents.message.ContentBlock.ToolResultBlock tb) {
                             ObjectNode trNode = content.addObject();
                             trNode.put("type", "tool_result"); trNode.put("tool_use_id", tb.toolUseId());
                             trNode.put("content", tb.content());
@@ -246,23 +246,23 @@ public abstract class BaseApiModel implements Model {
                         }
                     node.set("content", content);
                 }
-            } else if (msg instanceof io.sketch.mochaagents.agent.message.Message.AssistantMessage a) {
+            } else if (msg instanceof io.sketch.mochaagents.message.Message.AssistantMessage a) {
                 ArrayNode content = arr.arrayNode();
                 for (var b : a.content()) {
-                    if (b instanceof io.sketch.mochaagents.agent.message.ContentBlock.TextBlock t)
+                    if (b instanceof io.sketch.mochaagents.message.ContentBlock.TextBlock t)
                         content.addObject().put("type", "text").put("text", t.text());
-                    else if (b instanceof io.sketch.mochaagents.agent.message.ContentBlock.ToolUseBlock tu) {
+                    else if (b instanceof io.sketch.mochaagents.message.ContentBlock.ToolUseBlock tu) {
                         ObjectNode tuNode = content.addObject();
                         tuNode.put("type", "tool_use"); tuNode.put("id", tu.id());
                         tuNode.put("name", tu.name()); tuNode.set("input", JSON.valueToTree(tu.input()));
-                    } else if (b instanceof io.sketch.mochaagents.agent.message.ContentBlock.ThinkingBlock th) {
+                    } else if (b instanceof io.sketch.mochaagents.message.ContentBlock.ThinkingBlock th) {
                         ObjectNode thNode = content.addObject();
                         thNode.put("type", "thinking"); thNode.put("thinking", th.thought());
                         if (th.signature() != null) thNode.put("signature", th.signature());
                     }
                 }
                 node.set("content", content);
-            } else if (msg instanceof io.sketch.mochaagents.agent.message.Message.SystemMessage s)
+            } else if (msg instanceof io.sketch.mochaagents.message.Message.SystemMessage s)
                 node.put("content", s.content());
             arr.add(node);
         }

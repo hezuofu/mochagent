@@ -16,7 +16,7 @@ public class ModelRequest {
 
     private final String prompt;
     private final List<Map<String, String>> messages;
-    private final List<io.sketch.mochaagents.agent.message.Message> typedMessages;
+    private final List<io.sketch.mochaagents.message.Message> typedMessages;
     private final double temperature;
     private final int maxTokens;
     private final double topP;
@@ -48,7 +48,7 @@ public class ModelRequest {
     public List<Map<String, String>> messages() { return messages; }
 
     /** Typed messages (new API). Providers should check this first, fall back to messages(). */
-    public List<io.sketch.mochaagents.agent.message.Message> typedMessages() { return typedMessages; }
+    public List<io.sketch.mochaagents.message.Message> typedMessages() { return typedMessages; }
     public double temperature() { return temperature; }
     public int maxTokens() { return maxTokens; }
     public double topP() { return topP; }
@@ -66,7 +66,7 @@ public class ModelRequest {
     public static class Builder {
         private String prompt = "";
         private List<Map<String, String>> messages = new ArrayList<>();
-        private List<io.sketch.mochaagents.agent.message.Message> typedMessages;
+        private List<io.sketch.mochaagents.message.Message> typedMessages;
         private double temperature = 0.7;
         private int maxTokens = 4096;
         private double topP = 1.0;
@@ -85,7 +85,7 @@ public class ModelRequest {
             return this;
         }
 
-        public Builder typedMessages(List<io.sketch.mochaagents.agent.message.Message> msgs) {
+        public Builder typedMessages(List<io.sketch.mochaagents.message.Message> msgs) {
             this.typedMessages = msgs; return this;
         }
         public Builder temperature(double temperature) { this.temperature = temperature; return this; }
