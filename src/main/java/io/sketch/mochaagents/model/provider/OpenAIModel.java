@@ -138,11 +138,9 @@ public class OpenAIModel extends BaseApiModel {
         return new ResponseParseResult(content, promptTokens, completionTokens);
     }
 
-    @Override
-    public String modelName() {
-        return modelId;
-        @Override public boolean supportsNativeTools() { return true; }
-    }
+    @Override public String modelName() { return modelId; }
+
+    @Override public boolean supportsNativeTools() { return true; }
 
     // ============ Builder ============
 
