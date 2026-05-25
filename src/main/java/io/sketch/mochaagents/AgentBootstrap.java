@@ -43,10 +43,13 @@ public final class AgentBootstrap {
 
     /** Build a fully-featured MochaAgent with learning + global memory. */
     public MochaAgent buildAgent(String name) {
-        return MochaAgent.builder(name, model)
+        var builder = MochaAgent.builder(name, model)
                 .toolRegistry(toolRegistry)
-                .globalMemory(true)
-                .build();
+                .globalMemory(true);
+        if (decisionPipeline != null && permissionRules != null) {
+            // Pipeline will be wired via toolExecutor after build
+        }
+        return builder.build();
     }
 
     /** One-liner: create agent and run a task. */
@@ -116,6 +119,32 @@ public final class AgentBootstrap {
     public AgentBootstrap withPythonLsp() {
         return withLsp("py", "python", "pyright-langserver", "--stdio");
     }
+
+    // ── Interaction ──
+
+    private io.sketch.mochaagents.interaction.PermissionRules permissionRules;
+    private io.sketch.mochaagents.interaction.ApprovalBroker approvalBroker;
+    private io.sketch.mochaagents.interaction.DecisionPipeline decisionPipeline;
+
+    public AgentBootstrap withPermissions(io.sketch.mochaagents.interaction.InteractionMode mode) {
+        permissionRules = new io.sketch.mochaagents.interaction.PermissionRules()
+                .defaultBehavior(mode == io.sketch.mochaagents.interaction.InteractionMode.AUTONOMOUS
+                        ? io.sketch.mochaagents.interaction.PermissionRules.Behavior.ALLOW
+                        : io.sketch.mochaagents.interaction.PermissionRules.Behavior.ASK);
+        return this;
+    }
+
+    public AgentBootstrap withApprovalHandler(io.sketch.mochaagents.interaction.ApprovalBroker.Handler handler) {
+        if (approvalBroker == null) approvalBroker = new io.sketch.mochaagents.interaction.ApprovalBroker();
+        decisionPipeline = io.sketch.mochaagents.interaction.DecisionPipeline.standard();
+        approvalBroker.register(handler);
+        return this;
+    }
+
+    public io.sketch.mochaagents.interaction.ApprovalBroker broker() { return approvalBroker; }
+    public io.sketch.mochaagents.interaction.PermissionRules permissionRules() { return permissionRules; }
+
+    // ── LSP ──
 
     private io.sketch.mochaagents.lsp.LspManager lspManager;
 
