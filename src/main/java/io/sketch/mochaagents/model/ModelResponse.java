@@ -3,7 +3,7 @@
 
 package io.sketch.mochaagents.model;
 
-import io.sketch.mochaagents.agent.message.Message;
+import io.sketch.mochaagents.message.Message;
 import java.util.*;
 
 /**

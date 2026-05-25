@@ -21,6 +21,7 @@ import io.sketch.mochaagents.reasoning.ThinkingConfig;
 import io.sketch.mochaagents.safety.SafetyManager;
 import io.sketch.mochaagents.tool.ToolRegistry;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
