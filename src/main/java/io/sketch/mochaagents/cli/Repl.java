@@ -6,7 +6,9 @@ package io.sketch.mochaagents.cli;
 import io.sketch.mochaagents.AgentBootstrap;
 import io.sketch.mochaagents.agent.loop.ToolCallingAgent;
 import io.sketch.mochaagents.agent.loop.PlanMode;
+import io.sketch.mochaagents.event.EventBus;
 import io.sketch.mochaagents.model.Model;
+import static io.sketch.mochaagents.event.EventType.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -167,12 +169,13 @@ final class Repl implements CliCommand {
 
             // Real-time event display (claude-code style)
             var unsub = a.onEvent(e -> {
-                switch (e.type()) {
-                    case io.sketch.mochaagents.agent.event.AgentEvents.STARTED ->
+                var ae = (io.sketch.mochaagents.event.AgentEvent) e;
+                switch (ae.type()) {
+                    case STARTED ->
                         out.print(dim("  Thinking"));
-                    case io.sketch.mochaagents.agent.event.AgentEvents.TOOL_CALL -> {
+                    case TOOL_CALL -> {
                         @SuppressWarnings("unchecked")
-                        Map<String, Object> d = (Map<String, Object>) e.data();
+                        Map<String, Object> d = (Map<String, Object>) ae.data();
                         String toolName = (String) d.get("toolName");
                         String file = (String) d.get("file");
                         if (file != null) {
@@ -196,14 +199,14 @@ final class Repl implements CliCommand {
                             if (!currentRunHasDiff) out.print(".");
                         }
                     }
-                    case io.sketch.mochaagents.agent.event.AgentEvents.COST -> {
-                        double[] c = (double[]) e.data();
+                    case COST -> {
+                        double[] c = (double[]) ae.data();
                         sessionCost += c[0];
                         sessionInputTokens += (long) c[1];
                         sessionOutputTokens += (long) c[2];
                     }
-                    case io.sketch.mochaagents.agent.event.AgentEvents.COMPLETED -> {
-                        long elapsed = e.elapsedMs();
+                    case COMPLETED -> {
+                        long elapsed = ae.elapsedMs();
                         if (currentRunHasDiff) {
                             out.println(dim("  │"));
                         }
@@ -344,6 +347,10 @@ final class Repl implements CliCommand {
             case "tools" -> { showTools(); yield false; }
             case "resume" -> { resumeCmd(arg); yield false; }
             case "sessions", "history" -> { listSessionsCmd(); yield false; }
+            case "undo" -> { undoCmd(arg); yield false; }
+            case "turns" -> { turnsCmd(); yield false; }
+            case "restore" -> { restoreCmd(arg); yield false; }
+            case "search" -> { searchCmd(arg); yield false; }
             default -> { out.println(red("Unknown command: /" + name + " (use /help)")); yield false; }
         };
     }
@@ -362,6 +369,10 @@ final class Repl implements CliCommand {
             {"/diff [file]", "Show pending file changes"},
             {"/status", "Show agent status"},
             {"/tools", "List available tools"},
+            {"/search <kw>", "Search across all session transcripts"},
+            {"/turns", "Show conversation turn history"},
+            {"/restore <n>", "Restore conversation to step n"},
+            {"/undo [file]", "Undo last file change (or specific file)"},
             {"/sessions", "List recent sessions"},
             {"/resume [id]", "Resume a previous session (latest if no id)"},
             {"/exit, /quit", "Exit REPL"},
@@ -454,6 +465,81 @@ final class Repl implements CliCommand {
         if (agent == null) { out.println(dim("Start a conversation first")); return; }
         if (sessionId.isEmpty()) sessionId = "latest";
         resumeSession(sessionId);
+    }
+
+    private void turnsCmd() {
+        if (agent == null) { out.println(dim("Start a conversation first")); return; }
+        var turns = agent.memory().turnSummaries();
+        if (turns.isEmpty()) { out.println(dim("No turns yet.")); return; }
+        int maxStep = agent.memory().maxStepNumber();
+        out.println(bold("Conversation turns (") + turns.size() + " steps, max=" + maxStep + "):");
+        for (var t : turns) out.println("  " + dim(t));
+        out.println(dim("  /restore <step> to roll back to a specific turn"));
+    }
+
+    private void restoreCmd(String arg) {
+        if (agent == null) { out.println(dim("Start a conversation first")); return; }
+        int step;
+        try { step = Integer.parseInt(arg.trim()); }
+        catch (NumberFormatException e) { out.println(red("Usage: /restore <step_number>")); return; }
+
+        // 1. Roll back file changes after this step
+        var restoredFiles = io.sketch.mochaagents.tool.FileHistory.getInstance().undoSinceStep(step);
+        if (!restoredFiles.isEmpty()) {
+            out.println(green("✓ Restored ") + restoredFiles.size() + dim(" file(s):"));
+            for (String f : restoredFiles) out.println(dim("    " + f));
+        }
+
+        // 2. Truncate conversation memory
+        int removed = agent.memory().truncateToStep(step);
+        agent.invalidateMessageCaches();
+        out.println(green("✓ Restored to step ") + step
+                + dim(" — " + removed + " entries" + (restoredFiles.isEmpty() ? "" : " + " + restoredFiles.size() + " files")));
+        if (removed > 0 || !restoredFiles.isEmpty()) {
+            out.println(dim("  Conversation and files rolled back. Continue with new input."));
+        } else {
+            out.println(dim("  Nothing to restore after step " + step + "."));
+        }
+    }
+
+    private void searchCmd(String query) {
+        if (agent == null || query.isEmpty()) {
+            out.println(dim("Usage: /search <keyword>"));
+            return;
+        }
+        String cwd = System.getProperty("user.dir", ".");
+        var results = agent.memory().searchSessions(query, cwd, 8);
+
+        if (results.isEmpty()) {
+            out.println(dim("No results for: ") + query);
+            return;
+        }
+        out.println(bold("Search: ") + query + dim(" — " + results.size() + " sessions"));
+        for (var r : results) {
+            String ts = r.startedAt().toString().substring(0, 10);
+            out.println("  " + bold(r.title()) + dim("  " + ts + "  " + r.sessionId().substring(0, 8)));
+            for (String s : r.matches()) {
+                out.println(dim("    ..." + s.trim() + "..."));
+            }
+        }
+    }
+
+    private void undoCmd(String fileFilter) {
+        var fh = io.sketch.mochaagents.tool.FileHistory.getInstance();
+        if (fh.size() == 0) {
+            out.println(dim("Nothing to undo."));
+            return;
+        }
+        if (!fileFilter.isEmpty()) {
+            String restored = fh.undo(fileFilter);
+            if (restored != null) out.println(green("✓ Undo: ") + dim(restored));
+            else out.println(red("No changes found for: ") + fileFilter);
+        } else {
+            String restored = fh.undo();
+            if (restored != null) out.println(green("✓ Undo last change: ") + dim(restored));
+            int remaining = fh.size();
+            if (remaining > 0) out.println(dim("  " + remaining + " more undo(s) available. /undo <file> for specific file."));
+        }
     }
 
     private void listSessionsCmd() {

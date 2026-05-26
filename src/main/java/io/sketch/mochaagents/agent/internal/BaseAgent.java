@@ -6,8 +6,8 @@ package io.sketch.mochaagents.agent.internal;
 import io.sketch.mochaagents.agent.Agent;
 import io.sketch.mochaagents.agent.AgentContext;
 import io.sketch.mochaagents.agent.event.AgentEvent;
-import io.sketch.mochaagents.agent.event.AgentEvents;
 import io.sketch.mochaagents.agent.event.AgentListener;
+import io.sketch.mochaagents.event.EventBus;
 import io.sketch.mochaagents.agent.AgentMetadata;
 import io.sketch.mochaagents.agent.AgentState;
 import io.sketch.mochaagents.context.ContextChunk;
@@ -54,7 +54,7 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
 
     protected final RecoveryStateMachine recovery;
     protected final io.sketch.mochaagents.observability.Observability observability;
-    protected final AgentEvents events = new AgentEvents();
+    protected final EventBus events = new EventBus();
     protected final Hooks hooks = new Hooks();
     protected final ToolExecutor toolExecutor;
     protected ThinkingConfig thinkingConfig;
@@ -99,10 +99,10 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
     // ── Generic infrastructure (available to all agent types) ──
 
     /** Subscribe to agent lifecycle + tool events. Returns unsubscribe runnable. */
-    public Runnable onEvent(AgentEvents.Listener l) { return events.subscribe(l); }
+    public Runnable onEvent(EventBus.EventListener l) { return events.subscribe(l); }
     public Hooks hooks() { return hooks; }
     public ToolExecutor toolExecutor() { return toolExecutor; }
-    public AgentEvents events() { return events; }
+    public EventBus events() { return events; }
 
     /** Build system prompt — subclasses override to provide agent-specific instructions. */
     public String buildSystemPrompt() { return ""; }

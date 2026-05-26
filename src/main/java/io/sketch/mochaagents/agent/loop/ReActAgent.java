@@ -5,7 +5,7 @@ package io.sketch.mochaagents.agent.loop;
 
 import io.sketch.mochaagents.agent.AgentContext;
 import io.sketch.mochaagents.agent.AgentLoop;
-import io.sketch.mochaagents.agent.event.AgentEvents;
+import io.sketch.mochaagents.event.AgentEvents;
 import io.sketch.mochaagents.agent.internal.BaseAgent;
 import io.sketch.mochaagents.memory.MemoryProvider;
 import io.sketch.mochaagents.prompt.SystemPromptProvider;
@@ -208,6 +208,9 @@ public abstract class ReActAgent extends BaseAgent<String, String>
                 ? new io.sketch.mochaagents.context.compaction.CompactionEngine(
                         new io.sketch.mochaagents.context.compaction.AutoCompactor(compactModel))
                 : new io.sketch.mochaagents.context.compaction.CompactionEngine();
+
+        // Wire async persistence listener for non-blocking I/O
+        events.register(new io.sketch.mochaagents.agent.event.AsyncPersistenceListener(memory));
     }
 
     private static io.sketch.mochaagents.learn.LearningLoop buildDefaultLearningLoop(
@@ -253,6 +256,14 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
     /** Invalidate cached prompt (call after tool changes or skill updates). */
     public void invalidatePromptCache() { cachedStaticPrefix = null; }
+
+    /** Reset message caches after memory truncation. */
+    public void invalidateMessageCaches() {
+        cachedMessages.clear();
+        lastSerializedStep = 0;
+        cachedTypedMessages.clear();
+        lastTypedStep = 0;
+    }
 
     // ============ Execution entry points ============
 
@@ -369,7 +380,8 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         String task = ctx.userMessage();
         log.info("Agent '{}' starting, session={}, user={}, maxSteps={}, task={}",
                 name, ctx.sessionId(), ctx.userId(), maxSteps, truncate(task, 120));
-        events.fire(new AgentEvents.Event(AgentEvents.STARTED, name, task, 0));
+        events.post(new AgentEvents.Started(name, task, 0));
+        events.fire(new io.sketch.mochaagents.event.AgentEvent(io.sketch.mochaagents.event.EventType.STARTED, name, task, 0));
 
         String systemPrompt = buildSystemPrompt();
         systemPrompt = enrichFromContext(systemPrompt, ctx);
@@ -417,8 +429,12 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         log.info("Agent '{}' completed in {}ms, steps={}, planDeviations={}, result={}",
                 name, elapsed, memory.steps().size(), planDeviations, truncate(result, 300));
 
-        events.fire(new AgentEvents.Event(AgentEvents.COMPLETED, name, result, elapsed));
-        events.fire(new AgentEvents.Event(AgentEvents.COST, name,
+        events.post(new AgentEvents.Completed(name, result, memory.steps().size(), elapsed,
+                costTracker.estimatedTotalCost(),
+                costTracker.totalInputTokens(),
+                costTracker.totalOutputTokens()));
+        events.fire(new io.sketch.mochaagents.event.AgentEvent(io.sketch.mochaagents.event.EventType.COMPLETED, name, result, elapsed));
+        events.fire(new io.sketch.mochaagents.event.AgentEvent(io.sketch.mochaagents.event.EventType.COST, name,
                 new double[]{costTracker.estimatedTotalCost(),
                         (double) costTracker.totalInputTokens(),
                         (double) costTracker.totalOutputTokens()}, elapsed));
@@ -466,6 +482,19 @@ public abstract class ReActAgent extends BaseAgent<String, String>
             replanFromDeviation(input, result);
             planDeviations = 0;
         }
+
+        // Fire step-end event for async persistence (session transcript, memory, etc.)
+        events.fire(new io.sketch.mochaagents.event.AgentEvent(io.sketch.mochaagents.event.EventType.STEP_END, name,
+                Map.of("stepNumber", stepNumber,
+                        "modelOutput", result.output() != null ? result.output() : "",
+                        "observation", result.observation() != null ? result.observation() : "",
+                        "action", result.action() != null ? result.action() : ""),
+                result.durationMs()));
+        events.post(new AgentEvents.StepCompleted(name, stepNumber,
+                result.output() != null ? result.output() : "",
+                result.observation() != null ? result.observation() : "",
+                result.action() != null ? result.action() : "",
+                result.durationMs()));
 
         return result;
     }

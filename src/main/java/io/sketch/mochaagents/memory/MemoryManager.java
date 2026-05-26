@@ -39,6 +39,50 @@ public class MemoryManager {
     public void replaceStep(int index, MemoryStep step) {
         if (index >= 0 && index < steps.size()) steps.set(index, step);
     }
+
+    // ── Turn-level restore ──
+
+    /** Truncate history to the given step number (inclusive). Removes all steps after it. */
+    public int truncateToStep(int stepNumber) {
+        int removed = 0;
+        for (int i = steps.size() - 1; i >= 0; i--) {
+            if (steps.get(i) instanceof ActionStep as && as.stepNumber() > stepNumber) {
+                steps.remove(i);
+                removed++;
+            } else if (steps.get(i) instanceof ContentStep cs && i > 0
+                    && steps.get(i - 1) instanceof ActionStep a
+                    && a.stepNumber() > stepNumber) {
+                steps.remove(i);
+                removed++;
+            }
+        }
+        return removed;
+    }
+
+    /** Summarize turns for display. */
+    public List<String> turnSummaries() {
+        List<String> turns = new ArrayList<>();
+        for (var step : steps) {
+            if (step instanceof ActionStep as) {
+                String action = as.action() != null ? as.action() : "";
+                if (action.length() > 50) action = action.substring(0, 50) + "...";
+                String summary = "Step " + as.stepNumber() + ": "
+                        + (as.isFinalAnswer() ? "✓ " : "→ ") + action;
+                if (as.hasError()) summary += " ⚡";
+                turns.add(summary);
+            }
+        }
+        return turns;
+    }
+
+    /** Find the max step number. */
+    public int maxStepNumber() {
+        int max = 0;
+        for (var step : steps) {
+            if (step instanceof ActionStep as && as.stepNumber() > max) max = as.stepNumber();
+        }
+        return max;
+    }
     public void setSystemPrompt(String sp) { this.systemPrompt = sp; }
     public String systemPrompt() { return systemPrompt; }
     public boolean hasFinalAnswer() { return steps.stream().anyMatch(s -> s instanceof ContentStep cs && cs.isFinalAnswer()); }
@@ -91,8 +135,9 @@ public class MemoryManager {
     public List<MemoryRecord> snapshot() { List<MemoryRecord> e = new ArrayList<>(); for (MemoryStep s : steps) { if (s instanceof ActionStep act) e.add(MemoryEntry.builder().content("[Step " + act.stepNumber() + "] " + (act.observation() != null ? act.observation() : act.modelOutput())).type(MemoryRecord.TYPE_EPISODIC).importance(act.hasError() ? 0.2 : 0.6).build()); else if (s instanceof ContentStep cs && cs.isFinalAnswer()) e.add(MemoryEntry.builder().content("Task result: " + cs.payload()).type(MemoryRecord.TYPE_SEMANTIC).concepts(Set.of("final", "output")).build()); } return e; }
 
     // ── Factory ──
-    private MemoryManager(MemoryStore store) { this.store = store != null ? store : new InMemoryMemoryStore(); }
-    public static MemoryManager create() { return new MemoryManager(new InMemoryMemoryStore()); }
+    private MemoryManager(MemoryStore store) { this.store = store != null ? store : new JsonlMemoryStore(); }
+    /** Create with default persistent store (~/.mocha/memory/records.jsonl). */
+    public static MemoryManager create() { return new MemoryManager(new JsonlMemoryStore()); }
     public static MemoryManager create(MemoryStore store) { return new MemoryManager(store); }
     // ── Session persistence ──
 
@@ -102,6 +147,11 @@ public class MemoryManager {
     public MemoryManager startSession(String cwd, String userId) {
         try { currentSession = sessionStore.start(UUID.randomUUID().toString(), cwd, userId); }
         catch (IOException e) { /* fall through */ }
+        // Bind FileHistory to session directory for persistent undo
+        if (currentSession != null) {
+            io.sketch.mochaagents.tool.FileHistory.getInstance()
+                    .withSession(currentSession.id(), sessionStore.projectDir(cwd));
+        }
         return this;
     }
 
@@ -118,6 +168,9 @@ public class MemoryManager {
             currentSession = loadSessionMeta(metaFile);
             // Inject transcript into memory steps for context
             sessionStore.injectTranscriptToMemory(currentSession, this);
+            // Re-bind FileHistory for persistent undo
+            io.sketch.mochaagents.tool.FileHistory.getInstance()
+                    .withSession(currentSession.id(), sessionStore.projectDir(cwd));
         } catch (IOException e) { /* fall through — start fresh */ }
         return this;
     }
@@ -152,6 +205,57 @@ public class MemoryManager {
 
     public SessionStore.Session currentSession() { return currentSession; }
     public SessionStore sessionStore() { return sessionStore; }
+
+    // ── Cross-session search ──
+
+    /**
+     * Search across all session transcripts for a keyword query.
+     * Returns top matches with context snippets and session metadata.
+     */
+    public List<SessionSearchResult> searchSessions(String query, String cwd, int maxResults) {
+        List<SessionSearchResult> results = new ArrayList<>();
+        String lower = query.toLowerCase();
+        try {
+            for (var meta : sessionStore.listSessions(cwd)) {
+                Path transcript = meta.metaFile().resolveSibling(meta.id() + ".jsonl");
+                if (!Files.exists(transcript)) continue;
+
+                List<String> matches = new ArrayList<>();
+                for (String line : Files.readAllLines(transcript)) {
+                    if (line.toLowerCase().contains(lower)) {
+                        try {
+                            @SuppressWarnings("unchecked")
+                            var m = new com.fasterxml.jackson.databind.ObjectMapper().readValue(line, Map.class);
+                            String content = (String) m.getOrDefault("content", "");
+                            // Extract context snippet (±80 chars around match)
+                            int idx = content.toLowerCase().indexOf(lower);
+                            int start = Math.max(0, idx - 80);
+                            int end = Math.min(content.length(), idx + lower.length() + 80);
+                            String snippet = (start > 0 ? "..." : "") + content.substring(start, end) + (end < content.length() ? "..." : "");
+                            matches.add(snippet);
+                        } catch (Exception ignored) {}
+                    }
+                    if (matches.size() >= 5) break; // max 5 snippets per session
+                }
+
+                if (!matches.isEmpty()) {
+                    String title = meta.title() != null ? meta.title() : "Session " + meta.id().substring(0, 8);
+                    results.add(new SessionSearchResult(meta.id(), title, meta.startedAt(), matches));
+                }
+            }
+        } catch (IOException e) { /* skip */ }
+
+        results.sort((a, b) -> Integer.compare(b.matches().size(), a.matches().size()));
+        if (results.size() > maxResults) results = results.subList(0, maxResults);
+        return results;
+    }
+
+    public List<SessionSearchResult> searchSessions(String query, String cwd) {
+        return searchSessions(query, cwd, 10);
+    }
+
+    public record SessionSearchResult(String sessionId, String title,
+                                       java.time.Instant startedAt, List<String> matches) {}
 
     // ── Session metadata helpers ──
 

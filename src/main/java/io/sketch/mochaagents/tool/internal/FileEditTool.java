@@ -119,6 +119,9 @@ public class FileEditTool extends AbstractTool {
         Path path = Paths.get(filePath).toAbsolutePath().normalize();
 
         try {
+            // Snapshot for undo before modification
+            io.sketch.mochaagents.tool.FileHistory.getInstance().record(filePath, getName());
+
             // Create parent directories
             Path parent = path.getParent();
             if (parent != null) {

@@ -88,6 +88,9 @@ public class FileWriteTool extends AbstractTool {
         boolean exists = Files.exists(path);
 
         try {
+            // Snapshot for undo before modification
+            io.sketch.mochaagents.tool.FileHistory.getInstance().record(filePath, getName());
+
             // Create parent directories
             Path parent = path.getParent();
             if (parent != null) {

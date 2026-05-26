@@ -93,6 +93,8 @@ public final class ToolCallingAgent extends ReActAgent {
     @Override
     protected StepResult executeReActStep(int stepNumber, String input, MemoryManager memory) {
         long start = System.currentTimeMillis();
+        // Track step for file history (enables turn-level file rollback)
+        io.sketch.mochaagents.tool.FileHistory.setCurrentStep(stepNumber);
 
         try {
             // Use typed messages for native ContentBlock-aware providers; fall back to flat maps

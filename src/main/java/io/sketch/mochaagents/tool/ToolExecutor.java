@@ -26,7 +26,7 @@ public class ToolExecutor {
     private io.sketch.mochaagents.interaction.DecisionPipeline pipeline;
     private io.sketch.mochaagents.interaction.ApprovalBroker broker;
     private io.sketch.mochaagents.interaction.Session session;
-    private io.sketch.mochaagents.agent.event.AgentEvents events;
+    private io.sketch.mochaagents.event.EventBus events;
     private String sessionId = "default";
 
     public ToolExecutor(ToolRegistry registry, long timeoutMs, int maxRetries, long retryDelayMs) {
@@ -47,7 +47,7 @@ public class ToolExecutor {
     /** Inject approval broker for ASK decisions. */
     public ToolExecutor withBroker(io.sketch.mochaagents.interaction.ApprovalBroker broker) { this.broker = broker; return this; }
     /** Inject event bus for real-time tool call notifications (diff display etc.). */
-    public ToolExecutor withEvents(io.sketch.mochaagents.agent.event.AgentEvents events) { this.events = events; return this; }
+    public ToolExecutor withEvents(io.sketch.mochaagents.event.EventBus events) { this.events = events; return this; }
     /** Inject session for denial tracking. */
     public ToolExecutor withSession(io.sketch.mochaagents.interaction.Session session) { this.session = session; return this; }
     /** Set current session ID (from AgentContext). */
@@ -119,9 +119,9 @@ public class ToolExecutor {
                 // Fire tool call event for real-time display (diff etc.)
                 if (events != null) {
                     Map<String, Object> eventData = buildToolEventData(toolName, arguments, result, elapsed);
-                    events.fire(new io.sketch.mochaagents.agent.event.AgentEvents.Event(
-                            io.sketch.mochaagents.agent.event.AgentEvents.TOOL_CALL,
-                            toolName, eventData, elapsed));
+                    events.post(new io.sketch.mochaagents.event.AgentEvents.ToolCalled(
+                            toolName, "agent", eventData.get("arguments") instanceof Map ? (Map) eventData.get("arguments") : Map.of(),
+                            eventData.get("result"), elapsed));
                 }
                 return ToolResult.Builder.success(toolName, result, elapsed);
 
