@@ -61,6 +61,7 @@ final class Repl implements CliCommand {
             ╚═╝     ╚═╝ ╚═════╝  ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝""";
 
     private final ModelConfig modelCfg;
+    private final String resumeSessionId;
     private io.sketch.mochaagents.agent.MochaAgent agent;
     private AgentBootstrap bootstrap;
     private Model model;
@@ -74,8 +75,13 @@ final class Repl implements CliCommand {
     // Diff tracking — capture tool outputs that modify files for real-time display
     private final List<FileChange> pendingChanges = new ArrayList<>();
     private boolean currentRunHasDiff;
+    private boolean titleGenerated;
 
-    Repl(ModelConfig modelCfg) { this.modelCfg = modelCfg; }
+    Repl(ModelConfig modelCfg) { this(modelCfg, null); }
+    Repl(ModelConfig modelCfg, String resumeSessionId) {
+        this.modelCfg = modelCfg;
+        this.resumeSessionId = resumeSessionId;
+    }
 
     @Override
     public int run(String[] args, PrintStream out, PrintStream err) {
@@ -131,8 +137,7 @@ final class Repl implements CliCommand {
         out.println("  " + bold("Java:") + "     " + System.getProperty("java.version"));
 
         if (bootstrap != null) {
-            out.println("  " + bold("Tools:") + "    " + bootstrap.toolRegistry().size()
-                    + (bootstrap.agentTool() != null ? " (+agent tool)" : ""));
+            out.println("  " + bold("Tools:") + "    " + bootstrap.toolRegistry().size());
         }
     }
 
@@ -212,6 +217,15 @@ final class Repl implements CliCommand {
 
             String result = a.run(task);
             unsub.run();
+
+            // Auto-generate session title after first exchange
+            if (!titleGenerated) {
+                titleGenerated = true;
+                String title = a.memory().generateTitle(model);
+                if (title != null) {
+                    out.println(dim("  Session: " + title));
+                }
+            }
 
             // Display result
             out.println();
@@ -312,7 +326,12 @@ final class Repl implements CliCommand {
 
         return switch (name) {
             case "help", "h" -> { showHelp(); yield false; }
-            case "exit", "quit", "q" -> { out.println("Goodbye."); yield true; }
+            case "exit", "quit", "q" -> {
+                if (agent != null) {
+                    agent.memory().endSession(sessionInputTokens, sessionOutputTokens, sessionCost);
+                }
+                out.println("Goodbye."); yield true;
+            }
             case "version" -> { out.println(VERSION); yield false; }
             case "model" -> { showModelInfo(); yield false; }
             case "cost" -> { showCost(); yield false; }
@@ -323,6 +342,8 @@ final class Repl implements CliCommand {
             case "diff" -> { showDiffCmd(arg); yield false; }
             case "status" -> { showStatus(); yield false; }
             case "tools" -> { showTools(); yield false; }
+            case "resume" -> { resumeCmd(arg); yield false; }
+            case "sessions", "history" -> { listSessionsCmd(); yield false; }
             default -> { out.println(red("Unknown command: /" + name + " (use /help)")); yield false; }
         };
     }
@@ -341,6 +362,8 @@ final class Repl implements CliCommand {
             {"/diff [file]", "Show pending file changes"},
             {"/status", "Show agent status"},
             {"/tools", "List available tools"},
+            {"/sessions", "List recent sessions"},
+            {"/resume [id]", "Resume a previous session (latest if no id)"},
             {"/exit, /quit", "Exit REPL"},
         };
         for (String[] c : commands) {
@@ -427,6 +450,32 @@ final class Repl implements CliCommand {
         }
     }
 
+    private void resumeCmd(String sessionId) {
+        if (agent == null) { out.println(dim("Start a conversation first")); return; }
+        if (sessionId.isEmpty()) sessionId = "latest";
+        resumeSession(sessionId);
+    }
+
+    private void listSessionsCmd() {
+        if (agent == null) { out.println(dim("Start a conversation first")); return; }
+        String cwd = System.getProperty("user.dir", ".");
+        var sessions = agent.memory().listSessions(cwd);
+        if (sessions.isEmpty()) {
+            out.println(dim("No sessions found in current project."));
+            return;
+        }
+        out.println(bold("Recent sessions:"));
+        int count = 0;
+        for (var s : sessions) {
+            if (count++ >= 10) break;
+            String title = s.title() != null ? s.title() : "(untitled)";
+            String ts = s.startedAt().toString().substring(0, 16).replace("T", " ");
+            out.printf("  %s  %s  %s  %d msgs%n",
+                    dim(s.id().substring(0, 8)), ts, title, s.messageCount());
+        }
+        out.println(dim("  /resume <id> to continue a session"));
+    }
+
     // ============ Agent lifecycle ============
 
     private io.sketch.mochaagents.agent.MochaAgent agent() {
@@ -456,9 +505,35 @@ final class Repl implements CliCommand {
                         }
                     });
             agent = bootstrap.buildAgent("repl-agent");
+
+            // Resume previous session if requested
+            if (resumeSessionId != null) {
+                resumeSession(resumeSessionId);
+            }
+
             log.info("REPL agent created — model: {}", model.modelName());
         }
         return agent;
+    }
+
+    private void resumeSession(String sessionId) {
+        var mem = agent.memory();
+        String cwd = System.getProperty("user.dir", ".");
+        String userId = System.getProperty("user.name", "anonymous");
+
+        if ("latest".equals(sessionId)) {
+            var sessions = mem.listSessions(cwd);
+            if (!sessions.isEmpty()) {
+                sessionId = sessions.get(0).id();
+            } else {
+                out.println(dim("No previous sessions found. Starting fresh."));
+                return;
+            }
+        }
+
+        mem.resumeSession(sessionId, cwd, userId);
+        out.println(green("✓ Resumed session ") + dim(sessionId.substring(0, 8) + "..."));
+        out.println(dim("  " + mem.steps().size() + " previous messages restored"));
     }
 
     private Model model() {

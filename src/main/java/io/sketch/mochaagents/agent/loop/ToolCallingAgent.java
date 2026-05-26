@@ -7,9 +7,11 @@ import io.sketch.mochaagents.agent.loop.LoopState;
 import io.sketch.mochaagents.memory.MemoryManager;
 import io.sketch.mochaagents.agent.loop.ReActAgent;
 import io.sketch.mochaagents.agent.loop.StepResult;
+import io.sketch.mochaagents.message.ContentBlock;
 import io.sketch.mochaagents.model.ModelRequest;
 import io.sketch.mochaagents.model.ModelResponse;
 import io.sketch.mochaagents.agent.loop.step.ActionStep;
+import io.sketch.mochaagents.tool.ConcurrentSafeBatcher;
 import io.sketch.mochaagents.tool.Tool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,11 +95,12 @@ public final class ToolCallingAgent extends ReActAgent {
         long start = System.currentTimeMillis();
 
         try {
-            List<Map<String, String>> messages = writeMemoryToMessages();
-
-            ModelRequest request = ModelRequest.builder()
-                    .messages(messages).maxTokens(2048).temperature(0.7)
-                    .thinkingConfig(thinkingConfig).effort(effortLevel).build();
+            // Use typed messages for native ContentBlock-aware providers; fall back to flat maps
+            List<io.sketch.mochaagents.message.Message> typedMsgs = writeTypedMessages();
+            ModelRequest.Builder reqBuilder = ModelRequest.builder()
+                    .typedMessages(typedMsgs).maxTokens(2048).temperature(0.7)
+                    .thinkingConfig(thinkingConfig).effort(effortLevel);
+            ModelRequest request = reqBuilder.build();
 
             ModelResponse response = withLlmRetry(() -> model.complete(request), "step " + stepNumber);
             String modelOutput = response.content();
@@ -105,37 +108,104 @@ public final class ToolCallingAgent extends ReActAgent {
                     stepNumber, System.currentTimeMillis() - start,
                     response.promptTokens(), response.completionTokens());
 
-            ParsedAction action = parseAction(modelOutput);
-
+            // ── Typed path: use contentBlocks when provider supports them ──
+            List<ContentBlock> assistantBlocks = new ArrayList<>();
+            List<ContentBlock.ToolResultBlock> toolResultBlocks = new ArrayList<>();
             String observation;
             boolean isFinalAnswer = false;
             Object toolResult = null;
 
-            if (action != null && toolRegistry != null && toolRegistry.has(action.name())) {
-                try {
-                    var result = executeTool(action.name(), action.arguments());
-                    toolResult = result.output();
-                    observation = result.isError()
-                            ? "Tool error: " + result.error()
-                            : String.valueOf(result.output());
-                    isFinalAnswer = "final_answer".equals(action.name());
-                } catch (Exception e) {
-                    observation = "Tool error: " + e.getMessage();
+            if (response.hasContentBlocks()) {
+                // Extract typed blocks from response
+                List<ParsedAction> actions = new ArrayList<>();
+                for (var msg : response.contentBlocks()) {
+                    if (msg instanceof io.sketch.mochaagents.message.Message.AssistantMessage am) {
+                        for (var block : am.content()) {
+                            assistantBlocks.add(block);
+                            if (block instanceof io.sketch.mochaagents.message.ContentBlock.ToolUseBlock tb) {
+                                actions.add(new ParsedAction(tb.name(), tb.input()));
+                            }
+                        }
+                    }
                 }
-            } else if (action != null) {
-                observation = "Tool not found: " + action.name()
-                        + ". Available: " + (toolRegistry != null
-                        ? toolRegistry.all().stream().map(Tool::getName).toList() : "none");
+
+                if (!actions.isEmpty()) {
+                    // Execute tools — concurrent for multiple, single for one
+                    List<io.sketch.mochaagents.tool.ToolResult> results;
+                    if (actions.size() == 1) {
+                        ParsedAction a = actions.get(0);
+                        results = List.of(executeTool(a.name(), a.arguments()));
+                    } else {
+                        var batcher = new io.sketch.mochaagents.tool.ConcurrentSafeBatcher(toolRegistry);
+                        List<io.sketch.mochaagents.tool.ConcurrentSafeBatcher.ToolCall> calls = actions.stream()
+                                .map(a -> new io.sketch.mochaagents.tool.ConcurrentSafeBatcher.ToolCall(
+                                        a.name(), a.arguments()))
+                                .toList();
+                        results = batcher.execute(calls);
+                    }
+
+                    // Build observation and tool result blocks
+                    StringBuilder obsBuilder = new StringBuilder();
+                    for (int i = 0; i < results.size(); i++) {
+                        var r = results.get(i);
+                        // Find matching ToolUseBlock for tool_result pairing
+                        String toolUseId = null, toolName = actions.get(i).name();
+                        for (var block : assistantBlocks) {
+                            if (block instanceof io.sketch.mochaagents.message.ContentBlock.ToolUseBlock tu
+                                    && tu.name().equals(toolName)) {
+                                toolUseId = tu.id();
+                                break;
+                            }
+                        }
+                        if (toolUseId != null) {
+                            toolResultBlocks.add(r.isError()
+                                    ? io.sketch.mochaagents.message.ContentBlock.ToolResultBlock.error(
+                                            toolUseId, toolName, r.error())
+                                    : io.sketch.mochaagents.message.ContentBlock.ToolResultBlock.success(
+                                            toolUseId, toolName, String.valueOf(r.output())));
+                        }
+                        if (obsBuilder.length() > 0) obsBuilder.append("\n");
+                        obsBuilder.append(r.isError() ? "Error: " + r.error() : String.valueOf(r.output()));
+                        if ("final_answer".equals(actions.get(i).name())) {
+                            isFinalAnswer = true;
+                            toolResult = r.output();
+                        }
+                    }
+                    observation = obsBuilder.toString();
+                } else {
+                    observation = "No tool calls found in typed response.";
+                }
             } else {
-                observation = "Could not parse action. "
-                        + "Use format: Action: tool_name(arguments)";
+                // ── Fallback: regex parsing on flat text ──
+                ParsedAction action = parseAction(modelOutput);
+
+                if (action != null && toolRegistry != null && toolRegistry.has(action.name())) {
+                    try {
+                        var result = executeTool(action.name(), action.arguments());
+                        toolResult = result.output();
+                        observation = result.isError()
+                                ? "Tool error: " + result.error()
+                                : String.valueOf(result.output());
+                        isFinalAnswer = "final_answer".equals(action.name());
+                    } catch (Exception e) {
+                        observation = "Tool error: " + e.getMessage();
+                    }
+                } else if (action != null) {
+                    observation = "Tool not found: " + action.name()
+                            + ". Available: " + (toolRegistry != null
+                            ? toolRegistry.all().stream().map(Tool::getName).toList() : "none");
+                } else {
+                    observation = "Could not parse action. "
+                            + "Use format: Action: tool_name(arguments)";
+                }
             }
 
             ActionStep actionStep = new ActionStep(
-                    stepNumber, messages.toString(), modelOutput,
-                    action != null ? action.name() + "(" + action.arguments() + ")" : "parse_error",
+                    stepNumber, typedMsgs.toString(), modelOutput,
+                    isFinalAnswer ? "final_answer" : "tool_call",
                     observation, null,
-                    response.promptTokens(), response.completionTokens(), isFinalAnswer);
+                    response.promptTokens(), response.completionTokens(), isFinalAnswer,
+                    assistantBlocks, toolResultBlocks);
             memory.appendAction(actionStep);
 
             if (isFinalAnswer) {
@@ -147,7 +217,7 @@ public final class ToolCallingAgent extends ReActAgent {
             return StepResult.builder()
                     .stepNumber(stepNumber)
                     .state(isFinalAnswer ? LoopState.COMPLETE : LoopState.ACT)
-                    .action(action != null ? action.name() : "parse_error")
+                    .action(isFinalAnswer ? "final_answer" : "tool_call")
                     .observation(observation)
                     .output(isFinalAnswer ? String.valueOf(toolResult) : observation)
                     .durationMs(System.currentTimeMillis() - start)
@@ -162,6 +232,9 @@ public final class ToolCallingAgent extends ReActAgent {
                     .error(e.getMessage()).durationMs(System.currentTimeMillis() - start).build();
         }
     }
+
+    private final io.sketch.mochaagents.tool.ConcurrentSafeBatcher toolBatcher =
+            new io.sketch.mochaagents.tool.ConcurrentSafeBatcher(toolRegistry);
 
     public static Builder builder() { return new Builder(); }
 

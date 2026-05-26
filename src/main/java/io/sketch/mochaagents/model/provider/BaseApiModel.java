@@ -80,7 +80,12 @@ public abstract class BaseApiModel implements Model {
     protected abstract String buildRequestBody(ModelRequest request);
     protected abstract ResponseParseResult parseResponseContent(JsonNode root);
 
-    protected record ResponseParseResult(String content, int promptTokens, int completionTokens) {}
+    protected record ResponseParseResult(String content, int promptTokens, int completionTokens,
+                                         java.util.List<io.sketch.mochaagents.message.Message> assistantMessages) {
+        public ResponseParseResult(String content, int promptTokens, int completionTokens) {
+            this(content, promptTokens, completionTokens, java.util.List.of());
+        }
+    }
 
     // ============ LLM接口 ============
 
@@ -108,7 +113,7 @@ public abstract class BaseApiModel implements Model {
                 if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
                     JsonNode root = JSON.readTree(resp.body());
                     ResponseParseResult parsed = parseResponseContent(root);
-                    return new ModelResponse(parsed.content(), modelId,
+                    return new ModelResponse(parsed.content(), parsed.assistantMessages(), modelId,
                             parsed.promptTokens(), parsed.completionTokens(),
                             latency, Map.of("provider", getClass().getSimpleName()));
                 }
@@ -214,6 +219,37 @@ public abstract class BaseApiModel implements Model {
     }
 
     // ============ Helpers ============
+
+    /** Resolve messages — prefer typedMessages when present, fall back to flat maps. */
+    protected static ArrayNode resolveMessages(ModelRequest request) {
+        if (!request.typedMessages().isEmpty()) {
+            ensureToolResultPairing(request.typedMessages());
+            return typedMessagesToJson(request.typedMessages());
+        }
+        return messagesToJson(request.messages());
+    }
+
+    /** Claude Code pattern: verify every tool_use has a paired tool_result before API call. */
+    protected static void ensureToolResultPairing(List<io.sketch.mochaagents.message.Message> messages) {
+        Map<String, Boolean> pending = new java.util.LinkedHashMap<>();
+        for (var msg : messages) {
+            if (msg instanceof io.sketch.mochaagents.message.Message.AssistantMessage am) {
+                for (var b : am.content()) {
+                    if (b instanceof io.sketch.mochaagents.message.ContentBlock.ToolUseBlock tu)
+                        pending.putIfAbsent(tu.id(), false);
+                }
+            } else if (msg instanceof io.sketch.mochaagents.message.Message.UserMessage um) {
+                for (var tr : um.toolResults()) {
+                    if (tr instanceof io.sketch.mochaagents.message.ContentBlock.ToolResultBlock tb)
+                        pending.put(tb.toolUseId(), true);
+                }
+            }
+        }
+        long unpaired = pending.values().stream().filter(v -> !v).count();
+        if (unpaired > 0)
+            LoggerFactory.getLogger(BaseApiModel.class)
+                    .warn("{} tool_use block(s) without matching tool_result — API may reject", unpaired);
+    }
 
     protected static ArrayNode messagesToJson(List<Map<String, String>> messages) {
         ArrayNode arr = JSON.createArrayNode();

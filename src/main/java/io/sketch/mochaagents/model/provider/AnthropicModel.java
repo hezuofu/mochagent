@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.sketch.mochaagents.model.ModelRequest;
 import io.sketch.mochaagents.model.StreamingResponse;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -97,31 +98,45 @@ public class AnthropicModel extends BaseApiModel implements Model.NativeTools {
             body.set("thinking", thinking);
         }
 
-        List<Map<String, String>> messages = request.messages();
         ArrayNode anthropicMessages = JSON.createArrayNode();
         String systemPrompt = null;
 
-        for (Map<String, String> msg : messages) {
-            String role = msg.getOrDefault("role", "user");
-            String content = msg.getOrDefault("content", "");
+        // Typed-first: use ContentBlock-aware messages when available
+        if (!request.typedMessages().isEmpty()) {
+            ensureToolResultPairing(request.typedMessages());
+            for (var msg : request.typedMessages()) {
+                if (msg instanceof io.sketch.mochaagents.message.Message.SystemMessage s) {
+                    systemPrompt = (systemPrompt == null ? "" : systemPrompt + "\n") + s.content();
+                } else if (msg instanceof io.sketch.mochaagents.message.Message.UserMessage u) {
+                    anthropicMessages.add(toAnthropicUserMessage(u));
+                } else if (msg instanceof io.sketch.mochaagents.message.Message.AssistantMessage a) {
+                    anthropicMessages.add(toAnthropicAssistantMessage(a));
+                }
+            }
+        } else {
+            // Fallback: flat Map-based messages
+            for (Map<String, String> msg : request.messages()) {
+                String role = msg.getOrDefault("role", "user");
+                String content = msg.getOrDefault("content", "");
 
-            if ("system".equals(role)) {
-                systemPrompt = content;
-            } else if ("assistant".equals(role) || "user".equals(role)) {
-                ObjectNode am = JSON.createObjectNode();
-                am.put("role", role);
-                am.put("content", content);
-                anthropicMessages.add(am);
-            } else if ("tool-call".equals(role)) {
-                ObjectNode am = JSON.createObjectNode();
-                am.put("role", "assistant");
-                am.put("content", content);
-                anthropicMessages.add(am);
-            } else if ("tool-response".equals(role)) {
-                ObjectNode am = JSON.createObjectNode();
-                am.put("role", "user");
-                am.put("content", content != null ? content : "Tool result");
-                anthropicMessages.add(am);
+                if ("system".equals(role)) {
+                    systemPrompt = content;
+                } else if ("assistant".equals(role) || "user".equals(role)) {
+                    ObjectNode am = JSON.createObjectNode();
+                    am.put("role", role);
+                    am.put("content", content);
+                    anthropicMessages.add(am);
+                } else if ("tool-call".equals(role)) {
+                    ObjectNode am = JSON.createObjectNode();
+                    am.put("role", "assistant");
+                    am.put("content", content);
+                    anthropicMessages.add(am);
+                } else if ("tool-response".equals(role)) {
+                    ObjectNode am = JSON.createObjectNode();
+                    am.put("role", "user");
+                    am.put("content", content != null ? content : "Tool result");
+                    anthropicMessages.add(am);
+                }
             }
         }
 
@@ -182,17 +197,31 @@ public class AnthropicModel extends BaseApiModel implements Model.NativeTools {
         // Anthropic 响应格式: {content: [{type: "text", text: "..."}], usage: {...}}
         JsonNode contentBlocks = root.get("content");
         StringBuilder content = new StringBuilder();
+        List<io.sketch.mochaagents.message.ContentBlock> blocks = new ArrayList<>();
 
         if (contentBlocks != null && contentBlocks.isArray()) {
             for (JsonNode block : contentBlocks) {
                 String type = safeStr(block, "type");
                 if ("text".equals(type)) {
+                    String text = safeStr(block, "text");
                     if (content.length() > 0) content.append("\n");
-                    content.append(safeStr(block, "text"));
+                    content.append(text);
+                    blocks.add(new io.sketch.mochaagents.message.ContentBlock.TextBlock(text));
                 } else if ("tool_use".equals(type)) {
+                    String id = safeStr(block, "id");
+                    String name = safeStr(block, "name");
+                    JsonNode inputNode = block.get("input");
+                    Map<String, Object> inputMap = inputNode != null && !inputNode.isNull()
+                            ? jsonNodeToMap(inputNode) : Map.of();
                     if (content.length() > 0) content.append("\n");
-                    content.append("[tool_use: ").append(safeStr(block, "name"))
-                            .append("(").append(block.get("input")).append(")]");
+                    content.append("[tool_use: ").append(name)
+                            .append("(").append(inputNode).append(")]");
+                    blocks.add(new io.sketch.mochaagents.message.ContentBlock.ToolUseBlock(id, name, inputMap));
+                } else if ("thinking".equals(type)) {
+                    String thought = safeStr(block, "thinking");
+                    String sig = safeStr(block, "signature");
+                    blocks.add(new io.sketch.mochaagents.message.ContentBlock.ThinkingBlock(thought,
+                            sig != null && !sig.isEmpty() ? sig : null));
                 }
             }
         }
@@ -201,7 +230,72 @@ public class AnthropicModel extends BaseApiModel implements Model.NativeTools {
         int inputTokens = usage != null ? safeInt(usage, "input_tokens") : 0;
         int outputTokens = usage != null ? safeInt(usage, "output_tokens") : 0;
 
-        return new ResponseParseResult(content.toString(), inputTokens, outputTokens);
+        List<io.sketch.mochaagents.message.Message> assistantMessages = blocks.isEmpty() ? List.of()
+                : List.of(new io.sketch.mochaagents.message.Message.AssistantMessage(blocks, modelId,
+                        new io.sketch.mochaagents.message.Message.TokenUsage(inputTokens, outputTokens)));
+
+        return new ResponseParseResult(content.toString(), inputTokens, outputTokens, assistantMessages);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> jsonNodeToMap(JsonNode node) {
+        if (node == null || node.isNull()) return Map.of();
+        try {
+            return JSON.convertValue(node, Map.class);
+        } catch (Exception e) { return Map.of(); }
+    }
+
+    // ── Typed message → Anthropic JSON helpers ──
+
+    private ObjectNode toAnthropicUserMessage(io.sketch.mochaagents.message.Message.UserMessage u) {
+        ObjectNode node = JSON.createObjectNode();
+        node.put("role", "user");
+        if (!u.toolResults().isEmpty()) {
+            ArrayNode content = JSON.createArrayNode();
+            if (u.content() != null && !u.content().isEmpty())
+                content.addObject().put("type", "text").put("text", u.content());
+            for (var tr : u.toolResults()) {
+                if (tr instanceof io.sketch.mochaagents.message.ContentBlock.ToolResultBlock tb) {
+                    ObjectNode trNode = content.addObject();
+                    trNode.put("type", "tool_result");
+                    trNode.put("tool_use_id", tb.toolUseId());
+                    trNode.put("content", tb.content());
+                    if (tb.isError()) trNode.put("is_error", true);
+                }
+            }
+            node.set("content", content);
+        } else {
+            node.put("content", u.content());
+        }
+        return node;
+    }
+
+    private ObjectNode toAnthropicAssistantMessage(io.sketch.mochaagents.message.Message.AssistantMessage a) {
+        ObjectNode node = JSON.createObjectNode();
+        node.put("role", "assistant");
+        if (a.content().size() == 1 && a.content().get(0) instanceof io.sketch.mochaagents.message.ContentBlock.TextBlock t) {
+            node.put("content", t.text());
+        } else {
+            ArrayNode content = JSON.createArrayNode();
+            for (var b : a.content()) {
+                if (b instanceof io.sketch.mochaagents.message.ContentBlock.TextBlock t)
+                    content.addObject().put("type", "text").put("text", t.text());
+                else if (b instanceof io.sketch.mochaagents.message.ContentBlock.ToolUseBlock tu) {
+                    ObjectNode tuNode = content.addObject();
+                    tuNode.put("type", "tool_use");
+                    tuNode.put("id", tu.id());
+                    tuNode.put("name", tu.name());
+                    tuNode.set("input", JSON.valueToTree(tu.input()));
+                } else if (b instanceof io.sketch.mochaagents.message.ContentBlock.ThinkingBlock th) {
+                    ObjectNode thNode = content.addObject();
+                    thNode.put("type", "thinking");
+                    thNode.put("thinking", th.thought());
+                    if (th.signature() != null) thNode.put("signature", th.signature());
+                }
+            }
+            node.set("content", content);
+        }
+        return node;
     }
 
     // ============ Builder ============

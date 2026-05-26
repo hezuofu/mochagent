@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import io.sketch.mochaagents.memory.MemoryManager;
 
 /**
  * Forked agent execution — spawns an isolated sub-conversation with its own context.
@@ -22,6 +23,7 @@ public final class ForkedAgent {
     private final ReActAgent agent;
     private final Map<String, Object> sharedContext = new HashMap<>();
     private final Set<String> loadedFiles = new LinkedHashSet<>();
+    private io.sketch.mochaagents.memory.MemoryManager parentMemory;
 
     public ForkedAgent(ReActAgent agent) { this.agent = agent; }
 
@@ -30,6 +32,11 @@ public final class ForkedAgent {
 
     /** Track a file that was loaded in the parent. */
     public ForkedAgent trackFile(String path) { loadedFiles.add(path); return this; }
+
+    /** Wire parent memory for sidechain session transcript (Claude Code pattern). */
+    public ForkedAgent withParentMemory(io.sketch.mochaagents.memory.MemoryManager parentMemory) {
+        this.parentMemory = parentMemory; return this;
+    }
 
     /**
      * Fork and execute in an isolated context.
@@ -58,10 +65,22 @@ public final class ForkedAgent {
             }
             sb.append("Task: ").append(task);
 
+            // Sidechain session tracking (Claude Code subagent transcript pattern)
+            String agentId = "agent-" + UUID.randomUUID().toString().substring(0, 8);
+            if (parentMemory != null && parentMemory.currentSession() != null) {
+                parentMemory.appendToSession("system", "[ForkedAgent " + agentId + "] " + task);
+            }
+
             AgentContext ctx = AgentContext.of(sb.toString());
-            log.info("Forked agent starting: {}", task);
+            log.info("Forked agent {} starting: {}", agentId, task);
             String result = agent.run(ctx);
-            log.info("Forked agent completed");
+            log.info("Forked agent {} completed", agentId);
+
+            if (parentMemory != null && parentMemory.currentSession() != null) {
+                parentMemory.appendToSession("system",
+                        "[ForkedAgent " + agentId + " result] " + (result.length() > 500
+                                ? result.substring(0, 500) + "..." : result));
+            }
             return result;
         });
     }

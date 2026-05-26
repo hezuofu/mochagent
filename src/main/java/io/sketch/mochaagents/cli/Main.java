@@ -15,10 +15,8 @@ import java.io.PrintStream;
  *
  * <pre>
  *   mocha mcp serve    → MCP server on stdio
- *   mocha plugin ...   → plugin management
+ *   mocha plugin list  → list loaded plugins
  *   mocha doctor       → diagnostics
- *   mocha update       → version check
- *   mocha auth ...     → authentication
  *   mocha              → interactive REPL
  * </pre>
  * @author lanxia39@163.com
@@ -45,8 +43,25 @@ public final class Main {
             printUsage(out); return 0;
         }
 
+        // ── Session listing ──
+        if (args.length == 1 && "--list".equals(args[0])) {
+            printSessionList(out); return 0;
+        }
+
+        // ── Session resume flags ──
+        String resumeSessionId = null;
+        for (int i = 0; i < args.length; i++) {
+            if ("--resume".equals(args[i]) && i + 1 < args.length) {
+                resumeSessionId = args[++i];
+            } else if ("--continue".equals(args[i])) {
+                resumeSessionId = "latest";
+            }
+        }
+
         ModelConfig modelCfg = parseModelArgs(args);
-        Repl repl = new Repl(modelCfg);
+        Repl repl = resumeSessionId != null
+                ? new Repl(modelCfg, resumeSessionId)
+                : new Repl(modelCfg);
 
         CliCommand mcp = (a, o, e) -> {
             if (a.length == 0) { o.println("Usage: mocha mcp <serve>"); return 1; }
@@ -107,6 +122,29 @@ public final class Main {
         return cfg;
     }
 
+    private static void printSessionList(PrintStream out) {
+        var mem = io.sketch.mochaagents.memory.MemoryManager.create();
+        String cwd = System.getProperty("user.dir", ".");
+        var sessions = mem.listSessions(cwd);
+        if (sessions.isEmpty()) {
+            out.println("No sessions found in current project.");
+            return;
+        }
+        out.println("Recent sessions:");
+        int count = 0;
+        for (var s : sessions) {
+            if (count++ >= 10) break;
+            String title = s.title() != null ? s.title() : "(untitled)";
+            out.printf("  %s  %s  %s  %d msgs%n",
+                    s.id().substring(0, 8),
+                    s.startedAt().toString().substring(0, 16).replace("T", " "),
+                    title,
+                    s.messageCount());
+        }
+        out.println();
+        out.println("Resume: mocha --resume <id>    or    mocha --continue");
+    }
+
     private static void printUsage(PrintStream out) {
         out.println("MochaAgents " + VERSION + " — Java agentic coding framework");
         out.println();
@@ -118,6 +156,11 @@ public final class Main {
         out.println("  plugin list     List loaded plugins");
         out.println("  doctor          Run diagnostics");
         out.println();
+        out.println("Session Options:");
+        out.println("  --list          List recent sessions");
+        out.println("  --resume <id>   Resume a specific session");
+        out.println("  --continue      Resume the latest session");
+        out.println();
         out.println("Model Options:");
         out.println("  --model, -m     Model ID (default: mock)");
         out.println("  --temperature   Sampling temperature (0-2, default: 0.7)");
@@ -126,6 +169,7 @@ public final class Main {
         out.println("Examples:");
         out.println("  mocha --model deepseek-chat");
         out.println("  mocha --model llama3.2 --temperature 0.3");
-        out.println("  mocha --model gpt-4o-mini --model claude-haiku  (multi-model routing)");
+        out.println("  mocha --continue --model gpt-4o-mini");
+        out.println("  mocha --list");
     }
 }

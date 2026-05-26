@@ -6,13 +6,10 @@ package io.sketch.mochaagents.agent.loop;
 import io.sketch.mochaagents.agent.AgentContext;
 import io.sketch.mochaagents.agent.AgentLoop;
 import io.sketch.mochaagents.agent.event.AgentEvents;
-import java.util.function.Predicate;
 import io.sketch.mochaagents.agent.internal.BaseAgent;
 import io.sketch.mochaagents.memory.MemoryProvider;
 import io.sketch.mochaagents.prompt.SystemPromptProvider;
-import io.sketch.mochaagents.agent.loop.Termination;
 import io.sketch.mochaagents.agent.loop.strategy.ReActLoop;
-import io.sketch.mochaagents.tool.Hooks;
 import io.sketch.mochaagents.context.Context;
 import io.sketch.mochaagents.evaluation.EvaluationResult;
 import io.sketch.mochaagents.model.Model;
@@ -81,9 +78,6 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     protected final boolean addBaseTools;
     protected final Map<String, ReActAgent> managedAgents = new LinkedHashMap<>();
     protected final io.sketch.mochaagents.orchestration.Orchestrator orchestrator;
-    protected final io.sketch.mochaagents.agent.event.AgentEvents events = new io.sketch.mochaagents.agent.event.AgentEvents();
-    protected final io.sketch.mochaagents.tool.Hooks hooks = new io.sketch.mochaagents.tool.Hooks();
-    protected final io.sketch.mochaagents.tool.ToolExecutor toolExecutor;
 
     /** Pluggable execution paradigm — defaults to ReActLoop. */
     protected final AgentLoop<String, String> agentLoop;
@@ -92,8 +86,9 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
     private int turnCount;
     protected io.sketch.mochaagents.learn.LearningLoop learningLoop;
+    protected final io.sketch.mochaagents.context.compaction.CompactionEngine compactionEngine;
 
-    // ── Cognitive capabilities (moved from BaseAgent — live here, not in base) ──
+    // ── Cognitive capabilities (live here, not in BaseAgent) ──
 
     protected final io.sketch.mochaagents.perception.Perceptor<String, String> perceptor;
     protected final io.sketch.mochaagents.reasoning.Reasoner reasoner;
@@ -102,21 +97,17 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     protected final io.sketch.mochaagents.perception.LayeredContextBuilder contextBuilder;
     protected final io.sketch.mochaagents.perception.PerceptionObserver perceptionObserver;
 
-    public Runnable onEvent(io.sketch.mochaagents.agent.event.AgentEvents.Listener l) { return events.subscribe(l); }
-    public Hooks hooks() { return hooks; }
-
     /** Switch execution paradigm at runtime. */
     public ReActAgent withAgentLoop(AgentLoop<String, String> loop) {
         return new AgentLoopSwitcher(this, loop);
     }
 
     /**
-     * Unified tool execution — permission check → pre-hooks → execute → post-hooks.
-     * Replaces the old direct tool.call() path in ToolCallingAgent/CodeAgent.
+     * Unified tool execution — delegates to BaseAgent's ToolExecutor.
      */
     protected io.sketch.mochaagents.tool.ToolResult executeTool(String toolName,
                                                                   Map<String, Object> arguments) {
-        return toolExecutor.execute(toolName, arguments);
+        return toolExecutor().execute(toolName, arguments);
     }
 
     /** Resolve the effective loop: configured loop, or default ReActLoop. */
@@ -140,11 +131,28 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
     // ============ Context ============
 
-    private io.sketch.mochaagents.context.AutoCompactor autoCompactor;
-
     /** Public — allows REPL / users to trigger context compaction manually. */
     public void autoCompact() {
-        if (autoCompactor != null) autoCompactor.checkAndCompact();
+        // SNIP + COLLAPSE are handled per-step in writeTypedMessages().
+        // AUTO (LLM summarization) requires a model call — use the compaction engine.
+        if (compactionEngine != null && model != null) {
+            var ctx = new io.sketch.mochaagents.context.ContextManager(
+                    128000, new io.sketch.mochaagents.context.SlidingWindowStrategy(),
+                    null);
+            // Build context from current memory steps for LLM summarization
+            for (var step : memory.steps()) {
+                if (step instanceof ActionStep as) {
+                    ctx.addChunk(new io.sketch.mochaagents.context.ContextChunk(
+                            "action-" + as.stepNumber(), "assistant",
+                            as.modelOutput() != null ? as.modelOutput() : "",
+                            0));
+                }
+            }
+            String summary = compactionEngine.autoCompact(ctx);
+            if (summary != null && !summary.isEmpty()) {
+                memory.appendSystemPrompt("[Compacted context]\n" + summary);
+            }
+        }
     }
 
     // ============ Prompt templates ============
@@ -184,22 +192,31 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         this.perceptionObserver = perceptor != null
                 ? new PerceptionObserver(contextBuilder, perceptor) : null;
 
-        // Wire ToolExecutor with hooks + permissions — unified tool execution pipeline
-        this.toolExecutor = new io.sketch.mochaagents.tool.ToolExecutor(
-                toolRegistry, 60_000, 2, 500);
-        this.toolExecutor.withHooks(hooks)
-                .withEvents(events);
+        // Wire permissions into BaseAgent's ToolExecutor (hooks + events already wired)
         if (builder.permissionRules != null) {
-            this.toolExecutor.withPermissions(builder.permissionRules);
+            toolExecutor().withPermissions(builder.permissionRules);
         }
 
         setupManagedAgents(builder.managedAgents);
         setupTools(builder.tools);
 
-        this.learningLoop = io.sketch.mochaagents.learn.LearningLoop.configure(memory)
-                .withGlobalMemory()
-                .withSummaryRequired()
-                .withAntiForgetting(10, 65);
+        this.learningLoop = builder.learningLoop != null
+                ? builder.learningLoop
+                : buildDefaultLearningLoop(memory, builder.globalMemory, builder.antiForgetting);
+        Model compactModel = this.model;
+        this.compactionEngine = compactModel != null
+                ? new io.sketch.mochaagents.context.compaction.CompactionEngine(
+                        new io.sketch.mochaagents.context.compaction.AutoCompactor(compactModel))
+                : new io.sketch.mochaagents.context.compaction.CompactionEngine();
+    }
+
+    private static io.sketch.mochaagents.learn.LearningLoop buildDefaultLearningLoop(
+            MemoryManager memory, boolean globalMemory, boolean antiForgetting) {
+        var ll = io.sketch.mochaagents.learn.LearningLoop.configure(memory)
+                .withSummaryRequired();
+        if (globalMemory) ll = ll.withGlobalMemory();
+        if (antiForgetting) ll = ll.withAntiForgetting(10, 65);
+        return ll;
     }
 
     protected Model resolveModel(ModelRequest request) {
@@ -215,6 +232,8 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
     private String cachedStaticPrefix;
 
+    private static final String DYNAMIC_BOUNDARY = "\n__SYSTEM_PROMPT_DYNAMIC_BOUNDARY__\n";
+
     public String buildSystemPrompt() {
         // Build static prefix once — maximizes API prompt cache hits
         if (cachedStaticPrefix == null) {
@@ -223,9 +242,10 @@ public abstract class ReActAgent extends BaseAgent<String, String>
                     "managed_agents", formatManagedAgents(),
                     "instructions", description != null ? description : ""
             ));
-            cachedStaticPrefix = contextBuilder.buildFullContext(base, "");
+            // Attach boundary marker — Anthropic API caches everything before it
+            cachedStaticPrefix = contextBuilder.buildFullContext(base, "") + DYNAMIC_BOUNDARY;
         }
-        // Dynamic suffix appends fresh each call
+        // Dynamic suffix appends fresh each call (per-session memory + environment)
         return cachedStaticPrefix
                 + memory.workingContext()
                 + memory.globalContext();
@@ -288,6 +308,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         String systemPrompt = buildSystemPrompt();
         systemPrompt = enrichFromContext(systemPrompt, ctx);
         memory.startSession(System.getProperty("user.dir", "."), ctx.userId());
+        toolExecutor().withSessionId(ctx.sessionId());
         memory.reset(systemPrompt);
         memory.appendTask(task);
         memory.appendToSession("user", task);
@@ -325,7 +346,17 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     protected StepResult executeReActStepStreaming(
             int stepNumber, String input, MemoryManager memory,
             java.util.function.Consumer<String> onToken) {
-        return executeReActStep(stepNumber, input, memory);
+        StepResult result = executeReActStep(stepNumber, input, memory);
+
+        // Self-learning hooks for streaming path too
+        turnCount++;
+        String modelResponse = extractLastModelOutput(memory);
+        List<Map<String, Object>> toolCalls = extractLastToolCalls(memory, result);
+        String injection = learningLoop.afterTurn(turnCount, modelResponse, toolCalls);
+        if (!injection.isEmpty()) {
+            memory.appendSystemPrompt(injection);
+        }
+        return result;
     }
 
     public String run(AgentContext ctx) {
@@ -344,6 +375,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         systemPrompt = enrichFromContext(systemPrompt, ctx);
 
         memory.startSession(System.getProperty("user.dir", "."), ctx.userId());
+        toolExecutor().withSessionId(ctx.sessionId());
         memory.reset(systemPrompt);
         memory.appendTask(task);
         memory.appendToSession("user", task);
@@ -414,19 +446,44 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         // 2. Act: delegate to subclass (ToolCallingAgent)
         StepResult result = executeReActStep(stepNumber, input, memory);
 
-        // 3. Perceive: continuous environmental awareness after action
+        // 3. Self-learning: after-turn hooks (anti-forgetting, summary enforcement, global memory)
+        turnCount++;
+        String modelResponse = extractLastModelOutput(memory);
+        List<Map<String, Object>> toolCalls = extractLastToolCalls(memory, result);
+        String learningInjection = learningLoop.afterTurn(turnCount, modelResponse, toolCalls);
+        if (!learningInjection.isEmpty()) {
+            memory.appendSystemPrompt(learningInjection);
+        }
+
+        // 4. Perceive: continuous environmental awareness after action
         perceiveAfterAction(result);
 
-        // 4. Track plan: compare action to expected plan step
+        // 5. Track plan: compare action to expected plan step
         trackPlanProgress(stepNumber, result);
 
-        // 5. Adapt: trigger replanning if deviation threshold exceeded
+        // 6. Adapt: trigger replanning if deviation threshold exceeded
         if (planDeviations >= MAX_PLAN_DEVIATIONS) {
             replanFromDeviation(input, result);
             planDeviations = 0;
         }
 
         return result;
+    }
+
+    private String extractLastModelOutput(MemoryManager memory) {
+        var steps = memory.steps();
+        for (int i = steps.size() - 1; i >= 0; i--) {
+            if (steps.get(i) instanceof ActionStep as) return as.modelOutput();
+        }
+        return "";
+    }
+
+    private List<Map<String, Object>> extractLastToolCalls(MemoryManager memory, StepResult result) {
+        if (result.action() != null && !result.action().isEmpty()) {
+            return List.of(Map.of("name", result.action(), "observation",
+                    result.observation() != null ? result.observation() : ""));
+        }
+        return List.of();
     }
 
     // ============ Capability initialization (pre-loop) ============
@@ -781,6 +838,11 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
     /** Convert memory to Model messages — incremental, O(steps since last call). */
     protected List<Map<String, String>> writeMemoryToMessages() {
+        // Guard: if memory was reset (e.g. second run()), invalidate cached messages
+        if (lastSerializedStep > memory.steps().size()) {
+            cachedMessages.clear();
+            lastSerializedStep = 0;
+        }
         if (cachedMessages.isEmpty() && memory.systemPrompt() != null
                 && !memory.systemPrompt().isEmpty()) {
             cachedMessages.add(Map.of("role", "system", "content", memory.systemPrompt()));
@@ -811,6 +873,72 @@ public abstract class ReActAgent extends BaseAgent<String, String>
                 msgs.add(Map.of("role", "assistant", "content", as.modelOutput()));
             if (as.observation() != null && !as.observation().isEmpty())
                 msgs.add(Map.of("role", "user", "content", "Observation:\n" + as.observation()));
+            return msgs;
+        }
+        return List.of();
+    }
+
+    // ── Typed message path (ContentBlock-aware, for native tool calling) ──
+
+    private int lastTypedStep = 0;
+    private final List<io.sketch.mochaagents.message.Message> cachedTypedMessages = new ArrayList<>();
+
+    /** Convert memory to typed Messages — incremental, preserves ContentBlock structure. */
+    protected List<io.sketch.mochaagents.message.Message> writeTypedMessages() {
+        // Pre-compaction: run free levels (SNIP + COLLAPSE) before building messages
+        if (compactionEngine.preCompact(memory) > 0) {
+            // Steps were modified — invalidate both caches
+            cachedTypedMessages.clear();
+            lastTypedStep = 0;
+            cachedMessages.clear();
+            lastSerializedStep = 0;
+        }
+
+        if (lastTypedStep > memory.steps().size()) {
+            cachedTypedMessages.clear();
+            lastTypedStep = 0;
+        }
+        if (cachedTypedMessages.isEmpty() && memory.systemPrompt() != null
+                && !memory.systemPrompt().isEmpty()) {
+            cachedTypedMessages.add(
+                    new io.sketch.mochaagents.message.Message.SystemMessage.Prompt(memory.systemPrompt()));
+        }
+
+        List<MemoryStep> steps = memory.steps();
+        for (int i = lastTypedStep; i < steps.size(); i++) {
+            cachedTypedMessages.addAll(stepToTypedMessages(steps.get(i)));
+        }
+        lastTypedStep = steps.size();
+        return cachedTypedMessages;
+    }
+
+    private static List<io.sketch.mochaagents.message.Message> stepToTypedMessages(MemoryStep step) {
+        if (step instanceof ContentStep cs && cs.isSystemPrompt()) {
+            return List.of(new io.sketch.mochaagents.message.Message.SystemMessage.Prompt(cs.text()));
+        } else if (step instanceof ContentStep cs && cs.isTask()) {
+            return List.of(new io.sketch.mochaagents.message.Message.UserMessage(cs.text()));
+        } else if (step instanceof PlanningStep ps) {
+            return List.of(new io.sketch.mochaagents.message.Message.AssistantMessage(List.of(
+                    new io.sketch.mochaagents.message.ContentBlock.TextBlock("Plan:\n" + ps.plan()))));
+        } else if (step instanceof ActionStep as) {
+            List<io.sketch.mochaagents.message.Message> msgs = new ArrayList<>();
+            if (as.hasTypedContent()) {
+                msgs.add(new io.sketch.mochaagents.message.Message.AssistantMessage(as.assistantBlocks()));
+                if (!as.toolResultBlocks().isEmpty()) {
+                    msgs.add(new io.sketch.mochaagents.message.Message.UserMessage("",
+                            as.toolResultBlocks().stream()
+                                    .map(b -> (io.sketch.mochaagents.message.ContentBlock) b).toList()));
+                }
+            } else {
+                if (as.modelOutput() != null && !as.modelOutput().isEmpty()) {
+                    msgs.add(new io.sketch.mochaagents.message.Message.AssistantMessage(List.of(
+                            new io.sketch.mochaagents.message.ContentBlock.TextBlock(as.modelOutput()))));
+                }
+                if (as.observation() != null && !as.observation().isEmpty()) {
+                    msgs.add(new io.sketch.mochaagents.message.Message.UserMessage(
+                            "Observation:\n" + as.observation()));
+                }
+            }
             return msgs;
         }
         return List.of();
@@ -895,7 +1023,17 @@ public abstract class ReActAgent extends BaseAgent<String, String>
             return "Managed agent not found: " + agentName;
         }
         log.info("Delegating '{}' to managed agent '{}'", task, agentName);
-        return sub.run(AgentContext.of(task));
+        // Sidechain session: log sub-agent delegation to parent session
+        if (memory.currentSession() != null) {
+            memory.appendToSession("system", "[Delegate " + agentName + "] " + task);
+        }
+        String result = sub.run(AgentContext.of(task));
+        if (memory.currentSession() != null) {
+            memory.appendToSession("system", "[Delegate " + agentName + " result] "
+                    + (result != null && result.length() > 500
+                    ? result.substring(0, 500) + "..." : result));
+        }
+        return result;
     }
 
     // ============ Inner tools ============
@@ -967,6 +1105,9 @@ public abstract class ReActAgent extends BaseAgent<String, String>
                 = io.sketch.mochaagents.model.OptimizationConfig.balanced();
         protected AgentLoop<String, String> agentLoop;
         protected io.sketch.mochaagents.interaction.PermissionRules permissionRules;
+        protected io.sketch.mochaagents.learn.LearningLoop learningLoop;
+        protected boolean antiForgetting = true;
+        protected boolean globalMemory = true;
 
         // Cognitive capabilities (own them, not inherited from BaseAgent)
         protected io.sketch.mochaagents.perception.Perceptor<String, String> perceptor;
@@ -999,6 +1140,12 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         public T permissionRules(io.sketch.mochaagents.interaction.PermissionRules rules) {
             this.permissionRules = rules; return (T) this;
         }
+        /** Custom self-learning loop (GenericAgent pattern). Overrides globalMemory/antiForgetting flags. */
+        public T learningLoop(io.sketch.mochaagents.learn.LearningLoop loop) {
+            this.learningLoop = loop; return (T) this;
+        }
+        public T antiForgetting(boolean v) { this.antiForgetting = v; return (T) this; }
+        public T globalMemory(boolean v) { this.globalMemory = v; return (T) this; }
     }
 
     // ============ AgentLoopSwitcher ============
@@ -1017,9 +1164,8 @@ public abstract class ReActAgent extends BaseAgent<String, String>
             this.loop = loop;
         }
 
-        private static Builder<?> createBuilder(ReActAgent delegate, AgentLoop<String, String> loop) {
-            io.sketch.mochaagents.agent.loop.ToolCallingAgent.Builder b
-                    = io.sketch.mochaagents.agent.loop.ToolCallingAgent.builder();
+        private static ReActAgent.Builder<?> createBuilder(ReActAgent delegate, AgentLoop<String, String> loop) {
+            ToolCallingAgent.Builder b = ToolCallingAgent.builder();
             b.name(delegate.name);
             b.description(delegate.description);
             b.model(delegate.model);

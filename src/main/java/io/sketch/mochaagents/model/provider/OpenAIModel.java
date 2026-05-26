@@ -83,8 +83,8 @@ public class OpenAIModel extends BaseApiModel implements Model.NativeTools {
             body.put("stream", true);
         }
 
-        // 消息
-        ArrayNode messages = messagesToJson(request.messages());
+        // 消息 — prefer typed path when available
+        ArrayNode messages = resolveMessages(request);
         if (messages.isEmpty()) {
             ObjectNode userMsg = JSON.createObjectNode();
             userMsg.put("role", "user");

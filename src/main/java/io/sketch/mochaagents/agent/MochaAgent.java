@@ -90,6 +90,9 @@ public final class MochaAgent implements Agent<String, String> {
         private final List<Faculty<String, String>> faculties = new ArrayList<>();
         private io.sketch.mochaagents.memory.MemoryPlugin memoryPlugin;
         private io.sketch.mochaagents.event.EventBus eventBus;
+        private io.sketch.mochaagents.interaction.PermissionRules permissionRules;
+        private io.sketch.mochaagents.interaction.DecisionPipeline decisionPipeline;
+        private io.sketch.mochaagents.interaction.ApprovalBroker approvalBroker;
         private boolean globalMemory;
         private boolean antiForgetting;
 
@@ -112,7 +115,10 @@ public final class MochaAgent implements Agent<String, String> {
         public Builder eventBus(io.sketch.mochaagents.event.EventBus bus) { eventBus = bus; return this; }
         public Builder globalMemory(boolean v) { globalMemory = v; return this; }
         public Builder antiForgetting(boolean v) { antiForgetting = v; return this; }
-        public Builder observability(io.sketch.mochaagents.observability.Observability o) { this.eventBus = null; /* use observability */ return this; }
+        public Builder permissionRules(io.sketch.mochaagents.interaction.PermissionRules r) { permissionRules = r; return this; }
+        public Builder decisionPipeline(io.sketch.mochaagents.interaction.DecisionPipeline p) { decisionPipeline = p; return this; }
+        public Builder approvalBroker(io.sketch.mochaagents.interaction.ApprovalBroker b) { approvalBroker = b; return this; }
+        public Builder observability(io.sketch.mochaagents.observability.Observability o) { /* eventBus = null; observability used externally */ return this; }
 
         // Faculty shortcuts
         public Builder withPerception(io.sketch.mochaagents.perception.Perceptor<String, String> p) {
@@ -135,7 +141,8 @@ public final class MochaAgent implements Agent<String, String> {
 
         public MochaAgent build() {
             ToolCallingAgent.Builder b = ToolCallingAgent.builder()
-                    .name(name).model(model).description(description).maxSteps(maxSteps);
+                    .name(name).model(model).description(description).maxSteps(maxSteps)
+                    .antiForgetting(antiForgetting).globalMemory(globalMemory);
             if (toolRegistry != null) b.toolRegistry(toolRegistry);
             if (!tools.isEmpty()) b.tools(tools);
             if (thinkingConfig != null) b.thinkingConfig(thinkingConfig);
@@ -143,12 +150,15 @@ public final class MochaAgent implements Agent<String, String> {
             if (loop != null) b.agentLoop(loop);
             if (orchestrator != null) b.orchestrator(orchestrator);
             if (systemPrompt != null) b.systemPromptTemplate(PromptTemplate.of(systemPrompt));
+            if (permissionRules != null) b.permissionRules(permissionRules);
             Agent<String, String> agent = b.build();
             for (Faculty<String, String> f : faculties) agent = f.apply(agent);
-            // Wire memory plugin + global memory
+            // Wire memory plugin + global memory + interaction (ToolExecutor side)
             if (agent instanceof ReActAgent ra) {
                 if (memoryPlugin != null) ra.memory().withPlugin(memoryPlugin);
                 if (globalMemory) ra.memory().withGlobalMemory();
+                if (decisionPipeline != null) ra.toolExecutor().withPipeline(decisionPipeline);
+                if (approvalBroker != null) ra.toolExecutor().withBroker(approvalBroker);
             }
             return new MochaAgent(agent);
         }

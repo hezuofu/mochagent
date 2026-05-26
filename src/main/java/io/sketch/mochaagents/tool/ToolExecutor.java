@@ -27,6 +27,7 @@ public class ToolExecutor {
     private io.sketch.mochaagents.interaction.ApprovalBroker broker;
     private io.sketch.mochaagents.interaction.Session session;
     private io.sketch.mochaagents.agent.event.AgentEvents events;
+    private String sessionId = "default";
 
     public ToolExecutor(ToolRegistry registry, long timeoutMs, int maxRetries, long retryDelayMs) {
         this.registry = registry;
@@ -49,12 +50,21 @@ public class ToolExecutor {
     public ToolExecutor withEvents(io.sketch.mochaagents.agent.event.AgentEvents events) { this.events = events; return this; }
     /** Inject session for denial tracking. */
     public ToolExecutor withSession(io.sketch.mochaagents.interaction.Session session) { this.session = session; return this; }
+    /** Set current session ID (from AgentContext). */
+    public ToolExecutor withSessionId(String id) { this.sessionId = id != null ? id : "default"; return this; }
 
     public ToolResult execute(String toolName, Map<String, Object> arguments) {
         Tool tool = registry.get(toolName);
         if (tool == null) {
             log.warn("Tool '{}' not found", toolName);
             return ToolResult.Builder.failure(toolName, "Tool not found: " + toolName, null);
+        }
+
+        // Schema validation — Pydantic/Zod pattern: validate Map args against tool schema
+        ValidationResult validation = tool.validateInput(arguments);
+        if (!validation.isValid()) {
+            log.warn("Tool '{}' validation failed: {}", toolName, validation.getMessage());
+            return ToolResult.Builder.failure(toolName, "Validation failed: " + validation.getMessage(), null);
         }
 
         // Permission check — pipeline or simple rules
@@ -70,7 +80,6 @@ public class ToolExecutor {
                 return ToolResult.Builder.failure(toolName, "Permission denied: " + d.reason(), null);
             }
             if (decision instanceof io.sketch.mochaagents.interaction.Decision.Ask a && broker != null) {
-                String sessionId = "default"; // TODO: wire from AgentContext
                 var approval = broker.request(use, sessionId);
                 try {
                     decision = approval.get(30, java.util.concurrent.TimeUnit.SECONDS);

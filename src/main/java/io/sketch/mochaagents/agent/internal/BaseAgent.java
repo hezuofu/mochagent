@@ -6,6 +6,7 @@ package io.sketch.mochaagents.agent.internal;
 import io.sketch.mochaagents.agent.Agent;
 import io.sketch.mochaagents.agent.AgentContext;
 import io.sketch.mochaagents.agent.event.AgentEvent;
+import io.sketch.mochaagents.agent.event.AgentEvents;
 import io.sketch.mochaagents.agent.event.AgentListener;
 import io.sketch.mochaagents.agent.AgentMetadata;
 import io.sketch.mochaagents.agent.AgentState;
@@ -19,6 +20,8 @@ import io.sketch.mochaagents.reasoning.EffortLevel;
 import io.sketch.mochaagents.reasoning.RecoveryStateMachine;
 import io.sketch.mochaagents.reasoning.ThinkingConfig;
 import io.sketch.mochaagents.safety.SafetyManager;
+import io.sketch.mochaagents.tool.Hooks;
+import io.sketch.mochaagents.tool.ToolExecutor;
 import io.sketch.mochaagents.tool.ToolRegistry;
 
 import java.util.ArrayList;
@@ -51,13 +54,17 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
 
     protected final RecoveryStateMachine recovery;
     protected final io.sketch.mochaagents.observability.Observability observability;
+    protected final AgentEvents events = new AgentEvents();
+    protected final Hooks hooks = new Hooks();
+    protected final ToolExecutor toolExecutor;
     protected ThinkingConfig thinkingConfig;
     protected EffortLevel effortLevel;
 
     protected BaseAgent(Builder<I, O, ?> builder) {
         this.name = builder.name;
         this.description = builder.description;
-        this.toolRegistry = builder.toolRegistry;
+        this.toolRegistry = builder.toolRegistry != null
+                ? builder.toolRegistry : new ToolRegistry();
         this.safetyManager = builder.safetyManager;
         this.memoryManager = builder.memoryManager;
         this.recovery = new RecoveryStateMachine();
@@ -67,6 +74,8 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
                 ? builder.thinkingConfig : ThinkingConfig.adaptive();
         this.effortLevel = builder.effortLevel != null
                 ? builder.effortLevel : EffortLevel.HIGH;
+        this.toolExecutor = new ToolExecutor(this.toolRegistry, 60_000, 2, 500)
+                .withHooks(hooks).withEvents(events);
     }
 
     protected abstract O doExecute(I input, AgentContext ctx);
@@ -86,6 +95,17 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
             throw e;
         }
     }
+
+    // ── Generic infrastructure (available to all agent types) ──
+
+    /** Subscribe to agent lifecycle + tool events. Returns unsubscribe runnable. */
+    public Runnable onEvent(AgentEvents.Listener l) { return events.subscribe(l); }
+    public Hooks hooks() { return hooks; }
+    public ToolExecutor toolExecutor() { return toolExecutor; }
+    public AgentEvents events() { return events; }
+
+    /** Build system prompt — subclasses override to provide agent-specific instructions. */
+    public String buildSystemPrompt() { return ""; }
 
     // ── Metadata / listeners ──
 
@@ -144,7 +164,7 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
     private static final Pattern KV_PAIR = Pattern.compile("(\\w+)\\s*=\\s*\"([^\"]*)\"");
     private static final Pattern JSON_PAIR = Pattern.compile("\"(\\w+)\"\\s*:\\s*\"([^\"]*)\"");
 
-    protected record ParsedAction(String name, Map<String, Object> arguments) {
+    public record ParsedAction(String name, Map<String, Object> arguments) {
         public boolean isFinalAnswer() { return "final_answer".equals(name); }
     }
 
@@ -199,18 +219,45 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
     }
 
     protected <T> T withLlmRetry(java.util.function.Supplier<T> call, String step) {
+        return withLlmRetry(call, step, 3);
+    }
+
+    /** Differentiated retry — hermes-agent pattern: vary backoff by error type. */
+    protected <T> T withLlmRetry(java.util.function.Supplier<T> call, String step, int maxRetries) {
         RuntimeException last = null;
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < maxRetries; i++) {
             try { return call.get(); }
-            catch (RuntimeException e) {
+            catch (io.sketch.mochaagents.MochaException.LlmException e) {
                 last = e;
-                if (i < 2) {
-                    try { Thread.sleep(1000L * (i + 1)); }
-                    catch (InterruptedException ie) { Thread.currentThread().interrupt(); throw e; }
+                int code = e.statusCode();
+                if (code >= 400 && code < 500 && code != 429) {
+                    // Client errors (4xx non-rate-limit) — don't retry, won't fix itself
+                    throw e;
+                }
+                if (i < maxRetries - 1) {
+                    long delay = code == 429 ? 5000L : (long) (1000 * Math.pow(2, i));
+                    org.slf4j.LoggerFactory.getLogger(BaseAgent.class)
+                            .warn("{} attempt {}/{} failed (HTTP {}): {}. Retrying in {}ms",
+                                    step, i + 1, maxRetries, code, e.getMessage(), delay);
+                    sleep(delay);
+                }
+            } catch (RuntimeException e) {
+                last = e;
+                if (i < maxRetries - 1) {
+                    long delay = 1000L * (i + 1);
+                    org.slf4j.LoggerFactory.getLogger(BaseAgent.class)
+                            .warn("{} attempt {}/{} failed: {}. Retrying in {}ms",
+                                    step, i + 1, maxRetries, e.getMessage(), delay);
+                    sleep(delay);
                 }
             }
         }
         throw last;
+    }
+
+    private static void sleep(long ms) {
+        try { Thread.sleep(ms); }
+        catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
     }
 
     // ── Builder ──

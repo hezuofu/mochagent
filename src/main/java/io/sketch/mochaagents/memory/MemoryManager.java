@@ -5,9 +5,11 @@ package io.sketch.mochaagents.memory;
 
 import io.sketch.mochaagents.agent.loop.step.*;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -33,6 +35,10 @@ public class MemoryManager {
     public List<MemoryStep> steps() { return Collections.unmodifiableList(steps); }
     public int stepCount() { return steps.size(); }
     public void reset(String sp) { steps.clear(); this.systemPrompt = sp; }
+    /** Replace a step at given index (for compaction operations). */
+    public void replaceStep(int index, MemoryStep step) {
+        if (index >= 0 && index < steps.size()) steps.set(index, step);
+    }
     public void setSystemPrompt(String sp) { this.systemPrompt = sp; }
     public String systemPrompt() { return systemPrompt; }
     public boolean hasFinalAnswer() { return steps.stream().anyMatch(s -> s instanceof ContentStep cs && cs.isFinalAnswer()); }
@@ -99,8 +105,39 @@ public class MemoryManager {
         return this;
     }
 
+    /** Resume an existing session — loads transcript into memory steps. */
+    public MemoryManager resumeSession(String sessionId, String cwd, String userId) {
+        try {
+            // Load session metadata and transcript
+            Path dir = sessionStore.projectDir(cwd);
+            Path metaFile = dir.resolve(sessionId + ".meta.json");
+            if (!Files.exists(metaFile)) {
+                // Session not found, start fresh
+                return startSession(cwd, userId);
+            }
+            currentSession = loadSessionMeta(metaFile);
+            // Inject transcript into memory steps for context
+            sessionStore.injectTranscriptToMemory(currentSession, this);
+        } catch (IOException e) { /* fall through — start fresh */ }
+        return this;
+    }
+
+    private SessionStore.Session loadSessionMeta(Path metaFile) throws IOException {
+        @SuppressWarnings("unchecked")
+        Map<String, Object> m = new com.fasterxml.jackson.databind.ObjectMapper().readValue(metaFile.toFile(), Map.class);
+        String id = (String) m.get("id");
+        String userId = (String) m.getOrDefault("userId", "unknown");
+        String cwd = (String) m.getOrDefault("cwd", ".");
+        Path transcript = metaFile.resolveSibling(id + ".jsonl");
+        Instant started = Instant.parse((String) m.get("startedAt"));
+        return new SessionStore.Session(id, userId, cwd, metaFile, transcript, started);
+    }
+
     public void appendToSession(String role, String content) {
-        if (currentSession != null) sessionStore.append(currentSession, role, content);
+        if (currentSession != null) {
+            sessionStore.append(currentSession, role, content);
+            currentSession.incrementMessageCount();
+        }
     }
 
     public List<SessionStore.SessionMeta> listSessions(String cwd) {
@@ -114,4 +151,53 @@ public class MemoryManager {
     }
 
     public SessionStore.Session currentSession() { return currentSession; }
+    public SessionStore sessionStore() { return sessionStore; }
+
+    // ── Session metadata helpers ──
+
+    /** Generate a short title for the current session using the model. */
+    public String generateTitle(io.sketch.mochaagents.model.Model model) {
+        if (currentSession == null) return null;
+        // Extract first user message + first assistant response for context
+        String firstUser = "", firstAssistant = "";
+        for (var step : steps) {
+            if (step instanceof ContentStep cs && cs.isTask() && firstUser.isEmpty())
+                firstUser = cs.text();
+            else if (step instanceof ActionStep as && firstAssistant.isEmpty())
+                firstAssistant = as.modelOutput();
+        }
+        if (firstUser.isEmpty()) return null;
+
+        String prompt = "Generate a SHORT title (max 6 words) for a conversation that starts with:\n"
+                + "User: " + (firstUser.length() > 200 ? firstUser.substring(0, 200) + "..." : firstUser) + "\n"
+                + (firstAssistant.isEmpty() ? "" : "Assistant: " + (firstAssistant.length() > 200 ? firstAssistant.substring(0, 200) + "..." : firstAssistant) + "\n")
+                + "\nTitle:";
+        try {
+            var req = io.sketch.mochaagents.model.ModelRequest.builder()
+                    .prompt(prompt).maxTokens(32).temperature(0.3).build();
+            var resp = model.complete(req);
+            String title = resp.content().trim().replaceAll("^[\"']|[\"']$", "");
+            if (title.length() > 80) title = title.substring(0, 80);
+            sessionStore.updateMeta(currentSession, title, null);
+            return title;
+        } catch (Exception e) { return null; }
+    }
+
+    /** Finalize session — persist metadata including token/cost stats. */
+    public void endSession(long totalInputTokens, long totalOutputTokens, double estimatedCost) {
+        if (currentSession == null) return;
+        try {
+            // Re-read existing meta, update with stats
+            @SuppressWarnings("unchecked")
+            Map<String, Object> meta = new com.fasterxml.jackson.databind.ObjectMapper()
+                    .readValue(currentSession.meta().toFile(), Map.class);
+            meta.put("endedAt", java.time.Instant.now().toString());
+            meta.put("messageCount", currentSession.messageCount());
+            meta.put("inputTokens", totalInputTokens);
+            meta.put("outputTokens", totalOutputTokens);
+            meta.put("estimatedCost", estimatedCost);
+            new com.fasterxml.jackson.databind.ObjectMapper()
+                    .writeValue(currentSession.meta().toFile(), meta);
+        } catch (IOException e) { /* best-effort */ }
+    }
 }

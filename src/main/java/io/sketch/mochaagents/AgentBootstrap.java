@@ -45,10 +45,10 @@ public final class AgentBootstrap {
     public MochaAgent buildAgent(String name) {
         var builder = MochaAgent.builder(name, model)
                 .toolRegistry(toolRegistry)
-                .globalMemory(true);
-        if (decisionPipeline != null && permissionRules != null) {
-            // Pipeline will be wired via toolExecutor after build
-        }
+                .globalMemory(true)
+                .permissionRules(permissionRules)
+                .decisionPipeline(decisionPipeline)
+                .approvalBroker(approvalBroker);
         return builder.build();
     }
 
@@ -56,10 +56,6 @@ public final class AgentBootstrap {
     public String run(String task) {
         return buildAgent("mocha").run(task);
     }
-
-    /** @deprecated sub-agents are spawned via AgentTool registered in ToolRegistry */
-    @Deprecated
-    public io.sketch.mochaagents.tool.internal.AgentTool agentTool() { return null; }
 
     public io.sketch.mochaagents.plugin.PluginBootstrap pluginBootstrap() {
         return io.sketch.mochaagents.plugin.PluginBootstrap.bootstrap(
