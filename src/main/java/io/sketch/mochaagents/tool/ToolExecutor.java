@@ -3,6 +3,14 @@
 
 package io.sketch.mochaagents.tool;
 
+import io.sketch.mochaagents.event.AgentEvents;
+import io.sketch.mochaagents.event.EventBus;
+import io.sketch.mochaagents.interaction.ApprovalBroker;
+import io.sketch.mochaagents.interaction.Decision;
+import io.sketch.mochaagents.interaction.DecisionPipeline;
+import io.sketch.mochaagents.interaction.PermissionRules;
+import io.sketch.mochaagents.interaction.Session;
+import io.sketch.mochaagents.interaction.ToolUse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,12 +35,12 @@ public class ToolExecutor {
     private final long timeoutMs;
     private final int maxRetries;
     private final long retryDelayMs;
-    private io.sketch.mochaagents.tool.Hooks hooks;
-    private io.sketch.mochaagents.interaction.PermissionRules permissions;
-    private io.sketch.mochaagents.interaction.DecisionPipeline pipeline;
-    private io.sketch.mochaagents.interaction.ApprovalBroker broker;
-    private io.sketch.mochaagents.interaction.Session session;
-    private io.sketch.mochaagents.event.EventBus events;
+    private Hooks hooks;
+    private PermissionRules permissions;
+    private DecisionPipeline pipeline;
+    private ApprovalBroker broker;
+    private Session session;
+    private EventBus events;
     private String sessionId = "default";
 
     public ToolExecutor(ToolRegistry registry, long timeoutMs, int maxRetries, long retryDelayMs) {
@@ -44,18 +52,12 @@ public class ToolExecutor {
 
     public ToolExecutor(ToolRegistry registry) { this(registry, 60_000, 2, 500); }
 
-    /** Inject hooks for pre/post tool interception. */
-    public ToolExecutor withHooks(io.sketch.mochaagents.tool.Hooks hooks) { this.hooks = hooks; return this; }
-    /** Inject permission rules for tool gating. */
-    public ToolExecutor withPermissions(io.sketch.mochaagents.interaction.PermissionRules permissions) { this.permissions = permissions; return this; }
-    /** Inject decision pipeline (rules + safety + mode). */
-    public ToolExecutor withPipeline(io.sketch.mochaagents.interaction.DecisionPipeline pipeline) { this.pipeline = pipeline; return this; }
-    /** Inject approval broker for ASK decisions. */
-    public ToolExecutor withBroker(io.sketch.mochaagents.interaction.ApprovalBroker broker) { this.broker = broker; return this; }
-    /** Inject event bus for real-time tool call notifications (diff display etc.). */
-    public ToolExecutor withEvents(io.sketch.mochaagents.event.EventBus events) { this.events = events; return this; }
-    /** Inject session for denial tracking. */
-    public ToolExecutor withSession(io.sketch.mochaagents.interaction.Session session) { this.session = session; return this; }
+    public ToolExecutor withHooks(Hooks hooks) { this.hooks = hooks; return this; }
+    public ToolExecutor withPermissions(PermissionRules permissions) { this.permissions = permissions; return this; }
+    public ToolExecutor withPipeline(DecisionPipeline pipeline) { this.pipeline = pipeline; return this; }
+    public ToolExecutor withBroker(ApprovalBroker broker) { this.broker = broker; return this; }
+    public ToolExecutor withEvents(EventBus events) { this.events = events; return this; }
+    public ToolExecutor withSession(Session session) { this.session = session; return this; }
     /** Set current session ID (from AgentContext). */
     public ToolExecutor withSessionId(String id) { this.sessionId = id != null ? id : "default"; return this; }
 
@@ -75,21 +77,21 @@ public class ToolExecutor {
 
         // Permission check — pipeline or simple rules
         if (pipeline != null && permissions != null) {
-            var use = new io.sketch.mochaagents.interaction.ToolUse(toolName, arguments);
+            var use = new ToolUse(toolName, arguments);
             var decision = pipeline.evaluate(use, permissions);
-            if (decision instanceof io.sketch.mochaagents.interaction.Decision.HardDeny hd) {
+            if (decision instanceof Decision.HardDeny hd) {
                 return ToolResult.Builder.failure(toolName, "BLOCKED: " + hd.reason(), null);
             }
-            if (decision instanceof io.sketch.mochaagents.interaction.Decision.Deny d) {
+            if (decision instanceof Decision.Deny d) {
                 if (session != null && session.recordDenial(toolName))
                     log.warn("Tool '{}' blocked: max denials reached", toolName);
                 return ToolResult.Builder.failure(toolName, "Permission denied: " + d.reason(), null);
             }
-            if (decision instanceof io.sketch.mochaagents.interaction.Decision.Ask a && broker != null) {
+            if (decision instanceof Decision.Ask a && broker != null) {
                 var approval = broker.request(use, sessionId);
                 try {
-                    decision = approval.get(30, java.util.concurrent.TimeUnit.SECONDS);
-                    if (decision instanceof io.sketch.mochaagents.interaction.Decision.Deny d)
+                    decision = approval.get(30, TimeUnit.SECONDS);
+                    if (decision instanceof Decision.Deny d)
                         return ToolResult.Builder.failure(toolName, "User denied: " + d.reason(), null);
                 } catch (Exception e) {
                     return ToolResult.Builder.failure(toolName, "Approval failed: " + e.getMessage(), null);
@@ -125,9 +127,12 @@ public class ToolExecutor {
                 // Fire tool call event for real-time display (diff etc.)
                 if (events != null) {
                     Map<String, Object> eventData = buildToolEventData(toolName, arguments, result, elapsed);
-                    events.post(new io.sketch.mochaagents.event.AgentEvents.ToolCalled(
-                            toolName, "agent", eventData.get("arguments") instanceof Map ? (Map) eventData.get("arguments") : Map.of(),
-                            eventData.get("result"), elapsed));
+                    Object rawArgs = eventData.get("arguments");
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> args = rawArgs instanceof Map<?,?> m
+                            ? (Map<String, Object>) m : Map.of();
+                    events.post(new AgentEvents.ToolCalled(
+                            toolName, "agent", args, eventData.get("result"), elapsed));
                 }
                 return ToolResult.Builder.success(toolName, result, elapsed);
 
