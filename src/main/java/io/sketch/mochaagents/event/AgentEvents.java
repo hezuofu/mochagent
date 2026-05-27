@@ -87,4 +87,11 @@ public final class AgentEvents {
 
     /** A memory record was persisted. */
     public record MemorySaved(String memoryId, String type, String content, double importance) {}
+
+    /** Task lifecycle event (orchestration). */
+    public record TaskStatusChanged(String taskId, String status, Object data, long elapsedMs, Instant timestamp) {
+        public TaskStatusChanged(String taskId, String status, Object data, long elapsedMs) {
+            this(taskId, status, data, elapsedMs, Instant.now());
+        }
+    }
 }

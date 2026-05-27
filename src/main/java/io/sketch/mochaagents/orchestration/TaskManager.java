@@ -75,20 +75,20 @@ public final class TaskManager {
         executor.submit(() -> {
             updateStatus(id, TaskStatus.RUNNING);
             notifyListeners(state);
-            fireEvent(io.sketch.mochaagents.event.EventType.STARTED, id, description);
+            postTaskEvent("STARTED", id, description);
             try {
                 T result = work.get();
                 state.result = result;
                 state.endTime = System.currentTimeMillis();
                 updateStatus(id, TaskStatus.COMPLETED);
                 task.future.complete(result);
-                fireEvent(io.sketch.mochaagents.event.EventType.COMPLETED, id, result);
+                postTaskEvent("COMPLETED", id, result);
             } catch (Exception e) {
                 state.error = e.getMessage();
                 state.endTime = System.currentTimeMillis();
                 updateStatus(id, TaskStatus.FAILED);
                 task.future.completeExceptionally(e);
-                fireEvent(io.sketch.mochaagents.event.EventType.ERROR, id, e.getMessage());
+                postTaskEvent("ERROR", id, e.getMessage());
                 log.error("Task '{}' failed: {}", id, e.getMessage());
             }
             notifyListeners(state);
@@ -190,9 +190,9 @@ public final class TaskManager {
         if (s != null) { s.status = newStatus; s.endTime = System.currentTimeMillis(); }
     }
 
-    private void fireEvent(io.sketch.mochaagents.event.EventType type, String id, Object data) {
-        if (eventBus != null) eventBus.fire(
-                new io.sketch.mochaagents.event.AgentEvent(type, id, data, 0));
+    private void postTaskEvent(String status, String id, Object data) {
+        if (eventBus != null) eventBus.post(
+                new io.sketch.mochaagents.event.AgentEvents.TaskStatusChanged(id, status, data, 0));
     }
 
     private void notifyListeners(TaskState state) {

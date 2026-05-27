@@ -9,37 +9,82 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class EventBusTest {
 
-    @Test void firesEventsToSubscribers() {
+    @Test void typedEventsDispatchToSubscribers() {
         var bus = new EventBus();
         var count = new AtomicInteger();
-        bus.subscribe(e -> count.incrementAndGet());
-        bus.fire(new AgentEvent(EventType.TOOL_CALL, "agent1", "data", 42));
+        bus.on(TestEvent.class, e -> count.incrementAndGet());
+        bus.post(new TestEvent("data"));
         assertEquals(1, count.get());
     }
 
     @Test void unsubscribeStopsReceiving() {
         var bus = new EventBus();
         var count = new AtomicInteger();
-        var unsub = bus.subscribe(e -> count.incrementAndGet());
-        bus.fire(new AgentEvent(EventType.STARTED, "a", null, 0));
+        var unsub = bus.on(TestEvent.class, e -> count.incrementAndGet());
+        bus.post(new TestEvent("first"));
         unsub.run();
-        bus.fire(new AgentEvent(EventType.STARTED, "a", null, 0));
+        bus.post(new TestEvent("second"));
         assertEquals(1, count.get());
     }
 
     @Test void multipleSubscribersAllFire() {
         var bus = new EventBus();
         var c1 = new AtomicInteger(); var c2 = new AtomicInteger();
-        bus.subscribe(e -> c1.incrementAndGet());
-        bus.subscribe(e -> c2.incrementAndGet());
-        bus.fire(new AgentEvent(EventType.ERROR, "a", "err", 0));
+        bus.on(TestEvent.class, e -> c1.incrementAndGet());
+        bus.on(TestEvent.class, e -> c2.incrementAndGet());
+        bus.post(new TestEvent("x"));
         assertEquals(1, c1.get());
         assertEquals(1, c2.get());
     }
 
-    @Test void eventTypeFiltering() {
-        var event = new AgentEvent(EventType.MODEL_CALL, "a", null, 0);
-        assertTrue(event.is(EventType.MODEL_CALL));
-        assertFalse(event.is(EventType.TOOL_CALL));
+    @Test void registerSubscriberWithAnnotation() {
+        var bus = new EventBus();
+        var count = new AtomicInteger();
+        bus.register(new Object() {
+            @Subscribe
+            void handle(TestEvent e) { count.incrementAndGet(); }
+        });
+        bus.post(new TestEvent("hello"));
+        assertEquals(1, count.get());
     }
+
+    @Test void differentEventTypesAreNotCrossDispatched() {
+        var bus = new EventBus();
+        var count = new AtomicInteger();
+        bus.on(TestEvent.class, e -> count.incrementAndGet());
+        bus.post(new OtherEvent("other"));
+        assertEquals(0, count.get(), "OtherEvent should not trigger TestEvent handler");
+    }
+
+    @Test void supertypeDispatchViaAssignable() {
+        var bus = new EventBus();
+        var count = new AtomicInteger();
+        // Register for parent type
+        bus.register(new Object() {
+            @Subscribe
+            void handle(TestEvent e) { count.incrementAndGet(); }
+        });
+        // Post subtype
+        bus.post(new TestEventSub("child"));
+        assertEquals(1, count.get());
+    }
+
+    @Test void onDeadEventFiresWhenNoHandler() {
+        var bus = new EventBus();
+        var dead = new AtomicInteger();
+        bus.onDeadEvent(e -> dead.incrementAndGet());
+        bus.post(new OtherEvent("no-handler"));
+        assertEquals(1, dead.get());
+    }
+
+    // ── Test event types ──
+
+    static class TestEvent {
+        final String payload;
+        TestEvent(String p) { this.payload = p; }
+    }
+    static class TestEventSub extends TestEvent {
+        TestEventSub(String p) { super(p); }
+    }
+    record OtherEvent(String payload) {}
 }

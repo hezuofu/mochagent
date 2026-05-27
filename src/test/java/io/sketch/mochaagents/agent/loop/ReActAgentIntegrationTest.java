@@ -117,12 +117,17 @@ class ReActAgentIntegrationTest {
                 .name("full-pipeline").model(echoLlm("Action: final_answer(answer=\"passed\")"))
                 .maxSteps(2).build();
 
-        // Subscribe to events
+        // Subscribe to typed events
         AtomicInteger eventCount = new AtomicInteger();
-        agent.onEvent(e -> eventCount.incrementAndGet());
+        var bus = agent.events();
+        var s1 = bus.on(io.sketch.mochaagents.event.AgentEvents.Started.class,
+                e -> eventCount.incrementAndGet());
+        var s2 = bus.on(io.sketch.mochaagents.event.AgentEvents.Completed.class,
+                e -> eventCount.incrementAndGet());
 
         // Run
         ExecutionReport report = agent.runAndReport("integration test");
+        s1.run(); s2.run();
         assertNotNull(report.result());
         assertTrue(report.steps() >= 1);
         assertTrue(report.durationMs() >= 0);

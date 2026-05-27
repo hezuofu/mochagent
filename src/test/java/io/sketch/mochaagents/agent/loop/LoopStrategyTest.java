@@ -6,7 +6,6 @@ package io.sketch.mochaagents.agent.loop;
 import io.sketch.mochaagents.agent.event.AgentEvent;
 import io.sketch.mochaagents.memory.MemoryManager;
 import io.sketch.mochaagents.memory.MemoryProvider;
-import io.sketch.mochaagents.agent.event.AgentEvents;
 import io.sketch.mochaagents.agent.event.AgentListener;
 
 import io.sketch.mochaagents.agent.Agent;

@@ -76,16 +76,18 @@ public final class AgentBootstrap {
         return this;
     }
 
+    private io.sketch.mochaagents.tool.mcp.StdioMcpClient mcpClient;
+
     public AgentBootstrap withMcp() {
         String servers = System.getenv("MCP_SERVERS");
         if (servers != null && !servers.isEmpty()) {
-            var mcp = new io.sketch.mochaagents.tool.mcp.StdioMcpClient();
+            mcpClient = new io.sketch.mochaagents.tool.mcp.StdioMcpClient();
             for (String cmd : servers.split(",")) {
                 cmd = cmd.trim();
                 if (!cmd.isEmpty()) {
-                    mcp.connect(cmd);
-                    if (mcp.isConnected())
-                        for (var t : mcp.discoverTools()) toolRegistry.register(t);
+                    mcpClient.connect(cmd);
+                    if (mcpClient.isConnected())
+                        for (var t : mcpClient.discoverTools()) toolRegistry.register(t);
                 }
             }
         }

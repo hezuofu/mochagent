@@ -66,7 +66,7 @@ public final class MochaAgent implements Agent<String, String> {
     private ReActAgent ra() { return (ReActAgent) inner; }
 
     public io.sketch.mochaagents.memory.MemoryManager memory() { return ra().memory(); }
-    public Runnable onEvent(io.sketch.mochaagents.event.EventBus.EventListener l) { return ra().onEvent(l); }
+    public io.sketch.mochaagents.event.EventBus events() { return ra().events(); }
     public void autoCompact() { ra().autoCompact(); }
     public void invalidateMessageCaches() { ra().invalidateMessageCaches(); }
     public io.sketch.mochaagents.tool.Hooks hooks() { return ra().hooks(); }

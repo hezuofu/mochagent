@@ -15,8 +15,7 @@ import java.util.function.Consumer;
 /**
  * Guava-style EventBus — typed events, &#64;Subscribe dispatch, async support.
  *
- * <p>Unlike the simple {@link io.sketch.mochaagents.agent.event.AgentEvents}
- * (single callback, manual type filtering), this bus dispatches by event class:
+ * <p>Dispatches by event class — each handler receives only its declared type:
  *
  * <pre>{@code
  * var bus = new EventBus();
@@ -44,15 +43,17 @@ public class EventBus {
     private final boolean async;
     private Consumer<Object> deadEventHandler;
 
-    public EventBus() {
-        this(Executors.newFixedThreadPool(2, r -> {
+    /** Synchronous EventBus — handlers run on posting thread (Guava default). */
+    public EventBus() { this(null, false); }
+
+    /** Async EventBus with daemon thread pool. */
+    public static EventBus async() { return new EventBus(Executors.newFixedThreadPool(2, r -> {
             Thread t = new Thread(r, "event-bus");
             t.setDaemon(true);
             return t;
-        }), true);
-    }
+        }), true); }
 
-    /** Synchronous EventBus — handlers run on posting thread. */
+    /** Sync EventBus — explicit factory. */
     public static EventBus sync() { return new EventBus(null, false); }
 
     /** Async EventBus with custom executor. */
@@ -91,41 +92,27 @@ public class EventBus {
     }
 
     /** Convenience: register a lambda for a specific event type. */
+    @SuppressWarnings("unchecked")
     public <T> Runnable on(Class<T> eventType, Consumer<T> handler) {
-        Object sub = new Object() {
-            @Subscribe void handle(T event) { handler.accept(event); }
-        };
-        register(sub);
-        return () -> unregister(sub);
+        Handler h = new Handler((Consumer<Object>) handler, !async);
+        List<Handler> list = handlers.computeIfAbsent(eventType, k -> new CopyOnWriteArrayList<>());
+        list.add(h);
+        return () -> list.remove(h);
     }
 
     // ── Post ──
 
-    /** Post an event — dispatched to all matching handlers by type. */
+    /** Post an event — dispatched to handlers registered for the event's type or supertypes. */
     public void post(Object event) {
         boolean handled = false;
-        Class<?> eventClass = event.getClass();
+        Class<?> type = event.getClass();
 
-        // Walk class hierarchy (exact match)
-        Class<?> type = eventClass;
+        // Walk class hierarchy: exact class → superclass → interfaces
         while (type != null && type != Object.class) {
             if (dispatchTo(type, event)) handled = true;
             for (Class<?> iface : type.getInterfaces())
                 if (dispatchTo(iface, event)) handled = true;
             type = type.getSuperclass();
-        }
-
-        // Also check registered types for assignable match (backward compat:
-        // a Started event should trigger listeners registered for AgentEvent supertype)
-        for (var entry : handlers.entrySet()) {
-            if (entry.getKey().isAssignableFrom(eventClass) && entry.getKey() != eventClass) {
-                // Only if not already dispatched above (exact class chain)
-                List<Handler> list = entry.getValue();
-                if (list != null) {
-                    for (Handler h : list) dispatch(h, event);
-                    handled = true;
-                }
-            }
         }
 
         if (!handled && deadEventHandler != null) {
@@ -148,13 +135,18 @@ public class EventBus {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void invoke(Handler h, Object event) {
         try {
-            h.method.invoke(h.subscriber, event);
+            if (h.method != null) {
+                h.method.invoke(h.subscriber, event);
+            } else if (h.consumer != null) {
+                ((Consumer<Object>) h.consumer).accept(event);
+            }
         } catch (InvocationTargetException e) {
             log.error("Event handler {} failed: {}", h.method.getName(), e.getCause().getMessage());
         } catch (Exception e) {
-            log.error("Event handler {} error: {}", h.method.getName(), e.getMessage());
+            log.error("Event handler error: {}", e.getMessage());
         }
     }
 
@@ -162,23 +154,6 @@ public class EventBus {
 
     /** Handle events that have no subscribers. */
     public void onDeadEvent(Consumer<Object> handler) { this.deadEventHandler = handler; }
-
-    // ── Backward-compat API (old AgentEvent/EventListener pattern) ──
-
-    /** @deprecated Use post(Object) with typed event records instead. */
-    @Deprecated
-    public void fire(AgentEvent e) { post(e); }
-
-    /** @deprecated Use register(Object) with &#64;Subscribe methods instead. */
-    @Deprecated
-    public Runnable subscribe(EventListener l) {
-        Object sub = new Object() {
-            @Subscribe(sync = true)
-            void handle(AgentEvent e) { l.onEvent(e); }
-        };
-        register(sub);
-        return () -> unregister(sub);
-    }
 
     // ── Shutdown ──
 
@@ -190,14 +165,18 @@ public class EventBus {
         }
     }
 
-    // ── Legacy types ──
-
-    @FunctionalInterface
-    public interface EventListener {
-        void onEvent(AgentEvent event);
-    }
-
     // ── Internal ──
 
-    private record Handler(Object subscriber, Method method, boolean sync) {}
+    private static class Handler {
+        final Object subscriber;
+        final Method method;
+        final boolean sync;
+        final Consumer<Object> consumer;
+        Handler(Object subscriber, Method method, boolean sync) {
+            this.subscriber = subscriber; this.method = method; this.sync = sync; this.consumer = null;
+        }
+        Handler(Consumer<Object> consumer, boolean sync) {
+            this.subscriber = null; this.method = null; this.sync = sync; this.consumer = consumer;
+        }
+    }
 }

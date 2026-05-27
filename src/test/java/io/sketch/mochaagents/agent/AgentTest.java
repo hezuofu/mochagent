@@ -3,7 +3,6 @@
 
 package io.sketch.mochaagents.agent;
 import io.sketch.mochaagents.agent.event.AgentEvent;
-import io.sketch.mochaagents.agent.event.AgentEvents;
 import io.sketch.mochaagents.agent.event.AgentListener;
 
 import org.junit.jupiter.api.Test;

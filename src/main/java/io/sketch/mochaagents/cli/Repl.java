@@ -6,9 +6,8 @@ package io.sketch.mochaagents.cli;
 import io.sketch.mochaagents.AgentBootstrap;
 import io.sketch.mochaagents.agent.loop.ToolCallingAgent;
 import io.sketch.mochaagents.agent.loop.PlanMode;
-import io.sketch.mochaagents.event.EventBus;
+import io.sketch.mochaagents.event.AgentEvents;
 import io.sketch.mochaagents.model.Model;
-import static io.sketch.mochaagents.event.EventType.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -167,59 +166,38 @@ final class Repl implements CliCommand {
             var a = agent();
             currentRunHasDiff = false;
 
-            // Real-time event display (claude-code style)
-            var unsub = a.onEvent(e -> {
-                var ae = (io.sketch.mochaagents.event.AgentEvent) e;
-                switch (ae.type()) {
-                    case STARTED ->
-                        out.print(dim("  Thinking"));
-                    case TOOL_CALL -> {
-                        @SuppressWarnings("unchecked")
-                        Map<String, Object> d = (Map<String, Object>) ae.data();
-                        String toolName = (String) d.get("toolName");
-                        String file = (String) d.get("file");
-                        if (file != null) {
-                            // File-modifying tool — show diff immediately
-                            if (!currentRunHasDiff) { out.println(); currentRunHasDiff = true; }
-                            String type = (String) d.getOrDefault("type", "modify");
-                            out.print("  " + dim("│ ") + colorForType(type) + " " + bold(file));
-                            long elapsed = e.elapsedMs();
-                            out.println(dim("  (" + elapsed + "ms)"));
-                            // Show diff content inline
-                            String oldContent = (String) d.get("oldContent");
-                            String newContent = (String) d.get("newContent");
-                            if (newContent != null) {
-                                showInlineDiff(oldContent, newContent);
-                            }
-                            // Track for summary
-                            pendingChanges.add(new FileChange(file,
-                                    oldContent, newContent, type, ZonedDateTime.now()));
-                        } else {
-                            // Non-file tool — brief notification
-                            if (!currentRunHasDiff) out.print(".");
-                        }
-                    }
-                    case COST -> {
-                        double[] c = (double[]) ae.data();
-                        sessionCost += c[0];
-                        sessionInputTokens += (long) c[1];
-                        sessionOutputTokens += (long) c[2];
-                    }
-                    case COMPLETED -> {
-                        long elapsed = ae.elapsedMs();
-                        if (currentRunHasDiff) {
-                            out.println(dim("  │"));
-                        }
-                        out.println(dim("  ✓ " + elapsed + "ms | $"
-                                + String.format("%.4f", sessionCost)
-                                + " | " + formatTokens(sessionInputTokens) + " in / "
-                                + formatTokens(sessionOutputTokens) + " out"));
-                    }
+            // Real-time event display via typed subscriptions
+            var bus = a.events();
+            var unsubs = new ArrayList<Runnable>();
+            unsubs.add(bus.on(AgentEvents.Started.class,
+                    e -> out.print(dim("  Thinking"))));
+            unsubs.add(bus.on(AgentEvents.ToolCalled.class, e -> {
+                String file = e.file();
+                if (file != null) {
+                    if (!currentRunHasDiff) { out.println(); currentRunHasDiff = true; }
+                    out.print("  " + dim("│ ") + colorForType("modify") + " " + bold(file));
+                    out.println(dim("  (" + e.elapsedMs() + "ms)"));
+                    String oldContent = (String) e.arguments().get("old_content");
+                    String newContent = (String) e.arguments().get("content");
+                    if (newContent != null) showInlineDiff(oldContent, newContent);
+                    pendingChanges.add(new FileChange(file, oldContent, newContent, "modify", ZonedDateTime.now()));
+                } else {
+                    if (!currentRunHasDiff) out.print(".");
                 }
-            });
+            }));
+            unsubs.add(bus.on(AgentEvents.Completed.class, e -> {
+                if (currentRunHasDiff) out.println(dim("  │"));
+                sessionCost += e.estimatedCost();
+                sessionInputTokens += e.inputTokens();
+                sessionOutputTokens += e.outputTokens();
+                out.println(dim("  ✓ " + e.elapsedMs() + "ms | $"
+                        + String.format("%.4f", sessionCost)
+                        + " | " + formatTokens(sessionInputTokens) + " in / "
+                        + formatTokens(sessionOutputTokens) + " out"));
+            }));
 
             String result = a.run(task);
-            unsub.run();
+            unsubs.forEach(Runnable::run);
 
             // Auto-generate session title after first exchange
             if (!titleGenerated) {
@@ -447,10 +425,23 @@ final class Repl implements CliCommand {
 
     private void showStatus() {
         out.println(bold("Agent:") + " " + (agent != null ? agent.metadata().name() : "not loaded"));
-        out.println(bold("Tools:") + " " + (bootstrap != null ? bootstrap.toolRegistry().size() : 0));
-        out.println(bold("Plan mode:") + " " + (planMode != null && planMode.isReadOnly() ? "active" : "inactive"));
-        out.println(bold("Session:") + " $" + String.format("%.4f", sessionCost)
-                + " | " + formatTokens(sessionInputTokens + sessionOutputTokens) + " tokens");
+        out.println(bold("Model:") + " " + (model != null ? green(model.modelName()) : dim("none")));
+        out.println(bold("Tools:") + " " + (bootstrap != null ? bootstrap.toolRegistry().size() : 0)
+                + " | " + bold("Plan:") + " " + (planMode != null && planMode.isReadOnly() ? yellow("active") : dim("inactive")));
+
+        if (agent != null) {
+            var mem = agent.memory();
+            var session = mem.currentSession();
+            out.println(bold("Session:") + " " + (session != null ? dim(session.id().substring(0, 8) + "...") : dim("none"))
+                    + " | " + bold("Steps:") + " " + mem.stepCount()
+                    + " | " + bold("Turns:") + " " + mem.maxStepNumber());
+            out.println(bold("Memory:") + " " + mem.store().size() + " records"
+                    + " | " + bold("Undo:") + " " + io.sketch.mochaagents.tool.FileHistory.getInstance().size() + " snapshots"
+                    + " | " + bold("Changes:") + " " + pendingChanges.size() + " pending");
+        }
+        out.println(bold("Cost:") + " $" + String.format("%.4f", sessionCost)
+                + " | " + formatTokens(sessionInputTokens) + " in / " + formatTokens(sessionOutputTokens) + " out"
+                + " (" + formatTokens(sessionInputTokens + sessionOutputTokens) + " total)");
     }
 
     private void showTools() {

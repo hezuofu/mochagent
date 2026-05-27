@@ -54,7 +54,7 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
 
     protected final RecoveryStateMachine recovery;
     protected final io.sketch.mochaagents.observability.Observability observability;
-    protected final EventBus events = new EventBus();
+    protected final EventBus events = EventBus.async();
     protected final Hooks hooks = new Hooks();
     protected final ToolExecutor toolExecutor;
     protected ThinkingConfig thinkingConfig;
@@ -98,8 +98,6 @@ public abstract class BaseAgent<I, O> implements Agent<I, O> {
 
     // ── Generic infrastructure (available to all agent types) ──
 
-    /** Subscribe to agent lifecycle + tool events. Returns unsubscribe runnable. */
-    public Runnable onEvent(EventBus.EventListener l) { return events.subscribe(l); }
     public Hooks hooks() { return hooks; }
     public ToolExecutor toolExecutor() { return toolExecutor; }
     public EventBus events() { return events; }

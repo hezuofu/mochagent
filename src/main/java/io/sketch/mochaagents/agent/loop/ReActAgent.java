@@ -381,7 +381,6 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         log.info("Agent '{}' starting, session={}, user={}, maxSteps={}, task={}",
                 name, ctx.sessionId(), ctx.userId(), maxSteps, truncate(task, 120));
         events.post(new AgentEvents.Started(name, task, 0));
-        events.fire(new io.sketch.mochaagents.event.AgentEvent(io.sketch.mochaagents.event.EventType.STARTED, name, task, 0));
 
         String systemPrompt = buildSystemPrompt();
         systemPrompt = enrichFromContext(systemPrompt, ctx);
@@ -433,11 +432,6 @@ public abstract class ReActAgent extends BaseAgent<String, String>
                 costTracker.estimatedTotalCost(),
                 costTracker.totalInputTokens(),
                 costTracker.totalOutputTokens()));
-        events.fire(new io.sketch.mochaagents.event.AgentEvent(io.sketch.mochaagents.event.EventType.COMPLETED, name, result, elapsed));
-        events.fire(new io.sketch.mochaagents.event.AgentEvent(io.sketch.mochaagents.event.EventType.COST, name,
-                new double[]{costTracker.estimatedTotalCost(),
-                        (double) costTracker.totalInputTokens(),
-                        (double) costTracker.totalOutputTokens()}, elapsed));
         return result;
     }
 
@@ -484,12 +478,6 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         }
 
         // Fire step-end event for async persistence (session transcript, memory, etc.)
-        events.fire(new io.sketch.mochaagents.event.AgentEvent(io.sketch.mochaagents.event.EventType.STEP_END, name,
-                Map.of("stepNumber", stepNumber,
-                        "modelOutput", result.output() != null ? result.output() : "",
-                        "observation", result.observation() != null ? result.observation() : "",
-                        "action", result.action() != null ? result.action() : ""),
-                result.durationMs()));
         events.post(new AgentEvents.StepCompleted(name, stepNumber,
                 result.output() != null ? result.output() : "",
                 result.observation() != null ? result.observation() : "",

@@ -100,6 +100,7 @@ public class MemoryManager {
     public Optional<MemoryRecord> recall(String id) { return store.get(id); }
     public void forget(String id) { store.forget(id); }
     public List<MemoryRecord> search(String query) { return store.search(query); }
+    public MemoryStore store() { return store; }
 
     // ── Plugins ──
     private final List<MemoryPlugin> plugins = new ArrayList<>();
