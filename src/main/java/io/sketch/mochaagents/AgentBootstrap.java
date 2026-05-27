@@ -166,5 +166,6 @@ public final class AgentBootstrap {
         toolRegistry.register(new BugCheckTool());
         toolRegistry.register(new TodoWriteTool());
         toolRegistry.register(new CodeExecutionTool());
+        toolRegistry.register(new FormatTool());
     }
 }
