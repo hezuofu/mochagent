@@ -55,17 +55,11 @@ public class FormatTool extends AbstractTool {
         String language = (String) arguments.get("language");
         String file = (String) arguments.get("file");
 
-        // Auto-detect by file extension
-        if ((language == null || language.isBlank()) && file != null && !file.isBlank()) {
-            language = detectByFile(file);
-        }
         if (language == null || language.isBlank()) {
-            language = "plain";
+            language = file != null ? extension(file) : "plain";
         }
 
-        // Format
-        var formatter = io.sketch.mochaagents.tool.format.CodeFormatter.forLanguage(language);
-        String formatted = formatter.format(content);
+        String formatted = io.sketch.mochaagents.tool.format.CodeFormatter.format(language, content);
 
         // Count lines
         int inLines = content.split("\\r?\\n").length;
@@ -91,14 +85,8 @@ public class FormatTool extends AbstractTool {
                 + "_Formatted " + inLines + " → " + outLines + " lines (" + lang + ")_";
     }
 
-    private static String detectByFile(String path) {
-        String lower = path.toLowerCase();
-        if (lower.endsWith(".sql")) return "sql";
-        if (lower.endsWith(".java")) return "java";
-        if (lower.endsWith(".json")) return "json";
-        if (lower.endsWith(".xml") || lower.endsWith(".html") || lower.endsWith(".svg")) return "xml";
-        if (lower.endsWith(".md") || lower.endsWith(".markdown")) return "markdown";
-        if (lower.endsWith(".yml") || lower.endsWith(".yaml")) return "yaml";
-        return "plain";
+    private static String extension(String path) {
+        int dot = path.lastIndexOf('.');
+        return dot > 0 ? path.substring(dot + 1).toLowerCase() : "plain";
     }
 }
