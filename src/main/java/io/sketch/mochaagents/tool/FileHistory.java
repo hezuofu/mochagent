@@ -3,7 +3,6 @@
 
 package io.sketch.mochaagents.tool;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -136,11 +135,11 @@ public class FileHistory {
     private void load() {
         if (persistFile == null || !Files.exists(persistFile)) return;
         try {
-            String content = Files.readString(persistFile);
-            if (content.isBlank()) return;
-            List<Map<String, Object>> entries = JSON.readValue(content, new TypeReference<>() {});
-            for (var e : entries) {
+            for (String line : Files.readAllLines(persistFile)) {
+                if (line.isBlank()) continue;
                 try {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> e = JSON.readValue(line, Map.class);
                     String pathStr = (String) e.get("path");
                     String oldContent = (String) e.getOrDefault("oldContent", null);
                     boolean existed = (boolean) e.getOrDefault("existed", true);

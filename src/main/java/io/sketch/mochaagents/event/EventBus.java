@@ -80,7 +80,7 @@ public class EventBus {
             }
             Class<?> eventType = params[0];
             m.setAccessible(true);
-            boolean sync = ann.sync() || !async; // explicit sync or sync bus
+            boolean sync = ann.sync() || !async;
             handlers.computeIfAbsent(eventType, k -> new CopyOnWriteArrayList<>())
                     .add(new Handler(subscriber, m, sync));
         }

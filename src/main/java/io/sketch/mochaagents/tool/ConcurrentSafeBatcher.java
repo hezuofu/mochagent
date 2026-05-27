@@ -52,10 +52,15 @@ public class ConcurrentSafeBatcher {
     }
 
     public ConcurrentSafeBatcher(ToolRegistry registry, int maxConcurrency, long timeoutMs) {
+        this(registry, new ToolExecutor(registry, timeoutMs, 2, 500), maxConcurrency);
+    }
+
+    /** Use a pre-configured ToolExecutor (with hooks/permissions/events wired). */
+    public ConcurrentSafeBatcher(ToolRegistry registry, ToolExecutor executor, int maxConcurrency) {
         this.registry = registry;
         this.maxConcurrency = maxConcurrency;
-        this.timeoutMs = timeoutMs;
-        this.baseExecutor = new ToolExecutor(registry, timeoutMs, 2, 500);
+        this.timeoutMs = 60_000;
+        this.baseExecutor = executor;
         this.pool = Executors.newFixedThreadPool(maxConcurrency);
     }
 

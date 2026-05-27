@@ -204,7 +204,7 @@ public class AnthropicModel extends BaseApiModel implements Model.NativeTools {
                 String type = safeStr(block, "type");
                 if ("text".equals(type)) {
                     String text = safeStr(block, "text");
-                    if (content.length() > 0) content.append("\n");
+                    if (!content.isEmpty()) content.append("\n");
                     content.append(text);
                     blocks.add(new io.sketch.mochaagents.message.ContentBlock.TextBlock(text));
                 } else if ("tool_use".equals(type)) {
@@ -213,7 +213,7 @@ public class AnthropicModel extends BaseApiModel implements Model.NativeTools {
                     JsonNode inputNode = block.get("input");
                     Map<String, Object> inputMap = inputNode != null && !inputNode.isNull()
                             ? jsonNodeToMap(inputNode) : Map.of();
-                    if (content.length() > 0) content.append("\n");
+                    if (!content.isEmpty()) content.append("\n");
                     content.append("[tool_use: ").append(name)
                             .append("(").append(inputNode).append(")]");
                     blocks.add(new io.sketch.mochaagents.message.ContentBlock.ToolUseBlock(id, name, inputMap));
