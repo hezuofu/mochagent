@@ -136,11 +136,11 @@ public final class ToolCallingAgent extends ReActAgent {
                         ParsedAction a = actions.get(0);
                         results = List.of(executeTool(a.name(), a.arguments()));
                     } else {
-                        List<io.sketch.mochaagents.tool.ConcurrentSafeBatcher.ToolCall> calls = actions.stream()
-                                .map(a -> new io.sketch.mochaagents.tool.ConcurrentSafeBatcher.ToolCall(
+                        List<io.sketch.mochaagents.tool.ToolExecutor.ToolCall> calls = actions.stream()
+                                .map(a -> new io.sketch.mochaagents.tool.ToolExecutor.ToolCall(
                                         a.name(), a.arguments()))
                                 .toList();
-                        results = toolBatcher.execute(calls);
+                        results = toolExecutor().executeBatch(calls);
                     }
 
                     // Build observation and tool result blocks
@@ -231,9 +231,6 @@ public final class ToolCallingAgent extends ReActAgent {
                     .error(e.getMessage()).durationMs(System.currentTimeMillis() - start).build();
         }
     }
-
-    private final io.sketch.mochaagents.tool.ConcurrentSafeBatcher toolBatcher =
-            new io.sketch.mochaagents.tool.ConcurrentSafeBatcher(toolRegistry, toolExecutor(), 10);
 
     public static Builder builder() { return new Builder(); }
 
