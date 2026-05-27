@@ -47,11 +47,13 @@ public class EventBus {
     public EventBus() { this(null, false); }
 
     /** Async EventBus with daemon thread pool. */
-    public static EventBus async() { return new EventBus(Executors.newFixedThreadPool(2, r -> {
+    public static EventBus async() {
+        return new EventBus(Executors.newFixedThreadPool(2, r -> {
             Thread t = new Thread(r, "event-bus");
             t.setDaemon(true);
             return t;
-        }), true); }
+        }), true);
+    }
 
     /** Sync EventBus — explicit factory. */
     public static EventBus sync() { return new EventBus(null, false); }
@@ -172,11 +174,19 @@ public class EventBus {
         final Method method;
         final boolean sync;
         final Consumer<Object> consumer;
+
         Handler(Object subscriber, Method method, boolean sync) {
-            this.subscriber = subscriber; this.method = method; this.sync = sync; this.consumer = null;
+            this.subscriber = subscriber;
+            this.method = method;
+            this.sync = sync;
+            this.consumer = null;
         }
+
         Handler(Consumer<Object> consumer, boolean sync) {
-            this.subscriber = null; this.method = null; this.sync = sync; this.consumer = consumer;
+            this.subscriber = null;
+            this.method = null;
+            this.sync = sync;
+            this.consumer = consumer;
         }
     }
 }

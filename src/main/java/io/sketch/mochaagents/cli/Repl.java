@@ -424,24 +424,32 @@ final class Repl implements CliCommand {
     }
 
     private void showStatus() {
-        out.println(bold("Agent:") + " " + (agent != null ? agent.metadata().name() : "not loaded"));
-        out.println(bold("Model:") + " " + (model != null ? green(model.modelName()) : dim("none")));
-        out.println(bold("Tools:") + " " + (bootstrap != null ? bootstrap.toolRegistry().size() : 0)
-                + " | " + bold("Plan:") + " " + (planMode != null && planMode.isReadOnly() ? yellow("active") : dim("inactive")));
+        String agentName = agent != null ? agent.metadata().name() : "not loaded";
+        String modelLabel = model != null ? green(model.modelName()) : dim("none");
+        int toolCount = bootstrap != null ? bootstrap.toolRegistry().size() : 0;
+        String planState = planMode != null && planMode.isReadOnly() ? yellow("active") : dim("inactive");
+
+        out.println(bold("Agent:") + " " + agentName);
+        out.println(bold("Model:") + " " + modelLabel);
+        out.println(bold("Tools:") + " " + toolCount + " | " + bold("Plan:") + " " + planState);
 
         if (agent != null) {
             var mem = agent.memory();
             var session = mem.currentSession();
-            out.println(bold("Session:") + " " + (session != null ? dim(session.id().substring(0, 8) + "...") : dim("none"))
+            String sessionId = session != null ? dim(session.id().substring(0, 8) + "...") : dim("none");
+            out.println(bold("Session:") + " " + sessionId
                     + " | " + bold("Steps:") + " " + mem.stepCount()
                     + " | " + bold("Turns:") + " " + mem.maxStepNumber());
+
+            int undoCount = io.sketch.mochaagents.tool.FileHistory.getInstance().size();
             out.println(bold("Memory:") + " " + mem.store().size() + " records"
-                    + " | " + bold("Undo:") + " " + io.sketch.mochaagents.tool.FileHistory.getInstance().size() + " snapshots"
+                    + " | " + bold("Undo:") + " " + undoCount + " snapshots"
                     + " | " + bold("Changes:") + " " + pendingChanges.size() + " pending");
         }
+        long totalTokens = sessionInputTokens + sessionOutputTokens;
         out.println(bold("Cost:") + " $" + String.format("%.4f", sessionCost)
                 + " | " + formatTokens(sessionInputTokens) + " in / " + formatTokens(sessionOutputTokens) + " out"
-                + " (" + formatTokens(sessionInputTokens + sessionOutputTokens) + " total)");
+                + " (" + formatTokens(totalTokens) + " total)");
     }
 
     private void showTools() {
