@@ -16,16 +16,16 @@ import java.util.function.Consumer;
 public final class StreamingToolExecutor implements ToolExecutionStrategy {
 
     private final ToolRegistry registry;
-    private final ToolPipeline pipeline;
+    private final ToolExecutor pipeline;
     private final ExecutorService pool = Executors.newCachedThreadPool();
     private final List<TrackedTool> tools = new ArrayList<>();
     private final List<Consumer<ToolEvent>> listeners = new ArrayList<>();
 
     public StreamingToolExecutor(ToolRegistry registry) {
-        this(registry, new ToolPipeline(registry));
+        this(registry, new ToolExecutor(registry));
     }
 
-    public StreamingToolExecutor(ToolRegistry registry, ToolPipeline pipeline) {
+    public StreamingToolExecutor(ToolRegistry registry, ToolExecutor pipeline) {
         this.registry = registry;
         this.pipeline = pipeline;
     }
