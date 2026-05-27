@@ -6,24 +6,25 @@ package io.sketch.mochaagents.orchestration;
 import io.sketch.mochaagents.agent.Agent;
 
 /**
- * 编排策略 — 定义多 Agent 如何协作完成任务.
- */
-@FunctionalInterface
-/**
- * OrchestrationStrategy strategy interface.
+ * Orchestration strategy — how multiple agents collaborate.
+ *
+ * <p>Implementations:
+ * <ul>
+ *   <li>{@link DebateStrategy} — debate and consensus</li>
+ *   <li>{@link SwarmStrategy} — parallel swarm with consensus</li>
+ * </ul>
  *
  * @author lanxia39@163.com
  */
+@FunctionalInterface
 public interface OrchestrationStrategy {
 
-    /** 执行编排策略，返回结果 */
     <I, O> O execute(AgentTeam team, I input);
 
-    /** 顺序执行策略 */
+    /** Chain agents sequentially — each agent's output becomes the next agent's input. */
     static OrchestrationStrategy sequential() {
         return new OrchestrationStrategy() {
-            @Override
-            @SuppressWarnings("unchecked")
+            @Override @SuppressWarnings("unchecked")
             public <I, O> O execute(AgentTeam team, I input) {
                 Object result = input;
                 for (Agent<?, ?> agent : team.getAgents()) {
@@ -34,16 +35,14 @@ public interface OrchestrationStrategy {
         };
     }
 
-    /** 并行执行策略 */
+    /** Run all agents on the same input in parallel, returning collected results. */
     static OrchestrationStrategy parallel() {
         return new OrchestrationStrategy() {
-            @Override
-            @SuppressWarnings("unchecked")
+            @Override @SuppressWarnings("unchecked")
             public <I, O> O execute(AgentTeam team, I input) {
-                java.util.List<Object> results = team.getAgents().stream()
-                        .map(a -> ((Agent<I, Object>) (Object) a).execute(input))
+                return (O) team.getAgents().stream()
+                        .map(a -> ((Agent<Object, Object>) (Object) a).execute(input))
                         .toList();
-                return (O) results;
             }
         };
     }

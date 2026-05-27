@@ -2,7 +2,6 @@
 // Copyright 2024-2026 MochaAgents Authors
 
 package io.sketch.mochaagents.orchestration;
-import io.sketch.mochaagents.MochaException;
 
 import io.sketch.mochaagents.agent.Agent;
 import org.slf4j.Logger;
