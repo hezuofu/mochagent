@@ -17,24 +17,11 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Tool executor — Chain of Responsibility pipeline with batch/streaming strategies.
- *
- * <p>Implements {@link ToolExecutionStrategy} with built-in:
- * <ol>
- *   <li>Schema validation</li>
- *   <li>Permission check (pipeline or simple rules)</li>
- *   <li>Pre/post tool hooks</li>
- *   <li>Retry with timeout and backoff</li>
- *   <li>Output normalization and truncation</li>
- *   <li>Batch execution with concurrency-safe partitioning</li>
- * </ol>
+ * Tool executor — Chain of Responsibility interceptors delegating to a
+ * {@link ToolExecutionStrategy} (sequential by default, batch for multi-tool).
  *
  * <pre>{@code
  * var executor = new ToolExecutor(registry)
@@ -42,6 +29,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *     .withPermissions(rules, pipeline, broker)
  *     .withEvents(eventBus)
  *     .withMaxOutputChars(200_000);
+ *
+ * // Single tool → sequential
+ * executor.execute("read", Map.of("file", "a.txt"));
+ *
+ * // Multiple tools → batch with concurrency-safe partitioning
+ * executor.executeBatch(List.of(
+ *     new ToolCall("read", Map.of("file", "a.txt")),
+ *     new ToolCall("grep", Map.of("pattern", "foo"))));
  * }</pre>
  *
  * @author lanxia39@163.com
@@ -51,9 +46,8 @@ public class ToolExecutor implements ToolExecutionStrategy {
     private static final Logger log = LoggerFactory.getLogger(ToolExecutor.class);
 
     private final ToolRegistry registry;
-    private final long timeoutMs;
-    private final int maxRetries;
-    private final long retryDelayMs;
+    private final ToolExecutionStrategy strategy;
+    private final BatchStrategy batchStrategy;
 
     private Hooks hooks;
     private PermissionRules permissionRules;
@@ -70,9 +64,8 @@ public class ToolExecutor implements ToolExecutionStrategy {
 
     public ToolExecutor(ToolRegistry registry, long timeoutMs, int maxRetries, long retryDelayMs) {
         this.registry = registry;
-        this.timeoutMs = timeoutMs;
-        this.maxRetries = maxRetries;
-        this.retryDelayMs = retryDelayMs;
+        this.strategy = new SequentialStrategy(registry, timeoutMs, maxRetries, retryDelayMs);
+        this.batchStrategy = new BatchStrategy(registry, strategy);
     }
 
     // ── Configuration ──
@@ -89,102 +82,76 @@ public class ToolExecutor implements ToolExecutionStrategy {
     public ToolExecutor withSessionId(String id) { this.sessionId = id != null ? id : "default"; return this; }
     public ToolExecutor withMaxOutputChars(int n) { this.maxOutputChars = n; return this; }
 
-    // ── ToolExecutionStrategy ──
+    // ── ToolExecutionStrategy (interceptors → delegate) ──
 
     @Override
     public ToolResult execute(String toolName, Map<String, Object> arguments) {
         Tool tool = registry.get(toolName);
-        if (tool == null) {
-            log.warn("Tool '{}' not found", toolName);
-            return ToolResult.Builder.failure(toolName, "Tool not found: " + toolName, null);
-        }
+        if (tool == null) return ToolResult.Builder.failure(toolName, "Tool not found: " + toolName, null);
 
-        var validation = tool.validateInput(arguments);
-        if (!validation.isValid()) {
-            return ToolResult.Builder.failure(toolName, "Validation failed: " + validation.getMessage(), null);
-        }
+        // Interceptor 1: Validation
+        ToolResult r = validate(tool, toolName, arguments);
+        if (r != null) return r;
 
-        ToolResult permissionResult = checkPermissions(toolName, arguments);
-        if (permissionResult != null) return permissionResult;
+        // Interceptor 2: Permission
+        r = checkPermissions(toolName, arguments);
+        if (r != null) return r;
 
+        // Interceptor 3: Pre-hooks + argument modification
         if (hooks != null) {
-            var decision = hooks.applyPreTool(tool, arguments);
-            if (decision.outcome() == Hooks.HookDecision.Outcome.DENY)
-                return ToolResult.Builder.failure(toolName, "Hook denied: " + decision.reason(), null);
-            if (decision.modifiedArgs() != null) arguments = decision.modifiedArgs();
+            var d = hooks.applyPreTool(tool, arguments);
+            if (d.outcome() == Hooks.HookDecision.Outcome.DENY)
+                return ToolResult.Builder.failure(toolName, "Hook denied: " + d.reason(), null);
+            if (d.modifiedArgs() != null) arguments = d.modifiedArgs();
         }
 
-        final Map<String, Object> finalArgs = arguments;
-        RuntimeException lastError = null;
-        for (int attempt = 1; attempt <= maxRetries + 1; attempt++) {
-            try {
-                long start = System.currentTimeMillis();
-                CompletableFuture<Object> future = CompletableFuture.supplyAsync(() -> tool.call(finalArgs));
-                Object result = future.get(timeoutMs, TimeUnit.MILLISECONDS);
-                long elapsed = System.currentTimeMillis() - start;
+        // Delegate to execution strategy
+        var result = strategy.execute(toolName, arguments);
 
-                result = normalize(result, toolName);
-                log.info("[Tool] {} ({}ms) args={}", toolName, elapsed, summarizeArgs(arguments));
+        // Interceptor 4: Post-hooks
+        if (hooks != null) hooks.applyPostTool(tool, arguments, result.output(), msg -> {});
 
-                if (hooks != null) hooks.applyPostTool(tool, arguments, result, msg -> {});
-                fireToolEvent(toolName, arguments, result, elapsed);
+        // Interceptor 5: Normalization + event
+        Object normalized = normalize(result.output(), toolName);
+        fireEvent(toolName, arguments, normalized, result.durationMs());
 
-                return ToolResult.Builder.success(toolName, result, elapsed);
-
-            } catch (TimeoutException e) {
-                lastError = io.sketch.mochaagents.MochaException.ToolException.timeout(toolName);
-                log.warn("Tool '{}' timeout (attempt {}/{})", toolName, attempt, maxRetries + 1);
-            } catch (ExecutionException e) {
-                if (e.getCause() instanceof IllegalArgumentException iae) throw iae;
-                lastError = io.sketch.mochaagents.MochaException.ToolException.execution(toolName, e.getMessage(), e);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                lastError = new RuntimeException("Tool '" + toolName + "' interrupted", e);
-            } catch (Exception e) {
-                lastError = io.sketch.mochaagents.MochaException.ToolException.execution(toolName, e.getMessage(), e);
-            }
-
-            if (attempt <= maxRetries) {
-                try { Thread.sleep(retryDelayMs * attempt); }
-                catch (InterruptedException ie) { Thread.currentThread().interrupt(); break; }
-            }
-        }
-
-        log.error("Tool '{}' exhausted {} retries", toolName, maxRetries + 1);
-        return ToolResult.Builder.failure(toolName, lastError.getMessage(), null);
+        return ToolResult.Builder.success(toolName, normalized, result.durationMs());
     }
 
     @Override
     public List<ToolResult> executeBatch(List<ToolCall> calls) {
-        if (calls.isEmpty()) return List.of();
-        if (calls.size() == 1) return List.of(execute(calls.get(0).name(), calls.get(0).arguments()));
+        // Run interceptors (validation + permission + pre-hooks) for each call, then batch-execute remainder
+        var preResults = new ArrayList<ToolResult>();
+        var remaining = new ArrayList<ToolCall>();
 
-        var batches = partition(calls);
-        var results = new ArrayList<ToolResult>();
-        var abort = new AtomicBoolean(false);
-
-        for (var batch : batches) {
-            if (abort.get()) {
-                for (var tc : batch) results.add(ToolResult.Builder.failure(tc.name(), "Aborted: sibling error", null));
-                continue;
-            }
-            if (batch.size() > 1 && isConcurrencySafe(batch.get(0).name())) {
-                executeParallel(batch, results, abort);
-            } else {
-                for (var tc : batch) {
-                    if (abort.get()) results.add(ToolResult.Builder.failure(tc.name(), "Aborted: sibling error", null));
-                    else {
-                        var r = execute(tc.name(), tc.arguments());
-                        results.add(r);
-                        if (r.isError() && isDestructive(tc.name())) abort.set(true);
-                    }
-                }
-            }
+        for (var tc : calls) {
+            Tool tool = registry.get(tc.name());
+            if (tool == null) { preResults.add(ToolResult.Builder.failure(tc.name(), "Tool not found", null)); continue; }
+            ToolResult r = validate(tool, tc.name(), tc.arguments());
+            if (r != null) { preResults.add(r); continue; }
+            r = checkPermissions(tc.name(), tc.arguments());
+            if (r != null) { preResults.add(r); continue; }
+            remaining.add(tc);
         }
-        return results;
+
+        var results = batchStrategy.executeBatch(remaining);
+
+        // Post-hooks + normalization
+        for (var r : results) {
+            if (hooks != null) hooks.applyPostTool(registry.get(r.toolName()), Map.of(), r.output(), msg -> {});
+        }
+
+        preResults.addAll(results);
+        return preResults;
     }
 
-    // ── Permission check ──
+    // ── Interceptor implementations ──
+
+    private ToolResult validate(Tool tool, String name, Map<String, Object> args) {
+        var v = tool.validateInput(args);
+        if (!v.isValid()) return ToolResult.Builder.failure(name, "Validation failed: " + v.getMessage(), null);
+        return null;
+    }
 
     private ToolResult checkPermissions(String toolName, Map<String, Object> args) {
         if (decisionPipeline != null && permissionRules != null) {
@@ -215,72 +182,21 @@ public class ToolExecutor implements ToolExecutionStrategy {
         return null;
     }
 
-    // ── Batch execution ──
-
-    private List<List<ToolCall>> partition(List<ToolCall> calls) {
-        var batches = new ArrayList<List<ToolCall>>();
-        var current = new ArrayList<ToolCall>();
-        boolean concurrent = true;
-        for (var tc : calls) {
-            boolean safe = isConcurrencySafe(tc.name());
-            if (current.isEmpty()) { current.add(tc); concurrent = safe; }
-            else if (concurrent && safe) current.add(tc);
-            else { batches.add(List.copyOf(current)); current = new ArrayList<>(); current.add(tc); concurrent = safe; }
-        }
-        if (!current.isEmpty()) batches.add(List.copyOf(current));
-        return batches;
-    }
-
-    private void executeParallel(List<ToolCall> batch, List<ToolResult> results, AtomicBoolean abort) {
-        var futures = new ArrayList<CompletableFuture<ToolResult>>();
-        for (var tc : batch) {
-            futures.add(CompletableFuture.supplyAsync(() -> {
-                if (abort.get()) return ToolResult.Builder.failure(tc.name(), "Aborted", null);
-                var r = execute(tc.name(), tc.arguments());
-                if (r.isError() && isDestructive(tc.name())) abort.set(true);
-                return r;
-            }));
-        }
-        try { CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get(timeoutMs * batch.size(), TimeUnit.MILLISECONDS); }
-        catch (Exception e) { abort.set(true); }
-        for (var f : futures) {
-            try { results.add(f.getNow(ToolResult.Builder.failure("unknown", "No result", null))); }
-            catch (Exception e) { results.add(ToolResult.Builder.failure("unknown", e.getMessage(), null)); }
-        }
-    }
-
-    private boolean isConcurrencySafe(String name) { var t = registry.get(name); return t != null && t.isConcurrencySafe(); }
-    private boolean isDestructive(String name) { var t = registry.get(name); return t != null && t.isDestructive(); }
-
-    // ── Output normalization ──
-
     private Object normalize(Object result, String toolName) {
         if (result == null) return "[Tool " + toolName + " completed]";
         String text = result instanceof String s ? s : result.toString();
         if (text.length() > maxOutputChars) {
             String stored = ToolResultStorage.getInstance().store(toolName, text);
             if (stored != null) return stored;
-            return text.substring(0, maxOutputChars / 2) + "\n... [" + (text.length() - maxOutputChars) + " chars truncated] ...\n" + text.substring(text.length() - maxOutputChars / 2);
+            return text.substring(0, maxOutputChars / 2) + "\n... ["
+                    + (text.length() - maxOutputChars) + " chars truncated] ...\n"
+                    + text.substring(text.length() - maxOutputChars / 2);
         }
         return result;
     }
 
-    private void fireToolEvent(String toolName, Map<String, Object> args, Object result, long elapsed) {
+    private void fireEvent(String name, Map<String, Object> args, Object result, long elapsed) {
         if (events == null) return;
-        @SuppressWarnings("unchecked")
-        Map<String, Object> evtArgs = Map.of("toolName", toolName, "elapsedMs", elapsed);
-        events.post(new AgentEvents.ToolCalled(toolName, "agent", evtArgs, result, elapsed));
-    }
-
-    private static String summarizeArgs(Map<String, Object> args) {
-        if (args == null || args.isEmpty()) return "{}";
-        var sb = new StringBuilder("{");
-        for (var e : args.entrySet()) {
-            if (sb.length() > 1) sb.append(", ");
-            sb.append(e.getKey()).append("=");
-            Object v = e.getValue();
-            sb.append(v instanceof String s && s.length() > 60 ? s.substring(0, 60) + "..." : v);
-        }
-        return sb.append("}").toString();
+        events.post(new AgentEvents.ToolCalled(name, "agent", Map.of("toolName", name), result, elapsed));
     }
 }
