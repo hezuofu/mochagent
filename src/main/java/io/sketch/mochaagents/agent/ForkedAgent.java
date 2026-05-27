@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2024-2026 MochaAgents Authors
 
-package io.sketch.mochaagents.agent.loop;
+package io.sketch.mochaagents.agent;
 
-import io.sketch.mochaagents.agent.AgentContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import io.sketch.mochaagents.memory.MemoryManager;
 
 /**
  * Forked agent execution — spawns an isolated sub-conversation with its own context.

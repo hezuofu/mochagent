@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2024-2026 MochaAgents Authors
 
-package io.sketch.mochaagents.agent.loop;
+package io.sketch.mochaagents.agent;
 
-import io.sketch.mochaagents.agent.AgentContext;
-import io.sketch.mochaagents.agent.AgentLoop;
 import io.sketch.mochaagents.event.AgentEvents;
 import io.sketch.mochaagents.agent.internal.BaseAgent;
 import io.sketch.mochaagents.memory.MemoryProvider;
 import io.sketch.mochaagents.prompt.SystemPromptProvider;
+import io.sketch.mochaagents.agent.loop.LoopState;
+import io.sketch.mochaagents.agent.loop.StepResult;
+import io.sketch.mochaagents.agent.loop.Termination;
 import io.sketch.mochaagents.agent.loop.strategy.ReActLoop;
 import io.sketch.mochaagents.context.Context;
 import io.sketch.mochaagents.evaluation.EvaluationResult;
@@ -325,7 +326,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         memory.appendToSession("user", task);
         injectConversationHistory(ctx);
 
-        
+
 
         // Pre-loop: initialize capabilities
         initializeCapabilities(task, ctx);
@@ -901,7 +902,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     private final List<io.sketch.mochaagents.message.Message> cachedTypedMessages = new ArrayList<>();
 
     /** Convert memory to typed Messages — incremental, preserves ContentBlock structure. */
-    protected List<io.sketch.mochaagents.message.Message> writeTypedMessages() {
+    public List<io.sketch.mochaagents.message.Message> writeTypedMessages() {
         // Pre-compaction: run free levels (SNIP + COLLAPSE) before building messages
         if (compactionEngine.preCompact(memory) > 0) {
             // Steps were modified — invalidate both caches

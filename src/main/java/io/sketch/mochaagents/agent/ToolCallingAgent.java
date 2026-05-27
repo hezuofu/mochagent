@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2024-2026 MochaAgents Authors
 
-package io.sketch.mochaagents.agent.loop;
+package io.sketch.mochaagents.agent;
 
 import io.sketch.mochaagents.agent.loop.LoopState;
 import io.sketch.mochaagents.memory.MemoryManager;
-import io.sketch.mochaagents.agent.loop.ReActAgent;
+import io.sketch.mochaagents.agent.ReActAgent;
 import io.sketch.mochaagents.agent.loop.StepResult;
 import io.sketch.mochaagents.message.ContentBlock;
 import io.sketch.mochaagents.model.ModelRequest;

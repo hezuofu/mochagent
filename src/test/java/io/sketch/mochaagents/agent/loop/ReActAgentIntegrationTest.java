@@ -7,7 +7,7 @@ import io.sketch.mochaagents.orchestration.TaskManager;
 
 import io.sketch.mochaagents.agent.AgentContext;
 import io.sketch.mochaagents.agent.ExecutionReport;
-import io.sketch.mochaagents.agent.loop.ToolCallingAgent;
+import io.sketch.mochaagents.agent.ToolCallingAgent;
 import io.sketch.mochaagents.interaction.DenialTracker;
 import io.sketch.mochaagents.interaction.PermissionRules;
 import io.sketch.mochaagents.model.Model;

@@ -4,7 +4,7 @@
 package io.sketch.mochaagents.cli;
 
 import io.sketch.mochaagents.AgentBootstrap;
-import io.sketch.mochaagents.agent.loop.ToolCallingAgent;
+import io.sketch.mochaagents.agent.ToolCallingAgent;
 import io.sketch.mochaagents.agent.loop.PlanMode;
 import io.sketch.mochaagents.event.AgentEvents;
 import io.sketch.mochaagents.model.Model;

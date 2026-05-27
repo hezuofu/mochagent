@@ -6,7 +6,7 @@ import io.sketch.mochaagents.prompt.Persona;
 
 import io.sketch.mochaagents.agent.AgentContext;
 import io.sketch.mochaagents.agent.ExecutionReport;
-import io.sketch.mochaagents.agent.loop.ToolCallingAgent;
+import io.sketch.mochaagents.agent.ToolCallingAgent;
 import io.sketch.mochaagents.agent.loop.step.ActionStep;
 import io.sketch.mochaagents.agent.loop.step.ContentStep;
 import io.sketch.mochaagents.agent.loop.step.MemoryStep;

@@ -6,7 +6,7 @@ package io.sketch.mochaagents.tool.internal;
 import io.sketch.mochaagents.agent.Agent;
 import io.sketch.mochaagents.agent.AgentContext;
 import io.sketch.mochaagents.agent.AgentMetadata;
-import io.sketch.mochaagents.agent.loop.ToolCallingAgent;
+import io.sketch.mochaagents.agent.ToolCallingAgent;
 import io.sketch.mochaagents.model.Model;
 import io.sketch.mochaagents.orchestration.TaskNotification;
 import io.sketch.mochaagents.tool.AbstractTool;

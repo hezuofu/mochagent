@@ -4,7 +4,7 @@
 package io.sketch.mochaagents.model.provider;
 
 import io.sketch.mochaagents.agent.AgentContext;
-import io.sketch.mochaagents.agent.loop.ToolCallingAgent;
+import io.sketch.mochaagents.agent.ToolCallingAgent;
 import io.sketch.mochaagents.model.Model;
 import io.sketch.mochaagents.tool.Tool;
 import io.sketch.mochaagents.tool.ToolInput;
