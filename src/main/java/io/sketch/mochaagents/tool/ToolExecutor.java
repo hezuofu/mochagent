@@ -42,6 +42,7 @@ public class ToolExecutor {
     private Session session;
     private EventBus events;
     private String sessionId = "default";
+    private int maxOutputChars = 500_000;
 
     public ToolExecutor(ToolRegistry registry, long timeoutMs, int maxRetries, long retryDelayMs) {
         this.registry = registry;
@@ -51,6 +52,9 @@ public class ToolExecutor {
     }
 
     public ToolExecutor(ToolRegistry registry) { this(registry, 60_000, 2, 500); }
+
+    /** Set max output characters before truncation (Claude Code truncateToolOutput pattern). */
+    public ToolExecutor withMaxOutputChars(int n) { this.maxOutputChars = n; return this; }
 
     public ToolExecutor withHooks(Hooks hooks) { this.hooks = hooks; return this; }
     public ToolExecutor withPermissions(PermissionRules permissions) { this.permissions = permissions; return this; }
@@ -122,6 +126,7 @@ public class ToolExecutor {
                 long elapsed = System.currentTimeMillis() - start;
 
                 log.info("[Tool] {} ({}ms) args={}", toolName, elapsed, summarizeArgs(arguments));
+                result = normalize(result, toolName);
                 // Post-tool hooks
                 if (hooks != null) hooks.applyPostTool(tool, arguments, result, msg -> {});
                 // Fire tool call event for real-time display (diff etc.)
@@ -137,17 +142,16 @@ public class ToolExecutor {
                 return ToolResult.Builder.success(toolName, result, elapsed);
 
             } catch (TimeoutException e) {
-                lastError = new RuntimeException("Tool '" + toolName + "' timed out after " + timeoutMs + "ms");
+                lastError = io.sketch.mochaagents.MochaException.ToolException.timeout(toolName);
                 log.warn("Tool '{}' timeout (attempt {}/{})", toolName, attempt, maxRetries + 1);
             } catch (ExecutionException e) {
-                // Non-retryable: validation/permission errors should fail fast
-                if (e.getCause() instanceof IllegalArgumentException) throw (IllegalArgumentException) e.getCause();
-                lastError = new RuntimeException("Tool '" + toolName + "' failed: " + e.getMessage(), e);
+                if (e.getCause() instanceof IllegalArgumentException iae) throw iae;
+                lastError = io.sketch.mochaagents.MochaException.ToolException.execution(toolName, e.getMessage(), e);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 lastError = new RuntimeException("Tool '" + toolName + "' interrupted", e);
             } catch (Exception e) {
-                lastError = new RuntimeException("Tool '" + toolName + "' failed: " + e.getMessage(), e);
+                lastError = io.sketch.mochaagents.MochaException.ToolException.execution(toolName, e.getMessage(), e);
                 log.warn("Tool '{}' error (attempt {}/{}): {}", toolName, attempt, maxRetries + 1, e.getMessage());
             }
 
@@ -284,6 +288,19 @@ public class ToolExecutor {
         }
 
         return data;
+    }
+
+    // ── Output normalization (Claude Code normalizeToolResult + truncateToolOutput) ──
+
+    private Object normalize(Object result, String toolName) {
+        if (result == null) return "[Tool " + toolName + " completed]";
+        String text = result instanceof String s ? s : result.toString();
+        if (text.length() > maxOutputChars) {
+            String head = text.substring(0, maxOutputChars / 2);
+            String tail = text.substring(text.length() - maxOutputChars / 2);
+            return head + "\n... [" + (text.length() - maxOutputChars) + " chars truncated] ...\n" + tail;
+        }
+        return result;
     }
 
     private static String summarizeArgs(Map<String, Object> args) {

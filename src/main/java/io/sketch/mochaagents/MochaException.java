@@ -26,12 +26,27 @@ public class MochaException extends RuntimeException {
 
     // ── Subtypes ──
 
-    /** Tool execution failure. */
+    /** Tool execution failure with error category (hermes-agent ToolFailure pattern). */
     public static class ToolException extends MochaException {
+        public enum Category { VALIDATION, TIMEOUT, EXECUTION, PERMISSION, UNKNOWN }
+
         private final String toolName;
-        public ToolException(String toolName, String msg) { super(msg, "TOOL_ERROR"); this.toolName = toolName; }
-        public ToolException(String toolName, String msg, Throwable cause) { super(msg, "TOOL_ERROR", false, cause); this.toolName = toolName; }
+        private final Category category;
+
+        public ToolException(String toolName, String msg) { this(toolName, msg, Category.EXECUTION, false, null); }
+        public ToolException(String toolName, String msg, Throwable cause) { this(toolName, msg, Category.EXECUTION, false, cause); }
+        public ToolException(String toolName, String msg, Category category, boolean retryable, Throwable cause) {
+            super(msg, "TOOL_ERROR", retryable, cause);
+            this.toolName = toolName; this.category = category;
+        }
+
         public String toolName() { return toolName; }
+        public Category category() { return category; }
+
+        public static ToolException validation(String tool, String msg) { return new ToolException(tool, msg, Category.VALIDATION, false, null); }
+        public static ToolException timeout(String tool) { return new ToolException(tool, "Tool '" + tool + "' timed out", Category.TIMEOUT, true, null); }
+        public static ToolException permission(String tool, String msg) { return new ToolException(tool, msg, Category.PERMISSION, false, null); }
+        public static ToolException execution(String tool, String msg, Throwable cause) { return new ToolException(tool, msg, Category.EXECUTION, false, cause); }
     }
 
     /** Model API call failure. */
