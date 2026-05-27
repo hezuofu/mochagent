@@ -5,13 +5,11 @@ package io.sketch.mochaagents.agent;
 
 import io.sketch.mochaagents.agent.loop.LoopState;
 import io.sketch.mochaagents.memory.MemoryManager;
-import io.sketch.mochaagents.agent.ReActAgent;
 import io.sketch.mochaagents.agent.loop.StepResult;
 import io.sketch.mochaagents.message.ContentBlock;
 import io.sketch.mochaagents.model.ModelRequest;
 import io.sketch.mochaagents.model.ModelResponse;
 import io.sketch.mochaagents.agent.loop.step.ActionStep;
-import io.sketch.mochaagents.tool.ConcurrentSafeBatcher;
 import io.sketch.mochaagents.tool.Tool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,8 +47,8 @@ public final class ToolCallingAgent extends ReActAgent {
                 ## Response Format
                 Thought: <your reasoning about what to do next>
                 Action: <tool_name>(arguments)
-                Use key=\"value\" for arguments. End tasks with:
-                Action: final_answer(answer=\"your answer\")
+                Use key="value" for arguments. End tasks with:
+                Action: final_answer(answer="your answer")
 
                 ## Rules
                 - ALWAYS call a tool to take action — never just describe intentions.
@@ -166,7 +164,7 @@ public final class ToolCallingAgent extends ReActAgent {
                                     : io.sketch.mochaagents.message.ContentBlock.ToolResultBlock.success(
                                             toolUseId, toolName, String.valueOf(r.output())));
                         }
-                        if (obsBuilder.length() > 0) obsBuilder.append("\n");
+                        if (!obsBuilder.isEmpty()) obsBuilder.append("\n");
                         obsBuilder.append(r.isError() ? "Error: " + r.error() : String.valueOf(r.output()));
                         if ("final_answer".equals(actions.get(i).name())) {
                             isFinalAnswer = true;

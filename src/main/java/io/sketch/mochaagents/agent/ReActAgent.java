@@ -7,7 +7,6 @@ import io.sketch.mochaagents.event.AgentEvents;
 import io.sketch.mochaagents.agent.internal.BaseAgent;
 import io.sketch.mochaagents.memory.MemoryProvider;
 import io.sketch.mochaagents.prompt.SystemPromptProvider;
-import io.sketch.mochaagents.agent.loop.LoopState;
 import io.sketch.mochaagents.agent.loop.StepResult;
 import io.sketch.mochaagents.agent.loop.Termination;
 import io.sketch.mochaagents.agent.loop.strategy.ReActLoop;

@@ -135,7 +135,7 @@ public final class MochaAgent implements Agent<String, String> {
             return with(Faculty.Evaluation.of(e));
         }
 
-        public Builder reflexionLoop() { loop = new ReflexionLoop<>(null, ReflectionEngine.noop()); return this; }
+        public Builder reflexionLoop() { loop = new ReflexionLoop<>(null, Reflector.noop()); return this; }
         public Builder rewooLoop(ReWOOLoop.Reasoner r, ReWOOLoop.ToolExecutor e, ReWOOLoop.Synthesizer s) {
             loop = new ReWOOLoop<>(r, e, s); return this;
         }

@@ -31,7 +31,9 @@ public final class ForkedAgent {
     /** Track a file that was loaded in the parent. */
     public ForkedAgent trackFile(String path) { loadedFiles.add(path); return this; }
 
-    /** Wire parent memory for sidechain session transcript (Claude Code pattern). */
+    /**
+     * Wire parent memory for sidechain session transcript (Claude Code pattern).
+     * */
     public ForkedAgent withParentMemory(io.sketch.mochaagents.memory.MemoryManager parentMemory) {
         this.parentMemory = parentMemory; return this;
     }

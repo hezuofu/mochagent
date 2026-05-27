@@ -43,18 +43,18 @@ public class ReflexionLoop<I, O> implements AgentLoop<I, O> {
     }
 
     private final StepExecutor<I> stepExecutor;
-    private final ReflectionEngine reflectionEngine;
+    private final Reflector reflector;
     private final Critic critic;
     private final int maxImprovements;
 
-    public ReflexionLoop(StepExecutor<I> stepExecutor, ReflectionEngine reflectionEngine) {
-        this(stepExecutor, reflectionEngine, null, 10);
+    public ReflexionLoop(StepExecutor<I> stepExecutor, Reflector reflector) {
+        this(stepExecutor, reflector, null, 10);
     }
 
-    public ReflexionLoop(StepExecutor<I> stepExecutor, ReflectionEngine reflectionEngine,
+    public ReflexionLoop(StepExecutor<I> stepExecutor, Reflector reflector,
                           Critic critic, int maxImprovements) {
         this.stepExecutor = stepExecutor;
-        this.reflectionEngine = reflectionEngine != null ? reflectionEngine : ReflectionEngine.noop();
+        this.reflector = reflector != null ? reflector : Reflector.noop();
         this.critic = critic != null ? critic : ReflexionLoop::defaultCritique;
         this.maxImprovements = maxImprovements;
     }
@@ -73,7 +73,7 @@ public class ReflexionLoop<I, O> implements AgentLoop<I, O> {
         do {
             // 1. Inject any improvement from previous reflection into memory
             if (lastCritique != null && lastCritique.needsImprovement() && memory != null) {
-                var improvement = reflectionEngine.reflect(result, lastCritique);
+                var improvement = reflector.reflect(result, lastCritique);
                 if (improvement != null && !improvement.summary().isEmpty()) {
                     String adjustments = improvement.adjustments() != null
                             && !improvement.adjustments().isEmpty()

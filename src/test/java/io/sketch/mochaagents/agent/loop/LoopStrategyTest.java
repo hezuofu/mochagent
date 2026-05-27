@@ -11,7 +11,7 @@ import io.sketch.mochaagents.agent.event.AgentListener;
 import io.sketch.mochaagents.agent.Agent;
 import io.sketch.mochaagents.agent.AgentContext;
 import io.sketch.mochaagents.agent.AgentMetadata;
-import io.sketch.mochaagents.agent.loop.ReflectionEngine;
+import io.sketch.mochaagents.agent.loop.Reflector;
 import io.sketch.mochaagents.agent.loop.strategy.ObservePlanActReflect;
 import io.sketch.mochaagents.agent.loop.strategy.ThinkActObserve;
 import org.junit.jupiter.api.Test;
@@ -116,7 +116,7 @@ class LoopStrategyTest {
         ObservePlanActReflect<String, String> loop = new ObservePlanActReflect<>(
                 (step, input, mem) -> "observed " + step,
                 (step, input, mem) -> "plan " + step,
-                executor, ReflectionEngine.noop(), 1);
+                executor, Reflector.noop(), 1);
         loop.run(dummyAgent(), "task", new Termination(4));
         assertTrue(executor.stepsTaken() >= 1);
     }
@@ -125,7 +125,7 @@ class LoopStrategyTest {
     void oparLoopTerminatesEarly() {
         OparExecutor executor = new OparExecutor(100, false);
         ObservePlanActReflect<String, String> loop = new ObservePlanActReflect<>(
-                null, null, executor, ReflectionEngine.noop(), 5);
+                null, null, executor, Reflector.noop(), 5);
         loop.run(dummyAgent(), "task", new Termination(2));
         assertTrue(executor.stepsTaken() >= 1);
     }

@@ -9,7 +9,7 @@ import io.sketch.mochaagents.agent.Agent;
 import io.sketch.mochaagents.memory.MemoryProvider;
 import io.sketch.mochaagents.agent.AgentLoop;
 import io.sketch.mochaagents.agent.loop.*;
-import io.sketch.mochaagents.agent.loop.ReflectionEngine;
+import io.sketch.mochaagents.agent.loop.Reflector;
 import io.sketch.mochaagents.agent.loop.SelfCritique;
 import io.sketch.mochaagents.memory.MemoryManager;
 import org.slf4j.Logger;
@@ -43,16 +43,16 @@ public class ObservePlanActReflect<I, O> implements AgentLoop<I, O> {
     private final Observer<I> observer;
     private final PlanningFn<I> planningFn;
     private final StepExecutor<I> stepExecutor;
-    private final ReflectionEngine reflectionEngine;
+    private final Reflector reflector;
     private final int reflectInterval;
 
     public ObservePlanActReflect(Observer<I> observer, PlanningFn<I> planningFn,
-                                  StepExecutor<I> stepExecutor, ReflectionEngine reflectionEngine,
+                                  StepExecutor<I> stepExecutor, Reflector reflector,
                                   int reflectInterval) {
         this.observer = observer;
         this.planningFn = planningFn;
         this.stepExecutor = stepExecutor;
-        this.reflectionEngine = reflectionEngine != null ? reflectionEngine : ReflectionEngine.noop();
+        this.reflector = reflector != null ? reflector : Reflector.noop();
         this.reflectInterval = reflectInterval;
     }
 
@@ -94,7 +94,7 @@ public class ObservePlanActReflect<I, O> implements AgentLoop<I, O> {
                         .needsImprovement(result.hasError())
                         .suggestion(result.error() != null ? result.error() : "continue")
                         .build();
-                var improvement = reflectionEngine.reflect(result, critique);
+                var improvement = reflector.reflect(result, critique);
                 if (improvement != null && !improvement.summary().isEmpty()) {
                     log.debug("[{}] Reflect step {}: {}", agentName, step, improvement.summary());
                 }
