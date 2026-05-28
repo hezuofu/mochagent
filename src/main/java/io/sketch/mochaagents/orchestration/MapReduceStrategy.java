@@ -15,7 +15,7 @@ import java.util.function.Function;
 /**
  * MapReduce strategy — Map tasks to workers, Reduce through aggregator.
  *
- * <p>Uses {@link TaskExecutor} for individual task execution.
+ * <p>Uses {@link TaskRunner} for individual task execution.
  *
  * @author lanxia39@163.com
  */
@@ -24,15 +24,15 @@ public class MapReduceStrategy implements OrchestrationStrategy {
     private static final Logger log = LoggerFactory.getLogger(MapReduceStrategy.class);
 
     private final Agent<String, String> reducer;
-    private final TaskExecutor taskExecutor;
+    private final TaskRunner taskRunner;
     private Function<String, List<String>> mapper = input -> List.of(input);
 
-    public MapReduceStrategy(Agent<String, String> reducer, TaskExecutor taskExecutor) {
-        this.reducer = reducer; this.taskExecutor = taskExecutor;
+    public MapReduceStrategy(Agent<String, String> reducer, TaskRunner taskRunner) {
+        this.reducer = reducer; this.taskRunner = taskRunner;
     }
 
     public MapReduceStrategy(Agent<String, String> reducer) {
-        this(reducer, TaskExecutor.direct());
+        this(reducer, new DirectRunner());
     }
 
     public MapReduceStrategy withMapper(Function<String, List<String>> mapper) {
@@ -55,7 +55,7 @@ public class MapReduceStrategy implements OrchestrationStrategy {
             final String task = subTasks.get(i);
             final Agent<?, ?> worker = workers.get(i % workers.size());
             futures.add(CompletableFuture.supplyAsync(() -> {
-                Object result = taskExecutor.execute(task, worker);
+                Object result = taskRunner.run(task, worker);
                 return Map.entry(idx, result != null ? result.toString() : "[null]");
             }));
         }

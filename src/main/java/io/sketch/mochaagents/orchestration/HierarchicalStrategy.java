@@ -13,7 +13,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Hierarchical strategy — Leader decomposes via Planner, Workers execute topologically.
  *
- * <p>Delegates single-task execution to {@link TaskExecutor} so graph traversal and
+ * <p>Delegates single-task execution to {@link TaskRunner} so graph traversal and
  * task execution are separate concerns.
  *
  * @author lanxia39@163.com
@@ -22,16 +22,16 @@ public class HierarchicalStrategy implements OrchestrationStrategy {
 
     private static final Logger log = LoggerFactory.getLogger(HierarchicalStrategy.class);
 
-    private final TaskExecutor taskExecutor;
+    private final TaskRunner taskRunner;
     private final OrchestrationStrategy delegate;
 
-    public HierarchicalStrategy(TaskExecutor taskExecutor) {
-        this.taskExecutor = taskExecutor;
+    public HierarchicalStrategy(TaskRunner taskRunner) {
+        this.taskRunner = taskRunner;
         this.delegate = null;
     }
 
-    HierarchicalStrategy(TaskExecutor taskExecutor, OrchestrationStrategy delegate) {
-        this.taskExecutor = taskExecutor;
+    HierarchicalStrategy(TaskRunner taskRunner, OrchestrationStrategy delegate) {
+        this.taskRunner = taskRunner;
         this.delegate = delegate;
     }
 
@@ -56,7 +56,7 @@ public class HierarchicalStrategy implements OrchestrationStrategy {
             for (var node : level) {
                 Agent<?, ?> worker = findWorker(node.requiredCapability, workers);
                 futures.add(CompletableFuture.runAsync(() -> {
-                    Object result = taskExecutor.execute(node.description, worker);
+                    Object result = taskRunner.run(node.description, worker);
                     ctx.recordResult(node.id, result);
                 }));
             }
