@@ -78,7 +78,6 @@ public class TaskGraph {
         public final String description;
         public final String requiredCapability;
         final Set<String> dependencies = new LinkedHashSet<>();
-        private Object result;
 
         Node(String id, String description, String requiredCapability) {
             this.id = id; this.description = description; this.requiredCapability = requiredCapability;
@@ -90,7 +89,5 @@ public class TaskGraph {
         }
 
         public Set<String> dependencies() { return Collections.unmodifiableSet(dependencies); }
-        public Optional<Object> result() { return Optional.ofNullable(result); }
-        void setResult(Object r) { this.result = r; }
     }
 }

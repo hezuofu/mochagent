@@ -13,12 +13,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 /**
- * MapReduce strategy — Map tasks to workers, Reduce results through a reducer agent.
+ * MapReduce strategy — Map tasks to workers, Reduce through aggregator.
  *
- * <pre>{@code
- * var strategy = new MapReduceStrategy(reducerAgent)
- *     .withMapper(task -> extractSubTask(task));
- * }</pre>
+ * <p>Uses {@link TaskExecutor} for individual task execution.
  *
  * @author lanxia39@163.com
  */
@@ -27,15 +24,15 @@ public class MapReduceStrategy implements OrchestrationStrategy {
     private static final Logger log = LoggerFactory.getLogger(MapReduceStrategy.class);
 
     private final Agent<String, String> reducer;
-    private final ExecutionPolicy policy;
+    private final TaskExecutor taskExecutor;
     private Function<String, List<String>> mapper = input -> List.of(input);
 
-    public MapReduceStrategy(Agent<String, String> reducer, ExecutionPolicy policy) {
-        this.reducer = reducer; this.policy = policy;
+    public MapReduceStrategy(Agent<String, String> reducer, TaskExecutor taskExecutor) {
+        this.reducer = reducer; this.taskExecutor = taskExecutor;
     }
 
     public MapReduceStrategy(Agent<String, String> reducer) {
-        this(reducer, ExecutionPolicy.DEFAULT);
+        this(reducer, TaskExecutor.direct());
     }
 
     public MapReduceStrategy withMapper(Function<String, List<String>> mapper) {
@@ -49,37 +46,37 @@ public class MapReduceStrategy implements OrchestrationStrategy {
         List<Agent<?, ?>> workers = new ArrayList<>(team.getByRole(RoleType.WORKER));
         if (workers.isEmpty()) workers = new ArrayList<>(team.getAgents());
 
-        // Map phase: distribute sub-tasks to workers in parallel
-        List<CompletableFuture<String>> futures = new ArrayList<>();
+        var ctx = new OrchestrationContext(team, ExecutionPolicy.DEFAULT);
+
+        // Map phase — distribute to workers
+        List<CompletableFuture<Map.Entry<Integer, String>>> futures = new ArrayList<>();
         for (int i = 0; i < subTasks.size(); i++) {
+            final int idx = i;
             final String task = subTasks.get(i);
-            final Agent<String, String> worker = (Agent<String, String>) (Object) workers.get(i % workers.size());
+            final Agent<?, ?> worker = workers.get(i % workers.size());
             futures.add(CompletableFuture.supplyAsync(() -> {
-                for (int attempt = 0; attempt <= policy.maxRetries(); attempt++) {
-                    try { return worker.execute(task); }
-                    catch (Exception e) {
-                        if (attempt >= policy.maxRetries()) {
-                            log.error("Map task failed after {} retries: {}", attempt + 1, e.getMessage());
-                            return "[FAILED: " + e.getMessage() + "]";
-                        }
-                    }
-                }
-                return "[FAILED]";
+                Object result = taskExecutor.execute(task, worker);
+                return Map.entry(idx, result != null ? result.toString() : "[null]");
             }));
         }
 
-        // Collect map results
-        List<String> mapResults = new ArrayList<>();
+        // Collect
+        String[] mapResults = new String[subTasks.size()];
         for (var f : futures) {
-            try { mapResults.add(f.get(policy.timeoutMs(), TimeUnit.MILLISECONDS)); }
-            catch (Exception e) { mapResults.add("[TIMEOUT: " + e.getMessage() + "]"); }
+            try {
+                var entry = f.get(ctx.policy().timeoutMs(), TimeUnit.MILLISECONDS);
+                mapResults[entry.getKey()] = entry.getValue();
+            } catch (Exception e) {
+                log.error("Map task failed: {}", e.getMessage());
+            }
         }
 
-        // Reduce phase: reducer agent aggregates
-        String reduceInput = "Aggregate these sub-task results into a final answer:\n";
-        for (int i = 0; i < mapResults.size(); i++) {
-            reduceInput += "Task " + (i + 1) + " [" + subTasks.get(i) + "]: " + mapResults.get(i) + "\n";
+        // Reduce phase
+        StringBuilder sb = new StringBuilder("Aggregate these sub-task results:\n");
+        for (int i = 0; i < subTasks.size(); i++) {
+            sb.append("Task ").append(i + 1).append(" [").append(subTasks.get(i)).append("]: ")
+              .append(mapResults[i] != null ? mapResults[i] : "[failed]").append("\n");
         }
-        return (O) reducer.execute(reduceInput);
+        return (O) reducer.execute(sb.toString());
     }
 }
