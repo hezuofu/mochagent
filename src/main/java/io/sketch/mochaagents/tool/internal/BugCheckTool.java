@@ -4,7 +4,6 @@
 package io.sketch.mochaagents.tool.internal;
 
 import io.sketch.mochaagents.tool.AbstractTool;
-import io.sketch.mochaagents.tool.ToolInput;
 import io.sketch.mochaagents.tool.ToolSchema;
 
 import java.util.*;

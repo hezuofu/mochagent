@@ -5,7 +5,6 @@ package io.sketch.mochaagents.tool.internal;
 import io.sketch.mochaagents.MochaException;
 
 import io.sketch.mochaagents.tool.AbstractTool;
-import io.sketch.mochaagents.tool.ToolInput;
 import io.sketch.mochaagents.tool.ToolSchema;
 import io.sketch.mochaagents.tool.ValidationResult;
 
@@ -82,7 +81,9 @@ public class FileEditTool extends AbstractTool {
 
         if (!Files.exists(path)) {
             // Empty old_string on non-existent file = create new file
-            if (oldString.isEmpty()) return ValidationResult.valid();
+            if (oldString.isEmpty()) {
+                return ValidationResult.valid();
+            }
             return ValidationResult.invalid("File does not exist: " + filePath, 5);
         }
 
@@ -174,7 +175,9 @@ public class FileEditTool extends AbstractTool {
 
     @Override
     public String formatResult(Object output, String toolUseId) {
-        if (!(output instanceof Map)) return output != null ? output.toString() : "";
+        if (!(output instanceof Map)) {
+            return output != null ? output.toString() : "";
+        }
 
         @SuppressWarnings("unchecked")
         Map<String, Object> map = (Map<String, Object>) output;
@@ -221,7 +224,9 @@ public class FileEditTool extends AbstractTool {
      * Preserve quote style from the actual match found in the file.
      */
     static String preserveQuoteStyle(String original, String actual, String replacement) {
-        if (original.equals(actual)) return replacement;
+        if (original.equals(actual)) {
+            return replacement;
+        }
 
         // Map the quote styles from actual → replacement
         String style = actual;
@@ -238,7 +243,9 @@ public class FileEditTool extends AbstractTool {
     }
 
     private static int countOccurrences(String content, String search) {
-        if (search.isEmpty()) return 0;
+        if (search.isEmpty()) {
+            return 0;
+        }
         int count = 0;
         int idx = 0;
         while ((idx = content.indexOf(search, idx)) >= 0) {

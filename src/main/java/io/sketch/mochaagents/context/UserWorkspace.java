@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.sketch.mochaagents.memory.SessionStore;
+import io.sketch.mochaagents.session.SessionManager;
 
 import java.io.*;
 import java.nio.file.*;
@@ -40,14 +40,14 @@ public final class UserWorkspace {
 
     private final Path homeDir;
     private final String userId;
-    private final SessionStore sessions;
+    private final SessionManager sessions;
 
     public UserWorkspace() { this(Paths.get(System.getProperty("user.home"), ".mocha")); }
 
     public UserWorkspace(Path homeDir) {
         this.homeDir = homeDir;
         this.userId = loadOrCreateUserId();
-        this.sessions = new SessionStore(homeDir.resolve("projects"));
+        this.sessions = new SessionManager(homeDir.resolve("projects"));
         try { Files.createDirectories(homeDir); } catch (IOException ignored) {}
     }
 
@@ -103,17 +103,17 @@ public final class UserWorkspace {
 
     // ============ Sessions ============
 
-    public SessionStore sessions() { return sessions; }
+    public SessionManager sessions() { return sessions; }
 
     /** Start a new session in the user's workspace. */
-    public SessionStore.Session startSession(String cwd) throws IOException {
+    public SessionManager.Session startSession(String cwd) throws IOException {
         String sessionId = UUID.randomUUID().toString();
         return sessions.start(sessionId, cwd, userId);
     }
 
     /** List recent sessions for a project. */
-    public List<SessionStore.SessionMeta> recentSessions(String cwd) throws IOException {
-        return sessions.listSessions(cwd);
+    public List<SessionManager.SessionMeta> recentSessions(String cwd) throws IOException {
+        return sessions.list(cwd);
     }
 
     // ============ Helpers ============

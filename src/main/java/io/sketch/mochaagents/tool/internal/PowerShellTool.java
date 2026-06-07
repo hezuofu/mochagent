@@ -6,7 +6,6 @@ import io.sketch.mochaagents.MochaException;
 
 import io.sketch.mochaagents.tool.AbstractTool;
 import io.sketch.mochaagents.tool.PermissionResult;
-import io.sketch.mochaagents.tool.ToolInput;
 import io.sketch.mochaagents.tool.ToolSchema;
 import io.sketch.mochaagents.tool.ValidationResult;
 
@@ -441,7 +440,9 @@ public class PowerShellTool extends AbstractTool {
             // 退出码语义解释
             String semanticMessage = interpretExitCode(command, exitCode, out, err);
             if (semanticMessage != null && !semanticMessage.isBlank()) {
-                if (!err.isEmpty()) err += "\n";
+                if (!err.isEmpty()) {
+                    err += "\n";
+                }
                 err += semanticMessage;
             }
 
@@ -472,7 +473,9 @@ public class PowerShellTool extends AbstractTool {
 
     @Override
     public String formatResult(Object output, String toolUseId) {
-        if (!(output instanceof Map)) return output != null ? output.toString() : "";
+        if (!(output instanceof Map)) {
+            return output != null ? output.toString() : "";
+        }
         @SuppressWarnings("unchecked")
         Map<String, Object> map = (Map<String, Object>) output;
         String out = (String) map.getOrDefault("stdout", "");
@@ -485,13 +488,19 @@ public class PowerShellTool extends AbstractTool {
         if (warning != null) {
             sb.append("[WARNING] ").append(warning).append("\n");
         }
-        if (!out.isEmpty()) sb.append(out);
+        if (!out.isEmpty()) {
+            sb.append(out);
+        }
         if (!err.isEmpty()) {
-            if (sb.length() > 0) sb.append("\n");
+            if (sb.length() > 0) {
+                sb.append("\n");
+            }
             sb.append("[stderr]\n").append(err);
         }
         sb.append("\n[Exit code: ").append(exitCode).append("]");
-        if (truncated) sb.append(" [output truncated]");
+        if (truncated) {
+            sb.append(" [output truncated]");
+        }
         return sb.toString();
     }
 
@@ -533,7 +542,9 @@ public class PowerShellTool extends AbstractTool {
      * 检测是否为只读 PowerShell 命令.
      */
     private boolean isReadOnlyCommand(String lowerCmd) {
-        if (lowerCmd == null || lowerCmd.isBlank()) return true;
+        if (lowerCmd == null || lowerCmd.isBlank()) {
+            return true;
+        }
 
         // 提取第一个 token（去除前导 & . 调用操作符）
         String firstToken = lowerCmd.trim()
@@ -551,7 +562,9 @@ public class PowerShellTool extends AbstractTool {
             firstToken = firstToken.substring(0, firstToken.length() - 4);
         }
 
-        if (READ_ONLY_CMDLETS.contains(firstToken)) return true;
+        if (READ_ONLY_CMDLETS.contains(firstToken)) {
+            return true;
+        }
 
         // 外部工具：git status/log/diff/show, grep, find, ls, cat 等
         if (Set.of("git", "grep", "rg", "findstr", "where", "tree").contains(firstToken)) {
@@ -565,7 +578,9 @@ public class PowerShellTool extends AbstractTool {
      * 检测破坏性命令并返回警告信息（对齐 destructiveCommandWarning.ts）.
      */
     private String getDestructiveCommandWarning(String command) {
-        if (command == null) return null;
+        if (command == null) {
+            return null;
+        }
         for (DestructivePattern dp : DESTRUCTIVE_PATTERNS) {
             if (dp.pattern.matcher(command).find()) {
                 return dp.warning;
@@ -581,21 +596,29 @@ public class PowerShellTool extends AbstractTool {
      * 只有外部可执行文件需要此处理。
      */
     private String interpretExitCode(String command, int exitCode, String stdout, String stderr) {
-        if (exitCode == 0) return null;
+        if (exitCode == 0) {
+            return null;
+        }
 
         String baseCommand = heuristicallyExtractBaseCommand(command);
 
         // grep-like: 0 = match found, 1 = no match, 2+ = error
         if (GREP_LIKE_COMMANDS.contains(baseCommand)) {
-            if (exitCode == 1) return "No matches found";
-            if (exitCode >= 2) return null; // actual error — let stderr speak
+            if (exitCode == 1) {
+                return "No matches found";
+            }
+            if (exitCode >= 2) {
+                return null; // actual error — let stderr speak
+            }
             return null;
         }
 
         // robocopy: 0-7 success, 8+ error
         if (ROBOCOPY_COMMANDS.contains(baseCommand)) {
             if (exitCode < 8) {
-                if (exitCode == 0) return "No files copied (already in sync)";
+                if (exitCode == 0) {
+                    return "No files copied (already in sync)";
+                }
                 if ((exitCode & 1) != 0) return "Files copied successfully";
                 return "Robocopy completed (no errors)";
             }
@@ -634,12 +657,18 @@ public class PowerShellTool extends AbstractTool {
      */
     private boolean containsWord(String text, String word) {
         int idx = text.indexOf(word);
-        if (idx < 0) return false;
+        if (idx < 0) {
+            return false;
+        }
         // 左边界：文本开头或前一个字符是分隔符
-        if (idx > 0 && Character.isLetterOrDigit(text.charAt(idx - 1))) return false;
+        if (idx > 0 && Character.isLetterOrDigit(text.charAt(idx - 1))) {
+            return false;
+        }
         // 右边界：文本结束或后一个字符是分隔符
         int end = idx + word.length();
-        if (end < text.length() && Character.isLetterOrDigit(text.charAt(end))) return false;
+        if (end < text.length() && Character.isLetterOrDigit(text.charAt(end))) {
+            return false;
+        }
         return true;
     }
 
@@ -683,13 +712,17 @@ public class PowerShellTool extends AbstractTool {
     }
 
     private static String truncate(String s, int maxChars) {
-        if (s.length() <= maxChars) return s;
+        if (s.length() <= maxChars) {
+            return s;
+        }
         return s.substring(0, maxChars) + "\n... [truncated]";
     }
 
     private static int getIntArg(Map<String, Object> args, String key, int defaultVal) {
         Object v = args.get(key);
-        if (v instanceof Number) return ((Number) v).intValue();
+        if (v instanceof Number) {
+            return ((Number) v).intValue();
+        }
         if (v instanceof String s && !s.isEmpty()) {
             try {
                 return Integer.parseInt(s);

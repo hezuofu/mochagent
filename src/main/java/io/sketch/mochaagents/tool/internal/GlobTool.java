@@ -5,7 +5,6 @@ package io.sketch.mochaagents.tool.internal;
 import io.sketch.mochaagents.MochaException;
 
 import io.sketch.mochaagents.tool.AbstractTool;
-import io.sketch.mochaagents.tool.ToolInput;
 import io.sketch.mochaagents.tool.ToolSchema;
 import io.sketch.mochaagents.tool.ValidationResult;
 
@@ -22,7 +21,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Glob 文件匹配工具 — 对齐 claude-code 的 GlobTool.
@@ -130,21 +128,29 @@ public class GlobTool extends AbstractTool {
 
     @Override
     public String formatResult(Object output, String toolUseId) {
-        if (!(output instanceof Map)) return output != null ? output.toString() : "";
+        if (!(output instanceof Map)) {
+            return output != null ? output.toString() : "";
+        }
         @SuppressWarnings("unchecked")
         Map<String, Object> map = (Map<String, Object>) output;
         @SuppressWarnings("unchecked")
         List<String> filenames = (List<String>) map.getOrDefault("filenames", List.of());
         boolean truncated = Boolean.TRUE.equals(map.get("truncated"));
 
-        if (filenames.isEmpty()) return "No files found";
+        if (filenames.isEmpty()) {
+            return "No files found";
+        }
 
         StringBuilder sb = new StringBuilder();
         sb.append("Found ").append(filenames.size()).append(" files");
-        if (truncated) sb.append(" (truncated)");
+        if (truncated) {
+            sb.append(" (truncated)");
+        }
         sb.append("\n");
         sb.append(String.join("\n", filenames));
-        if (truncated) sb.append("\n(Results are truncated. Consider using a more specific path or pattern.)");
+        if (truncated) {
+            sb.append("\n(Results are truncated. Consider using a more specific path or pattern.)");
+        }
         return sb.toString();
     }
 }

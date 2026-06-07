@@ -6,7 +6,6 @@ import io.sketch.mochaagents.MochaException;
 
 import io.sketch.mochaagents.tool.AbstractTool;
 import io.sketch.mochaagents.tool.PermissionResult;
-import io.sketch.mochaagents.tool.ToolInput;
 import io.sketch.mochaagents.tool.ToolSchema;
 import io.sketch.mochaagents.tool.ValidationResult;
 
@@ -126,7 +125,9 @@ public class FileWriteTool extends AbstractTool {
 
     @Override
     public String formatResult(Object output, String toolUseId) {
-        if (!(output instanceof Map)) return output != null ? output.toString() : "";
+        if (!(output instanceof Map)) {
+            return output != null ? output.toString() : "";
+        }
 
         @SuppressWarnings("unchecked")
         Map<String, Object> map = (Map<String, Object>) output;

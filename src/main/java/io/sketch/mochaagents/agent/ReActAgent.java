@@ -73,6 +73,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     protected final io.sketch.mochaagents.model.OptimizationConfig optimization;
     protected final io.sketch.mochaagents.model.CostTracker costTracker;
     protected final MemoryManager memory = MemoryManager.create();
+
     protected final int maxSteps;
     protected final int planningInterval;
     protected final boolean addBaseTools;
@@ -210,7 +211,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
                 : new io.sketch.mochaagents.context.compaction.CompactionEngine();
 
         // Wire async persistence listener for non-blocking I/O
-        events.register(new io.sketch.mochaagents.agent.event.AsyncPersistenceListener(memory));
+        events.register(new io.sketch.mochaagents.agent.event.AsyncPersistenceListener(memory, sessions, () -> currentSession));
     }
 
     private static io.sketch.mochaagents.learn.LearningLoop buildDefaultLearningLoop(
@@ -318,11 +319,14 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
         String systemPrompt = buildSystemPrompt();
         systemPrompt = enrichFromContext(systemPrompt, ctx);
-        memory.startSession(System.getProperty("user.dir", "."), ctx.userId());
+        boolean isResume = currentSession != null;
+        startSession(System.getProperty("user.dir", "."), ctx.userId());
         toolExecutor().withSessionId(ctx.sessionId());
-        memory.reset(systemPrompt);
-        memory.appendTask(task);
-        memory.appendToSession("user", task);
+        if (!isResume) {
+            memory.reset(systemPrompt);
+            memory.appendTask(task);
+        }
+        appendToSession("user", task);
         injectConversationHistory(ctx);
 
 
@@ -385,11 +389,14 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         String systemPrompt = buildSystemPrompt();
         systemPrompt = enrichFromContext(systemPrompt, ctx);
 
-        memory.startSession(System.getProperty("user.dir", "."), ctx.userId());
+        boolean isResume = currentSession != null;
+        startSession(System.getProperty("user.dir", "."), ctx.userId());
         toolExecutor().withSessionId(ctx.sessionId());
-        memory.reset(systemPrompt);
-        memory.appendTask(task);
-        memory.appendToSession("user", task);
+        if (!isResume) {
+            memory.reset(systemPrompt);
+            memory.appendTask(task);
+        }
+        appendToSession("user", task);
         injectConversationHistory(ctx);
 
         // ===== Pre-loop: preflight context check =====
@@ -418,7 +425,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         autoCompact();
         learningLoop.onTaskComplete(result);
         // Turn-end: persist to session, sync memory plugins
-        memory.appendToSession("assistant", result);
+        appendToSession("assistant", result);
         memory.sync(task, result);
         EvaluationResult eval = evaluate(task, result, evaluator, ctx);
         storeMemories(task, result);
@@ -612,7 +619,9 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         if (activePlan == null || activePlan.getSteps().isEmpty()) return;
 
         List<PlanStep> steps = activePlan.getSteps();
-        if (planStepIndex >= steps.size()) return;
+        if (planStepIndex >= steps.size()) {
+            return;
+        }
 
         PlanStep expected = steps.get(planStepIndex);
         String action = result.action();
@@ -641,7 +650,9 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
     /** Simple heuristic: does the action semantically match the plan step? */
     private boolean actionMatchesPlanStep(String action, String observation, PlanStep step) {
-        if (action == null) return false;
+        if (action == null) {
+            return false;
+        }
         String desc = step.description().toLowerCase();
         String act = action.toLowerCase();
 
@@ -791,7 +802,9 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         String[] lines = history.split("\n");
         for (String line : lines) {
             line = line.trim();
-            if (line.isEmpty()) continue;
+            if (line.isEmpty()) {
+                continue;
+            }
             if (line.startsWith("User: ") || line.startsWith("user: ")) {
                 memory.remember(ContentStep.task(line.substring(line.indexOf(' ') + 1).trim()));
             } else if (line.startsWith("Assistant: ") || line.startsWith("assistant: ")) {
@@ -1003,7 +1016,10 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         if (toolRegistry == null) return "None";
         StringBuilder sb = new StringBuilder();
         for (Tool t : toolRegistry.all()) {
-            if (t instanceof ManagedAgentTool) continue; // shown separately
+            // shown separately
+            if (t instanceof ManagedAgentTool) {
+                continue;
+            }
             sb.append("- ").append(t.getName()).append(": ").append(t.getDescription()).append("\n");
         }
         return sb.toString();
@@ -1041,12 +1057,12 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         }
         log.info("Delegating '{}' to managed agent '{}'", task, agentName);
         // Sidechain session: log sub-agent delegation to parent session
-        if (memory.currentSession() != null) {
-            memory.appendToSession("system", "[Delegate " + agentName + "] " + task);
+        if (currentSession != null) {
+            appendToSession("system", "[Delegate " + agentName + "] " + task);
         }
         String result = sub.run(AgentContext.of(task));
-        if (memory.currentSession() != null) {
-            memory.appendToSession("system", "[Delegate " + agentName + " result] "
+        if (currentSession != null) {
+            appendToSession("system", "[Delegate " + agentName + " result] "
                     + (result != null && result.length() > 500
                     ? result.substring(0, 500) + "..." : result));
         }

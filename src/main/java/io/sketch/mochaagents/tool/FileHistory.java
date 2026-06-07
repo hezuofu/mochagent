@@ -77,7 +77,9 @@ public class FileHistory {
     /** Undo the most recent file change. */
     public String undo() {
         Snapshot snap = history.pollLast();
-        if (snap == null) return null;
+        if (snap == null) {
+            return null;
+        }
         rewriteDisk();
         return restore(snap);
     }
@@ -90,7 +92,9 @@ public class FileHistory {
             Snapshot s = it.next();
             if (s.path.equals(target)) { found = s; break; }
         }
-        if (found == null) return null;
+        if (found == null) {
+            return null;
+        }
         history.remove(found);
         rewriteDisk();
         return restore(found);
@@ -105,10 +109,14 @@ public class FileHistory {
             if (s.stepNumber > stepNumber) {
                 it.remove();
                 String path = restore(s);
-                if (path != null) restored.add(path);
+                if (path != null) {
+                    restored.add(path);
+                }
             }
         }
-        if (!restored.isEmpty()) rewriteDisk();
+        if (!restored.isEmpty()) {
+            rewriteDisk();
+        }
         return restored;
     }
 
@@ -128,15 +136,24 @@ public class FileHistory {
     }
 
     public int size() { return history.size(); }
-    public void clear() { history.clear(); if (persistFile != null) rewriteDisk(); }
+    public void clear() {
+        history.clear();
+        if (persistFile != null) {
+            rewriteDisk();
+        }
+    }
 
     // ── Disk persistence ──
 
     private void load() {
-        if (persistFile == null || !Files.exists(persistFile)) return;
+        if (persistFile == null || !Files.exists(persistFile)) {
+            return;
+        }
         try {
             for (String line : Files.readAllLines(persistFile)) {
-                if (line.isBlank()) continue;
+                if (line.isBlank()) {
+                    continue;
+                }
                 try {
                     @SuppressWarnings("unchecked")
                     Map<String, Object> e = JSON.readValue(line, Map.class);
@@ -153,11 +170,15 @@ public class FileHistory {
     }
 
     private void appendToDisk(Snapshot snap) {
-        if (persistFile == null) return;
+        if (persistFile == null) {
+            return;
+        }
         try {
             Map<String, Object> e = new LinkedHashMap<>();
             e.put("path", snap.path.toString());
-            if (snap.oldContent != null) e.put("oldContent", snap.oldContent);
+            if (snap.oldContent != null) {
+                e.put("oldContent", snap.oldContent);
+            }
             e.put("existed", snap.existed);
             e.put("toolName", snap.toolName);
             e.put("timestamp", snap.timestamp.toString());
@@ -168,13 +189,17 @@ public class FileHistory {
     }
 
     private void rewriteDisk() {
-        if (persistFile == null) return;
+        if (persistFile == null) {
+            return;
+        }
         try {
             List<Map<String, Object>> all = new ArrayList<>();
             for (var s : history) {
                 Map<String, Object> e = new LinkedHashMap<>();
                 e.put("path", s.path.toString());
-                if (s.oldContent != null) e.put("oldContent", s.oldContent);
+                if (s.oldContent != null) {
+                    e.put("oldContent", s.oldContent);
+                }
                 e.put("existed", s.existed);
                 e.put("toolName", s.toolName);
                 e.put("timestamp", s.timestamp.toString());

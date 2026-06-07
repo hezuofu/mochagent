@@ -6,7 +6,6 @@ import io.sketch.mochaagents.MochaException;
 
 import io.sketch.mochaagents.tool.AbstractTool;
 import io.sketch.mochaagents.tool.PermissionResult;
-import io.sketch.mochaagents.tool.ToolInput;
 import io.sketch.mochaagents.tool.ToolSchema;
 import io.sketch.mochaagents.tool.ValidationResult;
 
@@ -89,10 +88,14 @@ public class BashTool extends AbstractTool {
      * 根据命令内容判断是否为只读操作.
      */
     public boolean isReadOnlyCommand(String command) {
-        if (command == null || command.isBlank()) return true;
+        if (command == null || command.isBlank()) {
+            return true;
+        }
         String lower = command.toLowerCase().trim();
         for (String dangerous : DANGEROUS_COMMANDS) {
-            if (lower.contains(dangerous)) return false;
+            if (lower.contains(dangerous)) {
+                return false;
+            }
         }
         return READ_ONLY_COMMANDS.stream().anyMatch(lower::startsWith);
     }
@@ -111,7 +114,9 @@ public class BashTool extends AbstractTool {
     @Override
     public PermissionResult checkPermissions(Map<String, Object> arguments) {
         String command = (String) arguments.get("command");
-        if (command == null) return PermissionResult.deny("No command specified");
+        if (command == null) {
+            return PermissionResult.deny("No command specified");
+        }
 
         if (isReadOnlyCommand(command)) {
             return PermissionResult.allow(arguments, "Read-only command");
@@ -205,7 +210,9 @@ public class BashTool extends AbstractTool {
 
     @Override
     public String formatResult(Object output, String toolUseId) {
-        if (!(output instanceof Map)) return output != null ? output.toString() : "";
+        if (!(output instanceof Map)) {
+            return output != null ? output.toString() : "";
+        }
         @SuppressWarnings("unchecked")
         Map<String, Object> map = (Map<String, Object>) output;
         String out = (String) map.getOrDefault("stdout", "");
@@ -214,13 +221,19 @@ public class BashTool extends AbstractTool {
         boolean truncated = Boolean.TRUE.equals(map.get("truncated"));
 
         StringBuilder sb = new StringBuilder();
-        if (!out.isEmpty()) sb.append(out);
+        if (!out.isEmpty()) {
+            sb.append(out);
+        }
         if (!err.isEmpty()) {
-            if (sb.length() > 0) sb.append("\n");
+            if (!sb.isEmpty()) {
+                sb.append("\n");
+            }
             sb.append("[stderr]\n").append(err);
         }
         sb.append("\n[Exit code: ").append(exitCode).append("]");
-        if (truncated) sb.append(" [output truncated]");
+        if (truncated) {
+            sb.append(" [output truncated]");
+        }
         return sb.toString();
     }
 
@@ -231,13 +244,17 @@ public class BashTool extends AbstractTool {
     }
 
     private static String truncate(String s, int maxChars) {
-        if (s.length() <= maxChars) return s;
+        if (s.length() <= maxChars) {
+            return s;
+        }
         return s.substring(0, maxChars) + "\n... [truncated]";
     }
 
     private static int getIntArg(Map<String, Object> args, String key, int defaultVal) {
         Object v = args.get(key);
-        if (v instanceof Number) return ((Number) v).intValue();
+        if (v instanceof Number) {
+            return ((Number) v).intValue();
+        }
         if (v instanceof String s && !s.isEmpty()) {
             try { return Integer.parseInt(s); } catch (NumberFormatException ignored) {}
         }

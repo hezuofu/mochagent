@@ -5,7 +5,6 @@ package io.sketch.mochaagents.tool.internal;
 import io.sketch.mochaagents.MochaException;
 
 import io.sketch.mochaagents.tool.AbstractTool;
-import io.sketch.mochaagents.tool.ToolInput;
 import io.sketch.mochaagents.tool.ToolSchema;
 import io.sketch.mochaagents.tool.ValidationResult;
 
@@ -17,10 +16,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Web 搜索工具 — 对齐 claude-code 的 WebSearchTool.
@@ -114,7 +110,9 @@ public class WebSearchTool extends AbstractTool {
 
     @Override
     public String formatResult(Object output, String toolUseId) {
-        if (!(output instanceof Map)) return output != null ? output.toString() : "";
+        if (!(output instanceof Map)) {
+            return output != null ? output.toString() : "";
+        }
         @SuppressWarnings("unchecked")
         Map<String, Object> map = (Map<String, Object>) output;
         String query = (String) map.get("query");
@@ -141,7 +139,6 @@ public class WebSearchTool extends AbstractTool {
 
     // ==================== Parsing ====================
 
-    @SuppressWarnings("unchecked")
     private List<Map<String, String>> parseResults(String body,
                                                     List<String> allowedDomains,
                                                     List<String> blockedDomains) {
@@ -198,11 +195,11 @@ public class WebSearchTool extends AbstractTool {
             if (text != null && !text.isEmpty()) {
                 // Apply domain filters
                 if (allowedDomains != null && !allowedDomains.isEmpty()) {
-                    boolean allowed = allowedDomains.stream().anyMatch(d -> url.contains(d));
+                    boolean allowed = allowedDomains.stream().anyMatch(d -> Objects.requireNonNull(url).contains(d));
                     if (!allowed) { pos = firstUrlPos > 0 ? firstUrlPos + 1 : pos + 1; continue; }
                 }
                 if (blockedDomains != null && !blockedDomains.isEmpty()) {
-                    boolean blocked = blockedDomains.stream().anyMatch(d -> url.contains(d));
+                    boolean blocked = blockedDomains.stream().anyMatch(d -> Objects.requireNonNull(url).contains(d));
                     if (blocked) { pos = firstUrlPos > 0 ? firstUrlPos + 1 : pos + 1; continue; }
                 }
 
@@ -218,31 +215,49 @@ public class WebSearchTool extends AbstractTool {
 
     private static String extractJsonArray(String json, String key) {
         int keyPos = json.indexOf(key);
-        if (keyPos < 0) return null;
+        if (keyPos < 0) {
+            return null;
+        }
         int start = json.indexOf('[', keyPos);
-        if (start < 0) return null;
+        if (start < 0) {
+            return null;
+        }
         int depth = 0;
         for (int i = start; i < json.length(); i++) {
             char c = json.charAt(i);
-            if (c == '[') depth++;
-            else if (c == ']') { depth--; if (depth == 0) return json.substring(start, i + 1); }
+            if (c == '[') {
+                depth++;
+            } else if (c == ']') {
+                depth--;
+                if (depth == 0) {
+                    return json.substring(start, i + 1);
+                }
+            }
         }
         return null;
     }
 
     private static String extractJsonString(String json, String key) {
         int keyPos = json.indexOf(key);
-        if (keyPos < 0) return null;
+        if (keyPos < 0) {
+            return null;
+        }
         return extractJsonStringAt(json, keyPos + key.length());
     }
 
     private static String extractJsonStringAt(String json, int pos) {
         int colonPos = json.indexOf(':', pos);
-        if (colonPos < 0) return null;
+        if (colonPos < 0) {
+            return null;
+        }
         int start = json.indexOf('"', colonPos);
-        if (start < 0) return null;
+        if (start < 0) {
+            return null;
+        }
         int end = json.indexOf('"', start + 1);
-        if (end < 0) return null;
+        if (end < 0) {
+            return null;
+        }
         return json.substring(start + 1, end);
     }
 }

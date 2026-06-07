@@ -1,6 +1,11 @@
 # Hermes-Agent 设计文档
 
 > 基于 `E:\ai-work\hermes-agent` 源码完整分析。hermes-agent 是生产级 Python AI Agent 系统，已部署运行。
+>
+> **📖 详见新版本深度分析**: [hermes-agent-deep-analysis.md](./hermes-agent-deep-analysis.md)
+> (2026-06-07 更新, 涵盖最新 dev 分支所有模块)
+>
+> **📖 Claude Code 架构对比分析**: [claude-code-deep-analysis.md](./claude-code-deep-analysis.md)
 
 ---
 

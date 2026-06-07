@@ -47,8 +47,10 @@ public class PluginManager {
     /** Register a Plugin instance — reads @PluginInfo for metadata. */
     public void registerPlugin(Plugin plugin) {
         PluginInfo info = plugin.getClass().getAnnotation(PluginInfo.class);
-        if (info == null) throw new IllegalArgumentException(
-                "@PluginInfo required on " + plugin.getClass().getName());
+        if (info == null) {
+            throw new IllegalArgumentException(
+                    "@PluginInfo required on " + plugin.getClass().getName());
+        }
         PluginDescriptor desc = PluginDescriptor.of(info.name(), info.version(), info.description());
         var ref = new java.util.concurrent.atomic.AtomicReference<>(desc);
         plugin.extensions().forEach(e -> ref.set(ref.get().withExtension(e)));

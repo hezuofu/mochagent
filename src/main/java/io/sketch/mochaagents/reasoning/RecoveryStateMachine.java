@@ -8,8 +8,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 /**
  * Recovery state machine — replicates claude-code's multi-stage recovery chain.
@@ -185,7 +183,9 @@ public class RecoveryStateMachine {
 
     private void recordEvent(Phase phase, String detail) {
         history.add(new RecoveryEvent(phase, detail, System.currentTimeMillis()));
-        if (history.size() > 100) history.remove(0);
+        if (history.size() > 100) {
+            history.remove(0);
+        }
     }
 
     // ============ Types ============

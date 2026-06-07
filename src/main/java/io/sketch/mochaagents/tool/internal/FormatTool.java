@@ -4,7 +4,6 @@
 package io.sketch.mochaagents.tool.internal;
 
 import io.sketch.mochaagents.tool.AbstractTool;
-import io.sketch.mochaagents.tool.ToolInput;
 import io.sketch.mochaagents.tool.ToolSchema;
 
 import java.util.LinkedHashMap;
@@ -75,7 +74,9 @@ public class FormatTool extends AbstractTool {
 
     @Override
     public String formatResult(Object output, String toolUseId) {
-        if (!(output instanceof Map<?, ?> m)) return "";
+        if (!(output instanceof Map<?, ?> m)) {
+            return "";
+        }
         String result = (String) m.get("formatted");
         String lang = (String) m.get("language");
         int inLines = ((Number) m.get("lines_in")).intValue();

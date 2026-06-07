@@ -42,7 +42,7 @@ public class CurriculumLearner<I, O> implements Learner<I, O> {
         // 返回同难度级别的最佳经验输出
         return completed.stream()
                 .filter(e -> estimateDifficulty(e) <= currentLevel * 0.3 + 0.1)
-                .max(Comparator.<Experience<I, O>>comparingDouble(e -> e.reward()))
+                .max(Comparator.<Experience<I, O>>comparingDouble(Experience::reward))
                 .map(Experience::output)
                 .orElse(null);
     }

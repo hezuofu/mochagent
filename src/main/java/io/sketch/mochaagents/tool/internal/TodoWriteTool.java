@@ -4,7 +4,6 @@
 package io.sketch.mochaagents.tool.internal;
 
 import io.sketch.mochaagents.tool.AbstractTool;
-import io.sketch.mochaagents.tool.ToolInput;
 import io.sketch.mochaagents.tool.ToolSchema;
 
 import java.util.ArrayList;
@@ -53,7 +52,9 @@ public class TodoWriteTool extends AbstractTool {
     @SuppressWarnings("unchecked")
     public Object call(Map<String, Object> arguments) {
         List<Map<String, Object>> newTodos = (List<Map<String, Object>>) arguments.get("todos");
-        if (newTodos == null) newTodos = List.of();
+        if (newTodos == null) {
+            newTodos = List.of();
+        }
 
         // Capture old state
         List<Map<String, Object>> oldTodos = new ArrayList<>();
@@ -88,7 +89,9 @@ public class TodoWriteTool extends AbstractTool {
 
     @Override
     public String formatResult(Object output, String toolUseId) {
-        if (!(output instanceof Map)) return output != null ? output.toString() : "";
+        if (!(output instanceof Map)) {
+            return output != null ? output.toString() : "";
+        }
         @SuppressWarnings("unchecked")
         Map<String, Object> map = (Map<String, Object>) output;
         @SuppressWarnings("unchecked")
@@ -98,15 +101,14 @@ public class TodoWriteTool extends AbstractTool {
         long inProgress = newTodos.stream().filter(t -> "in_progress".equals(t.get("status"))).count();
         long completed = newTodos.stream().filter(t -> "completed".equals(t.get("status"))).count();
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("Todos have been modified successfully. ");
-        sb.append("Current status: ");
-        sb.append(pending).append(" pending, ");
-        sb.append(inProgress).append(" in progress, ");
-        sb.append(completed).append(" completed. ");
-        sb.append("Continue tracking progress with the todo list.");
+        String sb = "Todos have been modified successfully. " +
+            "Current status: " +
+            pending + " pending, " +
+            inProgress + " in progress, " +
+            completed + " completed. " +
+            "Continue tracking progress with the todo list.";
 
-        return sb.toString();
+        return sb;
     }
 
     /** 获取当前 session 的 todo 列表快照. */

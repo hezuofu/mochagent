@@ -4,7 +4,6 @@
 package io.sketch.mochaagents.tool.internal;
 
 import io.sketch.mochaagents.tool.AbstractTool;
-import io.sketch.mochaagents.tool.ToolInput;
 import io.sketch.mochaagents.tool.ToolSchema;
 import io.sketch.mochaagents.tool.ValidationResult;
 
@@ -174,7 +173,9 @@ public class WebFetchTool extends AbstractTool {
 
     @Override
     public String formatResult(Object output, String toolUseId) {
-        if (!(output instanceof Map)) return output != null ? output.toString() : "";
+        if (!(output instanceof Map)) {
+            return output != null ? output.toString() : "";
+        }
         @SuppressWarnings("unchecked")
         Map<String, Object> map = (Map<String, Object>) output;
         return (String) map.getOrDefault("result", "");
@@ -213,7 +214,9 @@ public class WebFetchTool extends AbstractTool {
 
         // Build result with prompt context
         StringBuilder sb = new StringBuilder();
-        if (!title.isEmpty()) sb.append("# ").append(title).append("\n\n");
+        if (!title.isEmpty()) {
+            sb.append("# ").append(title).append("\n\n");
+        }
         sb.append("## Prompt: ").append(prompt).append("\n\n");
         sb.append("## Content:\n").append(text);
 

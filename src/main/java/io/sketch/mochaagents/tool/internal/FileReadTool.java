@@ -5,7 +5,6 @@ package io.sketch.mochaagents.tool.internal;
 import io.sketch.mochaagents.MochaException;
 
 import io.sketch.mochaagents.tool.AbstractTool;
-import io.sketch.mochaagents.tool.ToolInput;
 import io.sketch.mochaagents.tool.ToolSchema;
 import io.sketch.mochaagents.tool.ValidationResult;
 
@@ -29,7 +28,8 @@ import java.util.Map;
 public class FileReadTool extends AbstractTool {
 
     private static final String NAME = "read_file";
-    private static final int MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10 MiB
+    // 10 MiB
+    private static final int MAX_SIZE_BYTES = 10 * 1024 * 1024;
     private static final int MAX_TOKENS_ESTIMATE = 100_000;
 
     public FileReadTool() {
@@ -164,7 +164,9 @@ public class FileReadTool extends AbstractTool {
 
     @Override
     public String formatResult(Object output, String toolUseId) {
-        if (!(output instanceof Map)) return output != null ? output.toString() : "";
+        if (!(output instanceof Map)) {
+            return output != null ? output.toString() : "";
+        }
 
         @SuppressWarnings("unchecked")
         Map<String, Object> map = (Map<String, Object>) output;
@@ -190,19 +192,21 @@ public class FileReadTool extends AbstractTool {
     }
 
     private static String getMimeFromExtension(String ext) {
-        switch (ext.toLowerCase()) {
-            case "png": return "image/png";
-            case "jpg": case "jpeg": return "image/jpeg";
-            case "gif": return "image/gif";
-            case "webp": return "image/webp";
-            case "bmp": return "image/bmp";
-            default: return "application/octet-stream";
-        }
+        return switch (ext.toLowerCase()) {
+            case "png" -> "image/png";
+            case "jpg", "jpeg" -> "image/jpeg";
+            case "gif" -> "image/gif";
+            case "webp" -> "image/webp";
+            case "bmp" -> "image/bmp";
+            default -> "application/octet-stream";
+        };
     }
 
     private static int getInt(Map<String, Object> args, String key, int defaultVal) {
         Object v = args.get(key);
-        if (v instanceof Number) return ((Number) v).intValue();
+        if (v instanceof Number) {
+            return ((Number) v).intValue();
+        }
         if (v instanceof String) {
             try { return Integer.parseInt((String) v); } catch (NumberFormatException ignored) {}
         }
@@ -211,9 +215,15 @@ public class FileReadTool extends AbstractTool {
 
     private static Integer getInteger(Map<String, Object> args, String key) {
         Object v = args.get(key);
-        if (v instanceof Number) return ((Number) v).intValue();
+        if (v instanceof Number) {
+            return ((Number) v).intValue();
+        }
         if (v instanceof String && !((String) v).isEmpty()) {
-            try { return Integer.parseInt((String) v); } catch (NumberFormatException ignored) {}
+            try {
+                return Integer.parseInt((String) v);
+            } catch (NumberFormatException ignored) {
+
+            }
         }
         return null;
     }

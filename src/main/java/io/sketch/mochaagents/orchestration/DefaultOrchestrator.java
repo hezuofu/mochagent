@@ -13,10 +13,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * 默认编排器 — Orchestrator 接口的通用实现.
+ * Default orchestrator — general-purpose Orchestrator implementation.
  *
- * <p>维护 AgentTeam 注册表，委托 OrchestrationStrategy 执行编排逻辑.
- * 线程安全，支持运行时注册/注销 Agent.
+ * <p>Maintains an AgentTeam registry, delegates to OrchestrationStrategy for
+ * execution logic, and uses a configurable {@link TaskRunner} (default:
+ * {@link DirectRunner}) for individual agent calls — enabling retry, timeout,
+ * and fallback through the {@link RetryingRunner} decorator.
+ *
+ * <p>Thread-safe. Supports runtime agent registration/unregistration.
+ *
  * @author lanxia39@163.com
  */
 public class DefaultOrchestrator implements Orchestrator {
@@ -27,10 +32,32 @@ public class DefaultOrchestrator implements Orchestrator {
     private final ConcurrentMap<String, Role> roles = new ConcurrentHashMap<>();
     private final AgentTeam team;
     private volatile OrchestrationStrategy activeStrategy;
+    private volatile TaskRunner taskRunner = new DirectRunner();
+    private volatile ExecutionPolicy defaultPolicy = ExecutionPolicy.DEFAULT;
 
     public DefaultOrchestrator() {
         this.team = new AgentTeam("default");
     }
+
+    // ── Configuration ──
+
+    /** Set the TaskRunner used for all individual agent calls. */
+    public DefaultOrchestrator withRunner(TaskRunner runner) {
+        this.taskRunner = runner;
+        return this;
+    }
+
+    /** Configure retry policy — wraps the current runner in a RetryingRunner. */
+    public DefaultOrchestrator withPolicy(ExecutionPolicy policy) {
+        this.defaultPolicy = policy;
+        this.taskRunner = new RetryingRunner(new DirectRunner(), policy);
+        return this;
+    }
+
+    /** @return the current TaskRunner in use. */
+    public TaskRunner taskRunner() { return taskRunner; }
+
+    // ── Agent management ──
 
     @Override
     public void register(Agent<?, ?> agent, Role role) {
@@ -51,6 +78,8 @@ public class DefaultOrchestrator implements Orchestrator {
         }
     }
 
+    // ── Orchestration ──
+
     @Override
     @SuppressWarnings("unchecked")
     public <I, O> O orchestrate(I input, OrchestrationStrategy strategy) {
@@ -59,7 +88,7 @@ public class DefaultOrchestrator implements Orchestrator {
         log.info("Orchestrating with strategy: {}", strategy.getClass().getSimpleName());
 
         try {
-            return (O) strategy.execute(team, input);
+            return strategy.execute(team, input, taskRunner);
         } catch (Exception e) {
             log.error("Orchestration failed: {}", e.getMessage(), e);
             throw new RuntimeException("Orchestration failed: " + e.getMessage(), e);
@@ -85,6 +114,6 @@ public class DefaultOrchestrator implements Orchestrator {
         log.info("Orchestrator shut down");
     }
 
-    /** 已注册 Agent 数量 */
+    /** Count of registered agents. */
     public int agentCount() { return agents.size(); }
 }

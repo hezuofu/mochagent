@@ -5,8 +5,6 @@ package io.sketch.mochaagents.reasoning;
 
 import io.sketch.mochaagents.model.Model;
 import io.sketch.mochaagents.model.ModelRequest;
-import io.sketch.mochaagents.reasoning.ReasoningChain;
-import io.sketch.mochaagents.reasoning.ReasoningStep;
 
 /**
  * 一致性检查 — 用 Model 检测推理步骤间是否存在自相矛盾.

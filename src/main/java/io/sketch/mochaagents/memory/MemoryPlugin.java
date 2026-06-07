@@ -2,30 +2,32 @@
 // Copyright 2024-2026 MochaAgents Authors
 
 package io.sketch.mochaagents.memory;
-import java.util.stream.Stream;
 
 import io.sketch.mochaagents.plugin.ExtensionPoint;
 import io.sketch.mochaagents.plugin.Plugin;
 
-import java.util.List;
+import java.util.stream.Stream;
 
 /**
- * Memory plugin — extends the unified Plugin system for memory backends.
+ * Memory plugin — extends {@link MemoryProvider} with Plugin discovery.
  *
  * <p>Implementations register via {@link MemoryManager#withPlugin(MemoryPlugin)}
  * or via the plugin loader as ExtensionPoint("MEMORY", ...).
- * Only ONE external plugin is recommended (prevents schema bloat).
-  * @author lanxia39@163.com
+ * Only ONE external plugin is recommended (prevenits schema bloat).
+ *
+ * <p>All memory lifecycle hooks (buildSystemPrompt, prefetch, sync, onTurnStart)
+ * are inherited from {@link MemoryProvider}.
+ *
+ * @author lanxia39@163.com
  */
-public interface MemoryPlugin extends Plugin {
+public interface MemoryPlugin extends MemoryProvider, Plugin {
 
-    default String name() { return getClass().getSimpleName(); }
-    default String buildSystemPrompt() { return ""; }
-    default String prefetch(String userMessage) { return ""; }
-    default void sync(String userMessage, String assistantResponse) {}
-    default void onTurnStart(int turnCount, String userMessage) {}
+    /** Resolve the diamond: both MemoryProvider and Plugin define default name(). Use MemoryProvider's. */
+    @Override
+    default String name() { return MemoryProvider.super.name(); }
 
     /** Expose this plugin as a MEMORY extension point for the unified plugin system. */
+    @Override
     default Stream<ExtensionPoint<?>> extensions() {
         return Stream.of(ExtensionPoint.memory(this, 0));
     }

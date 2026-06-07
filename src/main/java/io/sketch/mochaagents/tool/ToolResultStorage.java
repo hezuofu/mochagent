@@ -20,10 +20,16 @@ public final class ToolResultStorage {
 
     public static ToolResultStorage getInstance() { return INSTANCE; }
 
-    public ToolResultStorage() { this(Paths.get(System.getProperty("java.io.tmpdir"), "mocha-results"), DEFAULT_MAX_CHARS); }
+    public ToolResultStorage() {
+        this(Paths.get(System.getProperty("java.io.tmpdir"), "mocha-results"), DEFAULT_MAX_CHARS);
+    }
     public ToolResultStorage(Path dir, int maxChars) {
         this.storageDir = dir; this.maxResultChars = maxChars;
-        try { Files.createDirectories(dir); } catch (IOException e) { /* ignore */ }
+        try {
+            Files.createDirectories(dir);
+        } catch (IOException e) {
+            /* ignore */
+        }
     }
 
     /** Store a tool result, offloading to disk if too large. Returns display string. */

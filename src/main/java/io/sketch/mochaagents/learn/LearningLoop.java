@@ -39,8 +39,8 @@ public final class LearningLoop {
     }
 
     // ── Builder ──
-
-    public LearningLoop withWorkingMemory() { return this; } // MemoryManager already has it
+   // MemoryManager already has it
+    public LearningLoop withWorkingMemory() { return this; }
 
     public LearningLoop withGlobalMemory() {
         memory.withGlobalMemory(); return this;
@@ -51,10 +51,12 @@ public final class LearningLoop {
         this.forceInterruptAt = forceInterruptAt;
         this.dangerInterval = Math.max(1, globalInterval / 2);
         this.dangerHook = (ctx) -> {
-            if (ctx.turn() % forceInterruptAt == 0)
+            if (ctx.turn() % forceInterruptAt == 0) {
                 return "\n[DANGER] Turn " + ctx.turn() + ". Must ask_user with summary, no more retries.";
-            if (ctx.turn() % dangerInterval == 0)
+            }
+            if (ctx.turn() % dangerInterval == 0) {
                 return "\n[DANGER] Turn " + ctx.turn() + ". No pointless retries. Switch strategy or ask user.";
+            }
             return "";
         };
         return this;
@@ -63,8 +65,9 @@ public final class LearningLoop {
     public LearningLoop withSummaryRequired() {
         this.summaryExtractor = SummaryExtractor.fromTags();
         this.turnHook = (ctx) -> {
-            if (!ctx.response().contains("<summary>") && !ctx.response().contains("</summary>"))
+            if (!ctx.response().contains("<summary>") && !ctx.response().contains("</summary>")) {
                 return "\n[SYSTEM] Must include <summary> in response!";
+            }
             return "";
         };
         return this;
@@ -84,7 +87,9 @@ public final class LearningLoop {
 
         // 1. Extract summary + record in history
         String summary = summaryExtractor.extract(response);
-        if (!summary.isEmpty()) injection.append("\n[Summary: ").append(summary).append("]");
+        if (!summary.isEmpty()) {
+            injection.append("\n[Summary: ").append(summary).append("]");
+        }
 
         // 2. Turn hook (summary enforcement)
         String th = turnHook.afterTurn(ctx);
@@ -93,12 +98,16 @@ public final class LearningLoop {
         // 3. Periodic global memory reinjection
         if (globalMemoryInterval > 0 && turn % globalMemoryInterval == 0) {
             String gc = memory.globalContext();
-            if (!gc.isEmpty()) injection.append(gc);
+            if (!gc.isEmpty()) {
+                injection.append(gc);
+            }
         }
 
         // 4. Danger warnings
         String dw = dangerHook.afterTurn(ctx);
-        if (!dw.isEmpty()) injection.append(dw);
+        if (!dw.isEmpty()) {
+            injection.append(dw);
+        }
 
         // 5. Working memory context
         injection.append(memory.workingContext());

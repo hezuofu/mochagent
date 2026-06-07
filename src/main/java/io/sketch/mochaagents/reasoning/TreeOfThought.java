@@ -5,9 +5,6 @@ package io.sketch.mochaagents.reasoning;
 
 import io.sketch.mochaagents.model.Model;
 import io.sketch.mochaagents.model.ModelRequest;
-import io.sketch.mochaagents.reasoning.ReasoningChain;
-import io.sketch.mochaagents.reasoning.ReasoningStep;
-import io.sketch.mochaagents.reasoning.ReasoningStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,19 +68,27 @@ public class TreeOfThought implements ReasoningStrategy {
     private List<Branch> parseBranches(String text) {
         List<Branch> out = new ArrayList<>();
         for (String part : text.split("(?=Branch\\s*\\d+)")) {
-            if (part.isBlank()) continue;
+            if (part.isBlank()) {
+                continue;
+            }
             String thought = extractField(part, "Branch\\s*\\d+[:：]\\s*", "");
             String conclusion = extractField(part, "Conclusion[:：]\\s*", thought);
             double score = extractScore(part);
             out.add(new Branch(thought.trim(), conclusion.trim(), score));
         }
-        if (out.isEmpty()) out.add(new Branch(text.trim(), "default", 0.5));
+        if (out.isEmpty()) {
+            out.add(new Branch(text.trim(), "default", 0.5));
+        }
         return out;
     }
 
     private Branch selectBest(List<Branch> list) {
         Branch best = list.get(0);
-        for (Branch b : list) if (b.score > best.score) best = b;
+        for (Branch b : list) {
+            if (b.score > best.score) {
+                best = b;
+            }
+        }
         list.remove(best);
         return best;
     }

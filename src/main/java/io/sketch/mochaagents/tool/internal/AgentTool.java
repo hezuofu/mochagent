@@ -4,18 +4,15 @@
 package io.sketch.mochaagents.tool.internal;
 
 import io.sketch.mochaagents.agent.Agent;
-import io.sketch.mochaagents.agent.AgentContext;
 import io.sketch.mochaagents.agent.AgentMetadata;
 import io.sketch.mochaagents.agent.ToolCallingAgent;
 import io.sketch.mochaagents.model.Model;
 import io.sketch.mochaagents.orchestration.TaskNotification;
 import io.sketch.mochaagents.tool.AbstractTool;
-import io.sketch.mochaagents.tool.ToolInput;
 import io.sketch.mochaagents.tool.ToolRegistry;
 import io.sketch.mochaagents.tool.ToolSchema;
 import io.sketch.mochaagents.tool.ValidationResult;
 
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -248,7 +245,9 @@ public class AgentTool extends AbstractTool {
 
     @Override
     public String formatResult(Object output, String toolUseId) {
-        if (!(output instanceof Map)) return output != null ? output.toString() : "";
+        if (!(output instanceof Map)) {
+            return output != null ? output.toString() : "";
+        }
         @SuppressWarnings("unchecked")
         Map<String, Object> map = (Map<String, Object>) output;
         String agentId = (String) map.get("agentId");
@@ -263,7 +262,9 @@ public class AgentTool extends AbstractTool {
 
     private static int getIntArg(Map<String, Object> args, String key, int defaultVal) {
         Object v = args.get(key);
-        if (v instanceof Number) return ((Number) v).intValue();
+        if (v instanceof Number) {
+            return ((Number) v).intValue();
+        }
         if (v instanceof String s && !s.isEmpty()) {
             try { return Integer.parseInt(s); } catch (NumberFormatException ignored) {}
         }
@@ -333,7 +334,9 @@ public class AgentTool extends AbstractTool {
         try {
             java.util.function.Supplier<Agent<Map<String, Object>, String>> factory =
                     agentFactories.get(state.agentType);
-            if (factory == null) factory = agentFactories.get("general-purpose");
+            if (factory == null) {
+                factory = agentFactories.get("general-purpose");
+            }
             if (factory == null) {
                 return new TaskResult(agentId, TaskStatus.FAILED, null,
                         "No agent factory", state.agentType, 0, 0, 0, 0);

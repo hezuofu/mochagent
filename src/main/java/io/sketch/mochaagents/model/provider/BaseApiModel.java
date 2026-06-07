@@ -223,10 +223,27 @@ public abstract class BaseApiModel implements Model {
     /** Resolve messages — prefer typedMessages when present, fall back to flat maps. */
     protected static ArrayNode resolveMessages(ModelRequest request) {
         if (!request.typedMessages().isEmpty()) {
-            ensureToolResultPairing(request.typedMessages());
-            return typedMessagesToJson(request.typedMessages());
+            var messages = request.typedMessages();
+            ensureToolResultPairing(messages);
+            messages = io.sketch.mochaagents.context.compaction.MicroCompact.compact(
+                    messages, buildToolNameMap(messages)).messages();
+            return typedMessagesToJson(messages);
         }
         return messagesToJson(request.messages());
+    }
+
+    /** Build tool_use_id → tool_name map for MicroCompact eligibility. */
+    private static Map<String, String> buildToolNameMap(List<io.sketch.mochaagents.message.Message> messages) {
+        Map<String, String> map = new java.util.LinkedHashMap<>();
+        for (var msg : messages) {
+            if (msg instanceof io.sketch.mochaagents.message.Message.AssistantMessage am) {
+                for (var b : am.content()) {
+                    if (b instanceof io.sketch.mochaagents.message.ContentBlock.ToolUseBlock tu)
+                        map.put(tu.id(), tu.name());
+                }
+            }
+        }
+        return map;
     }
 
     /** Claude Code pattern: verify every tool_use has a paired tool_result before API call. */

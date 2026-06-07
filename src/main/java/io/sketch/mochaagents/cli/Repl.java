@@ -202,7 +202,7 @@ final class Repl implements CliCommand {
             // Auto-generate session title after first exchange
             if (!titleGenerated) {
                 titleGenerated = true;
-                String title = a.memory().generateTitle(model);
+                String title = a.generateTitle(model);
                 if (title != null) {
                     out.println(dim("  Session: " + title));
                 }
@@ -309,7 +309,7 @@ final class Repl implements CliCommand {
             case "help", "h" -> { showHelp(); yield false; }
             case "exit", "quit", "q" -> {
                 if (agent != null) {
-                    agent.memory().endSession(sessionInputTokens, sessionOutputTokens, sessionCost);
+                    agent.endSession(sessionInputTokens, sessionOutputTokens, sessionCost);
                 }
                 out.println("Goodbye."); yield true;
             }
@@ -435,7 +435,7 @@ final class Repl implements CliCommand {
 
         if (agent != null) {
             var mem = agent.memory();
-            var session = mem.currentSession();
+            var session = agent.currentSession();
             String sessionId = session != null ? dim(session.id().substring(0, 8) + "...") : dim("none");
             out.println(bold("Session:") + " " + sessionId
                     + " | " + bold("Steps:") + " " + mem.stepCount()
@@ -507,7 +507,7 @@ final class Repl implements CliCommand {
             return;
         }
         String cwd = System.getProperty("user.dir", ".");
-        var results = agent.memory().searchSessions(query, cwd, 8);
+        var results = agent.searchSessions(query, cwd, 8);
 
         if (results.isEmpty()) {
             out.println(dim("No results for: ") + query);
@@ -544,7 +544,7 @@ final class Repl implements CliCommand {
     private void listSessionsCmd() {
         if (agent == null) { out.println(dim("Start a conversation first")); return; }
         String cwd = System.getProperty("user.dir", ".");
-        var sessions = agent.memory().listSessions(cwd);
+        var sessions = agent.listSessions(cwd);
         if (sessions.isEmpty()) {
             out.println(dim("No sessions found in current project."));
             return;
@@ -607,7 +607,7 @@ final class Repl implements CliCommand {
         String userId = System.getProperty("user.name", "anonymous");
 
         if ("latest".equals(sessionId)) {
-            var sessions = mem.listSessions(cwd);
+            var sessions = agent.listSessions(cwd);
             if (!sessions.isEmpty()) {
                 sessionId = sessions.get(0).id();
             } else {
@@ -616,7 +616,7 @@ final class Repl implements CliCommand {
             }
         }
 
-        mem.resumeSession(sessionId, cwd, userId);
+        agent.resumeSession(sessionId, cwd, userId);
         out.println(green("✓ Resumed session ") + dim(sessionId.substring(0, 8) + "..."));
         out.println(dim("  " + mem.steps().size() + " previous messages restored"));
     }

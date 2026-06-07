@@ -20,7 +20,17 @@
       "Bash(sed -i '/^package/a\\\\import io.sketch.mochaagents.memory.MemoryRecord;' src/main/java/io/sketch/mochaagents/agent/loop/ToolCallingAgent.java)",
       "Bash(sed -i '/^package/a\\\\import io.sketch.mochaagents.memory.MemoryManager;' src/main/java/io/sketch/mochaagents/agent/loop/Termination.java)",
       "Bash(MAVEN_OPTS=\"-Xmx512m\" mvn test)",
-      "Bash(MAVEN_OPTS=\"-Xmx384m\" mvn compile)"
+      "Bash(MAVEN_OPTS=\"-Xmx384m\" mvn compile)",
+      "Bash(dir /s /b \"C:\\\\Users\\\\mogo\\\\AppData\\\\Local\\\\npm-cache\")",
+      "Bash(findstr /i \"cli.js\")",
+      "Bash(where.cmd claude *)",
+      "Bash(dir /s /b \"C:\\\\Users\\\\mogo\\\\AppData\\\\Local\\\\Programs\")",
+      "Bash(findstr /i \"claude\")",
+      "Bash(dir /s /b \"C:\\\\Users\\\\mogo\\\\AppData\\\\Roaming\\\\npm\")",
+      "Read(//mnt/c/Users/mogo/AppData/Roaming/npm/node_modules/**)",
+      "Read(//c/Users/mogo/AppData/Roaming/npm/node_modules/**)",
+      "Read(//c/Users/mogo/AppData/Local/**)",
+      "Read(//c/Users/mogo/**)"
     ]
   }
 }

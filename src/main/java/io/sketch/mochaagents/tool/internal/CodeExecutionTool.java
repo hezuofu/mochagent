@@ -4,7 +4,6 @@
 package io.sketch.mochaagents.tool.internal;
 
 import io.sketch.mochaagents.tool.AbstractTool;
-import io.sketch.mochaagents.tool.ToolInput;
 import io.sketch.mochaagents.tool.ToolSchema;
 import io.sketch.mochaagents.tool.ValidationResult;
 
@@ -135,7 +134,9 @@ public class CodeExecutionTool extends AbstractTool {
 
     private static int getIntArg(Map<String, Object> args, String key, int defaultVal) {
         Object v = args.get(key);
-        if (v instanceof Number n) return n.intValue();
+        if (v instanceof Number n) {
+            return n.intValue();
+        }
         if (v instanceof String s && !s.isEmpty()) {
             try { return Integer.parseInt(s); } catch (NumberFormatException ignored) {}
         }

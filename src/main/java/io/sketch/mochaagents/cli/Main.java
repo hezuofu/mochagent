@@ -123,9 +123,10 @@ public final class Main {
     }
 
     private static void printSessionList(PrintStream out) {
-        var mem = io.sketch.mochaagents.memory.MemoryManager.create();
+        var store = new io.sketch.mochaagents.session.SessionManager();
         String cwd = System.getProperty("user.dir", ".");
-        var sessions = mem.listSessions(cwd);
+        java.util.List<io.sketch.mochaagents.session.SessionManager.SessionMeta> sessions;
+        try { sessions = store.list(cwd); } catch (java.io.IOException e) { sessions = java.util.List.of(); }
         if (sessions.isEmpty()) {
             out.println("No sessions found in current project.");
             return;

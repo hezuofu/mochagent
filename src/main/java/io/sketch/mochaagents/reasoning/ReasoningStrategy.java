@@ -3,15 +3,14 @@
 
 package io.sketch.mochaagents.reasoning;
 
+
 /**
  * 推理策略 — 函数式接口，定义推理算法.
- */
-@FunctionalInterface
-/**
  * ReasoningStrategy strategy interface.
  *
  * @author lanxia39@163.com
  */
+@FunctionalInterface
 public interface ReasoningStrategy {
 
     /**

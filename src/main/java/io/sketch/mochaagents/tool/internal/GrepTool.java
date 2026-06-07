@@ -114,15 +114,12 @@ public class GrepTool extends AbstractTool {
         Pattern regex = Pattern.compile(patternStr, flags);
 
         try {
-            switch (outputMode) {
-                case "content":
-                    return searchContent(searchPath, regex, globStr, contextBefore, contextAfter,
-                            showLineNumbers, headLimit, offset);
-                case "count":
-                    return searchCount(searchPath, regex, globStr, headLimit, offset);
-                default:
-                    return searchFilesWithMatches(searchPath, regex, globStr, headLimit, offset);
-            }
+            return switch (outputMode) {
+                case "content" -> searchContent(searchPath, regex, globStr, contextBefore, contextAfter,
+                    showLineNumbers, headLimit, offset);
+                case "count" -> searchCount(searchPath, regex, globStr, headLimit, offset);
+                default -> searchFilesWithMatches(searchPath, regex, globStr, headLimit, offset);
+            };
         } catch (IOException e) {
             throw new MochaException.ToolException(getName(), "Grep search failed: " + e.getMessage(), e);
         }
@@ -235,7 +232,9 @@ public class GrepTool extends AbstractTool {
                     String content = Files.readString(file, StandardCharsets.UTF_8);
                     Matcher m = regex.matcher(content);
                     int count = 0;
-                    while (m.find()) count++;
+                    while (m.find()) {
+                        count++;
+                    }
                     if (count > 0) {
                         countMap.put(root.relativize(file).toString().replace('\\', '/'), count);
                     }
@@ -272,13 +271,17 @@ public class GrepTool extends AbstractTool {
 
     private static boolean isVcsDir(Path path) {
         for (int i = 0; i < path.getNameCount(); i++) {
-            if (VCS_DIRS.contains(path.getName(i).toString())) return true;
+            if (VCS_DIRS.contains(path.getName(i).toString())) {
+                return true;
+            }
         }
         return false;
     }
 
     private static boolean matchesGlob(Path path, String glob) {
-        if (glob == null || glob.isBlank()) return true;
+        if (glob == null || glob.isBlank()) {
+            return true;
+        }
         String syntax = "glob:" + glob;
         try {
             PathMatcher matcher = FileSystems.getDefault().getPathMatcher(syntax);
@@ -290,7 +293,9 @@ public class GrepTool extends AbstractTool {
 
     private static int getIntArg(Map<String, Object> args, String key, int defaultVal) {
         Object v = args.get(key);
-        if (v instanceof Number) return ((Number) v).intValue();
+        if (v instanceof Number) {
+            return ((Number) v).intValue();
+        }
         if (v instanceof String s && !s.isEmpty()) {
             try { return Integer.parseInt(s); } catch (NumberFormatException ignored) {}
         }
@@ -299,7 +304,9 @@ public class GrepTool extends AbstractTool {
 
     @Override
     public String formatResult(Object output, String toolUseId) {
-        if (!(output instanceof Map)) return output != null ? output.toString() : "";
+        if (!(output instanceof Map)) {
+            return output != null ? output.toString() : "";
+        }
         @SuppressWarnings("unchecked")
         Map<String, Object> map = (Map<String, Object>) output;
         String mode = (String) map.getOrDefault("mode", "files_with_matches");
@@ -307,7 +314,9 @@ public class GrepTool extends AbstractTool {
         int numFiles = ((Number) map.getOrDefault("numFiles", 0)).intValue();
 
         if ("content".equals(mode)) {
-            if (content == null || content.isEmpty()) return "No matches found";
+            if (content == null || content.isEmpty()) {
+                return "No matches found";
+            }
             return content;
         }
 
@@ -317,7 +326,9 @@ public class GrepTool extends AbstractTool {
                     + "\n\nFound " + numMatches + " occurrences across " + numFiles + " files.";
         }
 
-        if (numFiles == 0) return "No files found";
+        if (numFiles == 0) {
+            return "No files found";
+        }
         @SuppressWarnings("unchecked")
         List<String> filenames = (List<String>) map.getOrDefault("filenames", List.of());
         return "Found " + numFiles + " file(s)\n" + String.join("\n", filenames);

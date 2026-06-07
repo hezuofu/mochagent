@@ -50,7 +50,7 @@ public class ExperienceBuffer<I, O> {
     /** 基于奖励的优先级采样 (正样本更可能被选中) */
     public List<Experience<I, O>> prioritizedSample(int n) {
         List<Experience<I, O>> all = new ArrayList<>(buffer);
-        all.sort(Comparator.<Experience<I, O>>comparingDouble(e -> e.reward()).reversed());
+        all.sort(Comparator.<Experience<I, O>>comparingDouble(Experience::reward).reversed());
         return all.subList(0, Math.min(n, all.size()));
     }
 

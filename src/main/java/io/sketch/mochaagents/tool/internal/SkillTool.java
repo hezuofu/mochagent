@@ -8,11 +8,9 @@ import io.sketch.mochaagents.skill.Skill;
 import io.sketch.mochaagents.skill.SkillRegistry;
 import io.sketch.mochaagents.tool.AbstractTool;
 import io.sketch.mochaagents.tool.PermissionResult;
-import io.sketch.mochaagents.tool.ToolInput;
 import io.sketch.mochaagents.tool.ToolSchema;
 import io.sketch.mochaagents.tool.ValidationResult;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;

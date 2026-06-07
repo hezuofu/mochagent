@@ -54,9 +54,13 @@ public class CalculatorTool implements Tool {
     private static ScriptEngine findEngine() {
         ScriptEngineManager mgr = new ScriptEngineManager();
         ScriptEngine e = mgr.getEngineByName("graal.js");
-        if (e != null) return e;
+        if (e != null) {
+            return e;
+        }
         e = mgr.getEngineByName("JavaScript");
-        if (e != null) return e;
+        if (e != null) {
+            return e;
+        }
         return mgr.getEngineByName("nashorn");
     }
 
@@ -67,12 +71,15 @@ public class CalculatorTool implements Tool {
         String pendingOp = "+";
         for (String term : terms) {
             term = term.trim();
-            if (term.equals("+")) pendingOp = "+";
-            else if (term.equals("-")) pendingOp = "-";
-            else if (!term.isEmpty()) {
+            if (term.equals("+")) {
+                pendingOp = "+";
+            } else if (term.equals("-")) {
+                pendingOp = "-";
+            } else if (!term.isEmpty()) {
                 double val = parseFactor(term);
-                if (pendingOp.equals("+")) result += val;
-                else result -= val;
+                if (pendingOp.equals("+")) {
+                    result += val;
+                } else result -= val;
             }
         }
         return result;
@@ -85,9 +92,11 @@ public class CalculatorTool implements Tool {
             String op = "*";
             for (String p : parts) {
                 p = p.trim();
-                if (p.equals("*")) op = "*";
-                else if (p.equals("/")) op = "/";
-                else if (!p.isEmpty()) {
+                if (p.equals("*")) {
+                    op = "*";
+                } else if (p.equals("/")) {
+                    op = "/";
+                } else if (!p.isEmpty()) {
                     double v = Double.parseDouble(p);
                     result = op.equals("*") ? result * v : result / v;
                 }

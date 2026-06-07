@@ -45,8 +45,8 @@ public class FeedbackLearner<I, O> implements Learner<I, O> {
     public O infer(I input) {
         // 基于加权历史选择最佳输出
         return history.stream()
-                .filter(e -> e.isPositive())
-                .max(Comparator.<Experience<I, O>>comparingDouble(e -> e.reward()))
+                .filter(Experience::isPositive)
+                .max(Comparator.<Experience<I, O>>comparingDouble(Experience::reward))
                 .map(Experience::output)
                 .orElse(null);
     }
@@ -66,7 +66,7 @@ public class FeedbackLearner<I, O> implements Learner<I, O> {
     public List<Experience<I, O>> positiveFeedback(int limit) {
         return history.stream()
                 .filter(Experience::isPositive)
-                .sorted(Comparator.<Experience<I, O>, Instant>comparing(e -> e.timestamp()).reversed())
+                .sorted(Comparator.<Experience<I, O>, Instant>comparing(Experience::timestamp).reversed())
                 .limit(limit)
                 .toList();
     }
@@ -75,7 +75,7 @@ public class FeedbackLearner<I, O> implements Learner<I, O> {
     public List<Experience<I, O>> negativeFeedback(int limit) {
         return history.stream()
                 .filter(Experience::isNegative)
-                .sorted(Comparator.<Experience<I, O>, Instant>comparing(e -> e.timestamp()).reversed())
+                .sorted(Comparator.<Experience<I, O>, Instant>comparing(Experience::timestamp).reversed())
                 .limit(limit)
                 .toList();
     }

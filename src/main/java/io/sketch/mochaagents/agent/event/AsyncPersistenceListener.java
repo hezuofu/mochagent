@@ -6,6 +6,7 @@ package io.sketch.mochaagents.agent.event;
 import io.sketch.mochaagents.event.AgentEvents;
 import io.sketch.mochaagents.event.Subscribe;
 import io.sketch.mochaagents.memory.MemoryManager;
+import io.sketch.mochaagents.session.SessionManager;
 import io.sketch.mochaagents.tool.FileHistory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +15,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 /**
  * Async persistence listener — handles all I/O on background threads.
@@ -28,6 +30,8 @@ public class AsyncPersistenceListener {
     private static final Logger log = LoggerFactory.getLogger(AsyncPersistenceListener.class);
 
     private final MemoryManager memory;
+    private final SessionManager sessionStore;
+    private final Supplier<SessionManager.Session> sessionSupplier;
     private final FileHistory fileHistory;
     private final ExecutorService executor = Executors.newFixedThreadPool(2, r -> {
         Thread t = new Thread(r, "async-persist");
@@ -35,8 +39,11 @@ public class AsyncPersistenceListener {
         return t;
     });
 
-    public AsyncPersistenceListener(MemoryManager memory) {
+    public AsyncPersistenceListener(MemoryManager memory, SessionManager sessionStore,
+                                     Supplier<SessionManager.Session> sessionSupplier) {
         this.memory = memory;
+        this.sessionStore = sessionStore;
+        this.sessionSupplier = sessionSupplier;
         this.fileHistory = FileHistory.getInstance();
     }
 
@@ -44,11 +51,23 @@ public class AsyncPersistenceListener {
     void onStepCompleted(AgentEvents.StepCompleted e) {
         String output = e.modelOutput();
         if (output != null && !output.isEmpty()) {
-            async(() -> memory.appendToSession("assistant", output));
+            async(() -> {
+                var session = sessionSupplier.get();
+                if (session != null) {
+                    sessionStore.append(session, "assistant", output);
+                    session.incrementMessageCount();
+                }
+            });
         }
         String obs = e.observation();
         if (obs != null && !obs.isEmpty() && !"[snipped]".equals(obs)) {
-            async(() -> memory.appendToSession("system", "Observation: " + obs));
+            async(() -> {
+                var session = sessionSupplier.get();
+                if (session != null) {
+                    sessionStore.append(session, "system", "Observation: " + obs);
+                    session.incrementMessageCount();
+                }
+            });
         }
     }
 
@@ -63,9 +82,9 @@ public class AsyncPersistenceListener {
     @Subscribe
     void onCompleted(AgentEvents.Completed e) {
         async(() -> {
-            var session = memory.currentSession();
+            var session = sessionSupplier.get();
             if (session != null) {
-                try { memory.sessionStore().updateMeta(session, null, null); }
+                try { sessionStore.saveMeta(session); }
                 catch (java.io.IOException ignored) {}
             }
             for (var record : memory.snapshot()) {

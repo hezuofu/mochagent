@@ -27,13 +27,14 @@ public class DebateStrategy implements OrchestrationStrategy {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <I, O> O execute(AgentTeam team, I input) {
+    public <I, O> O execute(AgentTeam team, I input, TaskRunner runner) {
+        String task = input != null ? input.toString() : "";
         Collection<Agent<?, ?>> agents = team.getAgents();
         List<DebateResult> opinions = new ArrayList<>();
 
         for (int round = 0; round < maxRounds; round++) {
             for (Agent<?, ?> agent : agents) {
-                String opinion = ((Agent<I, String>) (Object) agent).execute(input).toString();
+                String opinion = runner.run(task, agent).toString();
                 // Use agent metadata's model info as a proxy for confidence
                 double confidence = 0.7; // default when no explicit confidence is reported
                 opinions.add(new DebateResult(agent.metadata().name(), opinion, confidence));

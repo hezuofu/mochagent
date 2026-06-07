@@ -8,13 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -77,7 +71,7 @@ public class FileSystemSkillLoader {
             return entries
                     .filter(Files::isDirectory)
                     .map(this::loadSkillFromDir)
-                    .filter(s -> s != null)
+                    .filter(Objects::nonNull)
                     .collect(Collectors.toList());
         } catch (IOException e) {
             // Directory not accessible — return empty
@@ -147,10 +141,9 @@ public class FileSystemSkillLoader {
 
         // Build base directory prefix
         String baseDir = skillDir.toAbsolutePath().toString();
-        String promptText = "Base directory for this skill: " + baseDir + "\n\n" + promptBody;
 
         // Store for lambda capture
-        final String finalPrompt = promptText;
+        final String finalPrompt = "Base directory for this skill: " + baseDir + "\n\n" + promptBody;
 
         return BundledSkill.builder(parsed.name, parsed.description, SkillSource.FILE_SYSTEM)
                 .whenToUse(parsed.whenToUse)
@@ -225,7 +218,6 @@ public class FileSystemSkillLoader {
      *   key: [item1, item2]
      *   key: true / false
      */
-    @SuppressWarnings("unchecked")
     static Map<String, Object> parseYamlLike(String text) {
         Map<String, Object> result = new LinkedHashMap<>();
         String[] lines = text.split("\\n");
@@ -276,15 +268,21 @@ public class FileSystemSkillLoader {
         // List: [a, b, c]
         if (value.startsWith("[") && value.endsWith("]")) {
             String inner = value.substring(1, value.length() - 1).trim();
-            if (inner.isEmpty()) return Collections.emptyList();
+            if (inner.isEmpty()) {
+                return Collections.emptyList();
+            }
             return Arrays.stream(inner.split(","))
                     .map(String::trim)
                     .map(s -> s.replaceAll("^[\"']|[\"']$", ""))
                     .collect(Collectors.toList());
         }
         // Boolean
-        if ("true".equalsIgnoreCase(value)) return true;
-        if ("false".equalsIgnoreCase(value)) return false;
+        if ("true".equalsIgnoreCase(value)) {
+            return true;
+        }
+        if ("false".equalsIgnoreCase(value)) {
+            return false;
+        }
 
         return value;
     }
@@ -299,25 +297,35 @@ public class FileSystemSkillLoader {
     @SuppressWarnings("unchecked")
     static List<String> getStringList(Map<String, Object> fm, String key, List<String> defaultVal) {
         Object v = fm.get(key);
-        if (v instanceof List) return (List<String>) v;
+        if (v instanceof List) {
+            return (List<String>) v;
+        }
         return defaultVal;
     }
 
     static boolean getBoolean(Map<String, Object> fm, String key, boolean defaultVal) {
         Object v = fm.get(key);
-        if (v instanceof Boolean) return (Boolean) v;
-        if (v instanceof String) return Boolean.parseBoolean((String) v);
+        if (v instanceof Boolean) {
+            return (Boolean) v;
+        }
+        if (v instanceof String) {
+            return Boolean.parseBoolean((String) v);
+        }
         return defaultVal;
     }
 
     static SkillContext parseContext(String value) {
-        if ("fork".equalsIgnoreCase(value)) return SkillContext.FORK;
+        if ("fork".equalsIgnoreCase(value)) {
+            return SkillContext.FORK;
+        }
         return SkillContext.INLINE;
     }
 
     /** 提取第一个 Markdown 标题. */
     static String extractFirstHeading(String body, String defaultDescription) {
-        if (body == null || body.isEmpty()) return defaultDescription;
+        if (body == null || body.isEmpty()) {
+            return defaultDescription;
+        }
         Pattern heading = Pattern.compile("^#\\s+(.+)$", Pattern.MULTILINE);
         Matcher m = heading.matcher(body);
         return m.find() ? m.group(1).trim() : defaultDescription;

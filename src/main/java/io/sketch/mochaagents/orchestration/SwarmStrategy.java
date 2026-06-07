@@ -29,13 +29,13 @@ public class SwarmStrategy implements OrchestrationStrategy {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <I, O> O execute(AgentTeam team, I input) {
+    public <I, O> O execute(AgentTeam team, I input, TaskRunner runner) {
+        String task = input != null ? input.toString() : "";
         List<Agent<?, ?>> participants = team.getAgents().stream()
                 .limit(swarmSize).toList();
 
         List<CompletableFuture<Object>> futures = participants.stream()
-                .map(a -> CompletableFuture.supplyAsync(
-                        () -> ((Agent<I, Object>) (Object) a).execute(input)))
+                .map(a -> CompletableFuture.supplyAsync(() -> runner.run(task, a)))
                 .toList();
 
         List<Object> results = futures.stream()

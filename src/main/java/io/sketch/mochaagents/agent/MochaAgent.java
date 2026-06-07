@@ -42,21 +42,27 @@ public final class MochaAgent implements Agent<String, String> {
     public String run(String task) { return execute(task); }
 
     public ExecutionReport runAndReport(String task) {
-        if (inner instanceof ReActAgent ra) return ra.runAndReport(task);
+        if (inner instanceof ReActAgent ra) {
+            return ra.runAndReport(task);
+        }
         long start = System.currentTimeMillis();
         return new ExecutionReport(run(task), 1, System.currentTimeMillis() - start,
                 0, 0, 0, List.of(), "Completed");
     }
 
     public String runStreaming(AgentContext ctx, java.util.function.Consumer<String> onToken) {
-        if (inner instanceof ReActAgent ra) return ra.runStreaming(ctx, onToken);
+        if (inner instanceof ReActAgent ra) {
+            return ra.runStreaming(ctx, onToken);
+        }
         return execute(ctx.userMessage(), ctx);
     }
 
     public Agent<String, String> inner() { return inner; }
 
     public MochaAgent withLoop(AgentLoop<String, String> loop) {
-        if (inner instanceof ReActAgent ra) return new MochaAgent(ra.withAgentLoop(loop));
+        if (inner instanceof ReActAgent ra) {
+            return new MochaAgent(ra.withAgentLoop(loop));
+        }
         return this;
     }
 
@@ -65,6 +71,14 @@ public final class MochaAgent implements Agent<String, String> {
     private ReActAgent ra() { return (ReActAgent) inner; }
 
     public io.sketch.mochaagents.memory.MemoryManager memory() { return ra().memory(); }
+    public io.sketch.mochaagents.session.SessionManager sessions() { return ra().sessions(); }
+    public io.sketch.mochaagents.session.SessionManager.Session currentSession() { return ra().currentSession(); }
+    public java.util.List<io.sketch.mochaagents.session.SessionManager.SessionMeta> listSessions(String cwd) { return ra().listSessions(cwd); }
+    public void resumeSession(String sessionId, String cwd, String userId) { ra().resumeSession(sessionId, cwd, userId); }
+    public void endSession(long in, long out, double cost) { ra().endSession(in, out, cost); }
+    public String generateTitle(io.sketch.mochaagents.model.Model model) { return ra().generateTitle(model); }
+    public java.util.List<io.sketch.mochaagents.session.SessionManager.SessionSearchResult> searchSessions(
+            String query, String cwd, int max) { return ra().searchSessions(query, cwd, max); }
     public io.sketch.mochaagents.event.EventBus events() { return ra().events(); }
     public void autoCompact() { ra().autoCompact(); }
     public void invalidateMessageCaches() { ra().invalidateMessageCaches(); }
@@ -143,22 +157,48 @@ public final class MochaAgent implements Agent<String, String> {
             ToolCallingAgent.Builder b = ToolCallingAgent.builder()
                     .name(name).model(model).description(description).maxSteps(maxSteps)
                     .antiForgetting(antiForgetting).globalMemory(globalMemory);
-            if (toolRegistry != null) b.toolRegistry(toolRegistry);
-            if (!tools.isEmpty()) b.tools(tools);
-            if (thinkingConfig != null) b.thinkingConfig(thinkingConfig);
-            if (effortLevel != null) b.effortLevel(effortLevel);
-            if (loop != null) b.agentLoop(loop);
-            if (orchestrator != null) b.orchestrator(orchestrator);
-            if (systemPrompt != null) b.systemPromptTemplate(PromptTemplate.of(systemPrompt));
-            if (permissionRules != null) b.permissionRules(permissionRules);
+            if (toolRegistry != null) {
+                b.toolRegistry(toolRegistry);
+            }
+            if (!tools.isEmpty()) {
+                b.tools(tools);
+            }
+            if (thinkingConfig != null) {
+                b.thinkingConfig(thinkingConfig);
+            }
+            if (effortLevel != null) {
+                b.effortLevel(effortLevel);
+            }
+            if (loop != null) {
+                b.agentLoop(loop);
+            }
+            if (orchestrator != null) {
+                b.orchestrator(orchestrator);
+            }
+            if (systemPrompt != null) {
+                b.systemPromptTemplate(PromptTemplate.of(systemPrompt));
+            }
+            if (permissionRules != null) {
+                b.permissionRules(permissionRules);
+            }
             Agent<String, String> agent = b.build();
-            for (Faculty<String, String> f : faculties) agent = f.apply(agent);
+            for (Faculty<String, String> f : faculties) {
+                agent = f.apply(agent);
+            }
             // Wire memory plugin + global memory + interaction (ToolExecutor side)
             if (agent instanceof ReActAgent ra) {
-                if (memoryPlugin != null) ra.memory().withPlugin(memoryPlugin);
-                if (globalMemory) ra.memory().withGlobalMemory();
-                if (decisionPipeline != null) ra.toolExecutor().withPipeline(decisionPipeline);
-                if (approvalBroker != null) ra.toolExecutor().withBroker(approvalBroker);
+                if (memoryPlugin != null) {
+                    ra.memory().withPlugin(memoryPlugin);
+                }
+                if (globalMemory) {
+                    ra.memory().withGlobalMemory();
+                }
+                if (decisionPipeline != null) {
+                    ra.toolExecutor().withPipeline(decisionPipeline);
+                }
+                if (approvalBroker != null) {
+                    ra.toolExecutor().withBroker(approvalBroker);
+                }
             }
             return new MochaAgent(agent);
         }
