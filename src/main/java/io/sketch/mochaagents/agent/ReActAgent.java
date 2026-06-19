@@ -996,10 +996,10 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         }
         // Register self-learning tools (GenericAgent pattern, via MemoryManager)
         if (!toolRegistry.has("update_checkpoint")) {
-            toolRegistry.register(new io.sketch.mochaagents.tool.internal.LearnTools.UpdateCheckpoint(memory));
+            toolRegistry.register(new io.sketch.mochaagents.tool.builtin.LearnTools.UpdateCheckpoint(memory));
         }
         if (!toolRegistry.has("start_long_term_update")) {
-            toolRegistry.register(new io.sketch.mochaagents.tool.internal.LearnTools.SettleLongTerm(memory));
+            toolRegistry.register(new io.sketch.mochaagents.tool.builtin.LearnTools.SettleLongTerm(memory));
         }
         // Register managed agents as callable tools
         for (var entry : managedAgents.entrySet()) {

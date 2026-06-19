@@ -69,6 +69,7 @@ final class Repl implements CliCommand {
     private PrintStream out;
     private PrintStream err;
     private PlanMode planMode;
+    private final CommandRegistry commands = CommandRegistry.builtin();
     private double sessionCost;
     private long sessionInputTokens;
     private long sessionOutputTokens;
@@ -305,61 +306,31 @@ final class Repl implements CliCommand {
         String name = parts[0].toLowerCase();
         String arg = parts.length > 1 ? parts[1] : "";
 
-        return switch (name) {
-            case "help", "h" -> { showHelp(); yield false; }
-            case "exit", "quit", "q" -> {
-                if (agent != null) {
-                    agent.endSession(sessionInputTokens, sessionOutputTokens, sessionCost);
+        SlashCommand command = commands.get(name);
+        if (command == null) {
+            // Check aliases
+            for (var c : commands.all()) {
+                if (c.aliases().contains(name)) {
+                    command = c;
+                    break;
                 }
-                out.println("Goodbye."); yield true;
             }
-            case "version" -> { out.println(VERSION); yield false; }
-            case "model" -> { showModelInfo(); yield false; }
-            case "cost" -> { showCost(); yield false; }
-            case "clear" -> { clearSession(); yield false; }
-            case "compact" -> { compactContext(); yield false; }
-            case "plan" -> { enterPlanMode(); yield false; }
-            case "exitplan" -> { exitPlanMode(); yield false; }
-            case "diff" -> { showDiffCmd(arg); yield false; }
-            case "status" -> { showStatus(); yield false; }
-            case "tools" -> { showTools(); yield false; }
-            case "resume" -> { resumeCmd(arg); yield false; }
-            case "sessions", "history" -> { listSessionsCmd(); yield false; }
-            case "undo" -> { undoCmd(arg); yield false; }
-            case "turns" -> { turnsCmd(); yield false; }
-            case "restore" -> { restoreCmd(arg); yield false; }
-            case "search" -> { searchCmd(arg); yield false; }
-            default -> { out.println(red("Unknown command: /" + name + " (use /help)")); yield false; }
-        };
+        }
+        if (command == null) {
+            out.println(red("Unknown command: /" + name + " (use /help)"));
+            return false;
+        }
+
+        try {
+            return command.execute(arg, new ReplContext(agent, model, out, err));
+        } catch (Exception e) {
+            out.println(red("Command error: ") + e.getMessage());
+            return false;
+        }
     }
 
-    private void showHelp() {
-        out.println();
-        out.println(bold("Commands:"));
-        String[][] commands = {
-            {"/help", "Show this help"},
-            {"/model", "Show model configuration"},
-            {"/cost", "Show session cost and token usage"},
-            {"/clear", "Clear conversation context"},
-            {"/compact", "Compact context window"},
-            {"/plan", "Enter plan mode (read-only exploration)"},
-            {"/exitplan", "Exit plan mode"},
-            {"/diff [file]", "Show pending file changes"},
-            {"/status", "Show agent status"},
-            {"/tools", "List available tools"},
-            {"/search <kw>", "Search across all session transcripts"},
-            {"/turns", "Show conversation turn history"},
-            {"/restore <n>", "Restore conversation to step n"},
-            {"/undo [file]", "Undo last file change (or specific file)"},
-            {"/sessions", "List recent sessions"},
-            {"/resume [id]", "Resume a previous session (latest if no id)"},
-            {"/exit, /quit", "Exit REPL"},
-        };
-        for (String[] c : commands) {
-            out.println("  " + bold(String.format("%-18s", c[0])) + dim(c[1]));
-        }
-        out.println();
-    }
+    /** Get the command registry (for external command registration). */
+    public CommandRegistry commands() { return commands; }
 
     private void showModelInfo() {
         Model l = model();

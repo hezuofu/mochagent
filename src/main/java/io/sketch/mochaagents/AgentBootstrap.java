@@ -6,7 +6,7 @@ package io.sketch.mochaagents;
 import io.sketch.mochaagents.agent.MochaAgent;
 import io.sketch.mochaagents.model.Model;
 import io.sketch.mochaagents.tool.ToolRegistry;
-import io.sketch.mochaagents.tool.internal.*;
+import io.sketch.mochaagents.tool.builtin.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +41,7 @@ public final class AgentBootstrap {
     public ToolRegistry toolRegistry() { return toolRegistry; }
     public Model model() { return model; }
 
-    /** Build a fully-featured MochaAgent with learning + global memory. */
+    /** Build a fully-featured MochaAgent with all plugin extensions applied. */
     public MochaAgent buildAgent(String name) {
         var builder = MochaAgent.builder(name, model)
                 .toolRegistry(toolRegistry)
@@ -49,8 +49,81 @@ public final class AgentBootstrap {
                 .permissionRules(permissionRules)
                 .decisionPipeline(decisionPipeline)
                 .approvalBroker(approvalBroker);
+        applyPluginExtensions(builder);
         return builder.build();
     }
+
+    /** Apply extension points from all enabled plugins to the agent builder. */
+    private void applyPluginExtensions(MochaAgent.Builder builder) {
+        if (pluginBootstrap == null) return;
+        var plugins = pluginBootstrap.pluginManager().getPlugins().enabled();
+        for (var plugin : plugins) {
+            var desc = pluginBootstrap.pluginManager().getDescriptor(plugin.name());
+            if (desc == null) continue;
+            for (var ext : desc.extensionPoints()) {
+                switch (ext.type()) {
+                    case "TOOL" -> {
+                        if (ext.component() instanceof io.sketch.mochaagents.tool.Tool t) {
+                            toolRegistry.register(t);
+                            log.debug("Plugin '{}' registered tool: {}", plugin.name(), t.getName());
+                        }
+                    }
+                    case "LOOP" -> {
+                        @SuppressWarnings("unchecked")
+                        var l = (io.sketch.mochaagents.agent.AgentLoop<String, String>) ext.component();
+                        builder.loop(l);
+                        log.info("Plugin '{}' set agent loop: {}", plugin.name(), l.getClass().getSimpleName());
+                    }
+                    case "MEMORY" -> {
+                        if (ext.component() instanceof io.sketch.mochaagents.memory.MemoryPlugin m) {
+                            builder.memoryPlugin(m);
+                            log.info("Plugin '{}' registered memory plugin: {}", plugin.name(), m.name());
+                        }
+                    }
+                    case "PERCEPTOR" -> {
+                        if (ext.component() instanceof io.sketch.mochaagents.perception.Perceptor<?, ?> p) {
+                            @SuppressWarnings("unchecked")
+                            var typed = (io.sketch.mochaagents.perception.Perceptor<String, String>) p;
+                            builder.withPerception(typed);
+                            log.debug("Plugin '{}' set perceptor: {}", plugin.name(), p.getClass().getSimpleName());
+                        }
+                    }
+                    case "REASONER" -> {
+                        if (ext.component() instanceof io.sketch.mochaagents.reasoning.Reasoner r) {
+                            builder.withReasoning(r);
+                            log.debug("Plugin '{}' set reasoner: {}", plugin.name(), r.getClass().getSimpleName());
+                        }
+                    }
+                    case "PLANNER" -> {
+                        if (ext.component() instanceof io.sketch.mochaagents.plan.Planner<?> p) {
+                            @SuppressWarnings("unchecked")
+                            var typed = (io.sketch.mochaagents.plan.Planner<String>) p;
+                            builder.withPlanning(typed);
+                            log.debug("Plugin '{}' set planner: {}", plugin.name(), p.getClass().getSimpleName());
+                        }
+                    }
+                    case "EVALUATOR" -> {
+                        if (ext.component() instanceof io.sketch.mochaagents.evaluation.Evaluator e) {
+                            builder.withEvaluation(e);
+                            log.debug("Plugin '{}' set evaluator: {}", plugin.name(), e.getClass().getSimpleName());
+                        }
+                    }
+                    case "MCP_SERVER" -> {
+                        if (ext.component() instanceof String cmd) {
+                            if (mcpClient == null) mcpClient = new io.sketch.mochaagents.tool.mcp.StdioMcpClient();
+                            mcpClient.connect(cmd);
+                            if (mcpClient.isConnected()) {
+                                for (var t : mcpClient.discoverTools()) toolRegistry.register(t);
+                                log.info("Plugin '{}' connected MCP: {}", plugin.name(), cmd);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private io.sketch.mochaagents.plugin.PluginBootstrap pluginBootstrap;
 
     /** One-liner: create agent and run a task. */
     public String run(String task) {
@@ -58,8 +131,11 @@ public final class AgentBootstrap {
     }
 
     public io.sketch.mochaagents.plugin.PluginBootstrap pluginBootstrap() {
-        return io.sketch.mochaagents.plugin.PluginBootstrap.bootstrap(
-                io.sketch.mochaagents.skill.SkillManager.bootstrap(toolRegistry).skillRegistry());
+        if (pluginBootstrap == null) {
+            pluginBootstrap = io.sketch.mochaagents.plugin.PluginBootstrap.bootstrap(
+                    io.sketch.mochaagents.skill.SkillManager.bootstrap(toolRegistry).skillRegistry());
+        }
+        return pluginBootstrap;
     }
 
     // ── Optional add-ons ──
@@ -71,7 +147,7 @@ public final class AgentBootstrap {
 
     public AgentBootstrap withPlugins() {
         withSkills(); // Skills must be loaded first
-        io.sketch.mochaagents.plugin.PluginBootstrap.bootstrap(
+        pluginBootstrap = io.sketch.mochaagents.plugin.PluginBootstrap.bootstrap(
                 io.sketch.mochaagents.skill.SkillManager.bootstrap(toolRegistry).skillRegistry());
         return this;
     }

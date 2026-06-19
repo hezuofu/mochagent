@@ -34,8 +34,12 @@ public final class RetryingRunner implements TaskRunner {
                 last = e;
                 log.warn("Task attempt {}/{} failed: {}", attempt + 1, policy.maxRetries() + 1, e.getMessage());
                 if (attempt < policy.maxRetries()) {
-                    try { Thread.sleep(1000L * (attempt + 1)); }
-                    catch (InterruptedException ie) { Thread.currentThread().interrupt(); break; }
+                    try {
+                        Thread.sleep(1000L * (attempt + 1));
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
                 }
             }
         }
