@@ -22,12 +22,16 @@ public final class LspDiagnosticBridge {
 
     public static void didChange(String filePath, String newContent) {
         LspManager m = MANAGER.get();
-        if (m != null) m.didChange(filePath, newContent);
+        if (m != null) {
+            m.didChange(filePath, newContent);
+        }
     }
 
     public static void didSave(String filePath) {
         LspManager m = MANAGER.get();
-        if (m != null) m.didSave(filePath);
+        if (m != null) {
+            m.didSave(filePath);
+        }
     }
 
     public static LspDiagnostics diagnostics() { return DIAGNOSTICS.get(); }

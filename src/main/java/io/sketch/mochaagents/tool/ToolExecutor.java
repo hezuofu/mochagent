@@ -261,8 +261,9 @@ public class ToolExecutor implements ToolExecutionStrategy {
         // 3. Pre-hooks (may modify args)
         if (hooks != null) {
             var d = hooks.applyPreTool(tool, arguments);
-            if (d.outcome() == Hooks.HookDecision.Outcome.DENY)
+            if (d.outcome() == Hooks.HookDecision.Outcome.DENY) {
                 return ToolResult.Builder.failure(toolName, "Hook denied: " + d.reason(), null);
+            }
         }
         return null;
     }

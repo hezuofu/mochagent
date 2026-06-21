@@ -3,9 +3,6 @@
 
 package io.sketch.mochaagents.context;
 
-import io.sketch.mochaagents.context.ContextChunk;
-import io.sketch.mochaagents.context.ContextStrategy;
-
 import java.util.ArrayList;
 import java.util.List;
 

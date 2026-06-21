@@ -6,7 +6,7 @@ package io.sketch.mochaagents.plugin;
 import java.util.stream.Stream;
 
 /**
- * Plugin — provide extension points. Metadata from {@link PluginInfo} annotation.
+ * Plugin — provide extension points. Metadata from {@link PluginMeta} annotation.
  *
  * <pre>{@code
  * @PluginInfo(name = "my-tools", description = "Custom tool set")
@@ -25,17 +25,17 @@ public interface Plugin {
 
     /** Derived from @PluginInfo annotation. */
     default String name() {
-        PluginInfo info = getClass().getAnnotation(PluginInfo.class);
+        PluginMeta info = getClass().getAnnotation(PluginMeta.class);
         return info != null ? info.name() : getClass().getSimpleName();
     }
 
     default String description() {
-        PluginInfo info = getClass().getAnnotation(PluginInfo.class);
+        PluginMeta info = getClass().getAnnotation(PluginMeta.class);
         return info != null ? info.description() : "";
     }
 
     default String version() {
-        PluginInfo info = getClass().getAnnotation(PluginInfo.class);
+        PluginMeta info = getClass().getAnnotation(PluginMeta.class);
         return info != null ? info.version() : "1.0";
     }
 }

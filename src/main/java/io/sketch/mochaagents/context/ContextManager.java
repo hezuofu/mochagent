@@ -42,7 +42,9 @@ public class ContextManager implements Context {
     }
 
     public void compress() {
-        if (compressor == null) return;
+        if (compressor == null) {
+            return;
+        }
         int beforeSize = window.all().size();
         List<ContextChunk> compressed = compressor.compress(window.all(), window.maxTokens());
         window.clear();

@@ -48,7 +48,9 @@ public class JsonlMemoryStore implements MemoryStore {
 
     private void loadAll() throws IOException {
         for (String line : Files.readAllLines(file)) {
-            if (line.isBlank()) continue;
+            if (line.isBlank()) {
+                continue;
+            }
             try {
                 MemoryEntry entry = JSON.readValue(line, MemoryEntry.class);
                 index.put(entry.id(), entry);
@@ -65,7 +67,9 @@ public class JsonlMemoryStore implements MemoryStore {
     @Override
     public Optional<MemoryRecord> get(String id) {
         MemoryRecord r = index.get(id);
-        if (r != null) r.touch();
+        if (r != null) {
+            r.touch();
+        }
         return Optional.ofNullable(r);
     }
 

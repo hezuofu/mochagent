@@ -28,7 +28,9 @@ public class LspDiagnostics {
 
     /** Called by LspManager when diagnostics arrive for a file. */
     public void onDiagnostics(String fileUri, JsonNode params) {
-        if (params == null || !params.has("diagnostics")) return;
+        if (params == null || !params.has("diagnostics")) {
+            return;
+        }
         String filePath = fileUri.replace("file://", "");
         List<Diagnostic> list = new ArrayList<>();
         for (JsonNode d : params.get("diagnostics")) {
@@ -59,7 +61,9 @@ public class LspDiagnostics {
     }
 
     public String formatForPrompt(List<Diagnostic> diagnostics) {
-        if (diagnostics.isEmpty()) return "";
+        if (diagnostics.isEmpty()) {
+            return "";
+        }
         StringBuilder sb = new StringBuilder("\n## LSP Diagnostics\n");
         for (var d : diagnostics) {
             sb.append(d.filePath()).append(":").append(d.line() + 1)

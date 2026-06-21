@@ -31,7 +31,9 @@ public interface LearningStrategy {
     /** 默认复合策略 — 新经验影响更大 */
     static LearningStrategy weightedRecent(double learningRate, double recencyBias) {
         return (weight, exp, history) -> {
-            if (history.isEmpty()) return weight;
+            if (history.isEmpty()) {
+                return weight;
+            }
             int recencyIndex = Math.max(0, history.size() - 1);
             double recencyFactor = Math.exp(-recencyBias * recencyIndex);
             return weight + learningRate * exp.reward() * recencyFactor;

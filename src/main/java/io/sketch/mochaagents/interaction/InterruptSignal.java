@@ -3,7 +3,6 @@
 
 package io.sketch.mochaagents.interaction;
 
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -28,7 +27,9 @@ public final class InterruptSignal {
     /** Clear interrupt for a session. */
     public static void clear(String sessionId) {
         AtomicReference<Reason> ref = sessions.get(sessionId);
-        if (ref != null) ref.set(null);
+        if (ref != null) {
+            ref.set(null);
+        }
     }
 
     /** Check if current session is interrupted. */

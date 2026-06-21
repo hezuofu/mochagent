@@ -3,9 +3,6 @@
 
 package io.sketch.mochaagents.context;
 
-import io.sketch.mochaagents.context.ContextChunk;
-import io.sketch.mochaagents.context.ContextStrategy;
-import io.sketch.mochaagents.context.ContextSummarizer;
 import io.sketch.mochaagents.model.Model;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,14 +35,20 @@ public class SummarizationStrategy implements ContextStrategy {
 
     @Override
     public List<ContextChunk> apply(List<ContextChunk> chunks, int maxTokens) {
-        if (chunks.isEmpty()) return chunks;
+        if (chunks.isEmpty()) {
+            return chunks;
+        }
 
         int totalTokens = chunks.stream().mapToInt(ContextChunk::tokenCount).sum();
-        if (totalTokens <= maxTokens) return chunks;
+        if (totalTokens <= maxTokens) {
+            return chunks;
+        }
 
         // Reserve budget for the summary chunk itself
         int keepBudget = maxTokens - summaryBudgetTokens;
-        if (keepBudget <= 0) keepBudget = maxTokens / 2;
+        if (keepBudget <= 0) {
+            keepBudget = maxTokens / 2;
+        }
 
         // Partition: walk from the end to find which chunks fit in keepBudget
         int keepTokens = 0;
@@ -60,7 +63,9 @@ public class SummarizationStrategy implements ContextStrategy {
         }
 
         // No overflow to summarize
-        if (splitIdx == 0) return chunks;
+        if (splitIdx == 0) {
+            return chunks;
+        }
 
         List<ContextChunk> overflow = chunks.subList(0, splitIdx);
         List<ContextChunk> kept = chunks.subList(splitIdx, chunks.size());

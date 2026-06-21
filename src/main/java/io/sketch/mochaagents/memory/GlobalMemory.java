@@ -40,14 +40,18 @@ public class GlobalMemory {
     /** Read the full global memory content. */
     public String read() {
         try {
-            if (Files.exists(file)) return Files.readString(file);
+            if (Files.exists(file)) {
+                return Files.readString(file);
+            }
         } catch (IOException e) { log.debug("Cannot read global memory: {}", e.getMessage()); }
         return "";
     }
 
     /** Append a verified entry to global memory. */
     public void append(String entry) {
-        if (entry == null || entry.isBlank()) return;
+        if (entry == null || entry.isBlank()) {
+            return;
+        }
         try {
             String stamp = Instant.now().toString().substring(0, 10);
             String block = "\n### " + stamp + "\n" + entry.trim() + "\n";
@@ -59,16 +63,21 @@ public class GlobalMemory {
     /** Compact: keep only the last N entries. */
     public void compact(int maxEntries) {
         try {
-            if (!Files.exists(file)) return;
+            if (!Files.exists(file)) {
+                return;
+            }
             String content = Files.readString(file);
             String[] sections = content.split("\n### ");
             if (sections.length <= maxEntries + 1) return;
             List<String> keep = new ArrayList<>();
             keep.add(sections[0]); // header
-            for (int i = sections.length - maxEntries; i < sections.length; i++)
+            for (int i = sections.length - maxEntries; i < sections.length; i++) {
                 keep.add("### " + sections[i]);
+            }
             Files.writeString(file, String.join("", keep));
-        } catch (IOException e) { log.debug("Compact failed: {}", e.getMessage()); }
+        } catch (IOException e) {
+            log.debug("Compact failed: {}", e.getMessage());
+        }
     }
 
     public Path file() { return file; }

@@ -222,7 +222,7 @@ public class PluginLoader {
      * */
     public <T extends Plugin> T loadPlugin(Class<T> pluginClass) {
         try {
-            PluginInfo info = pluginClass.getAnnotation(PluginInfo.class);
+            PluginMeta info = pluginClass.getAnnotation(PluginMeta.class);
             if (info == null) {
                 throw new IllegalArgumentException(
                         "@PluginInfo required on " + pluginClass.getName());

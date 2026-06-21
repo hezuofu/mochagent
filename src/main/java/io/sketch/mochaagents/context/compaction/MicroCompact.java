@@ -40,8 +40,9 @@ public final class MicroCompact {
      */
     public static CompactResult compact(List<Message> messages,
                                          Map<String, String> toolNames) {
-        if (messages == null || messages.isEmpty())
+        if (messages == null || messages.isEmpty()) {
             return new CompactResult(List.copyOf(messages), Set.of());
+        }
 
         Set<String> lastRoundIds = collectLastRoundToolIds(messages);
         Set<String> compactedIds = new HashSet<>();
@@ -69,7 +70,10 @@ public final class MicroCompact {
                         found = true;
                     }
                 }
-                if (found) break; // only the most recent assistant with tools
+                // only the most recent assistant with tools
+                if (found) {
+                    break;
+                }
             }
         }
         return ids;
@@ -103,7 +107,9 @@ public final class MicroCompact {
             }
         }
 
-        if (!anyCleared) return original;
+        if (!anyCleared) {
+            return original;
+        }
 
         // Build new UserMessage with compacted tool results
         // The text content stays as-is (or summarize if all cleared)

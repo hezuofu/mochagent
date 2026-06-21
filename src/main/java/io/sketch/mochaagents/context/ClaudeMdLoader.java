@@ -68,7 +68,9 @@ public final class ClaudeMdLoader {
     private static void loadRulesDir(Path rulesDir, StringBuilder sb) {
         if (!Files.isDirectory(rulesDir)) return;
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(rulesDir, "*.md")) {
-            for (Path rule : stream) loadIfExists(rule, sb);
+            for (Path rule : stream) {
+                loadIfExists(rule, sb);
+            }
         } catch (IOException e) { log.warn("Cannot read rules dir: {}", e.getMessage()); }
     }
 
@@ -78,10 +80,14 @@ public final class ClaudeMdLoader {
         Path current = cwd.toAbsolutePath();
         while (current != null) {
             Path claudeDir = current.resolve(".claude");
-            if (Files.exists(claudeDir.resolve("CLAUDE.md")) || Files.isDirectory(claudeDir.resolve("rules")))
-                dirs.add(0, claudeDir); // closer to root = lower priority
+            if (Files.exists(claudeDir.resolve("CLAUDE.md")) || Files.isDirectory(claudeDir.resolve("rules"))) {
+                // closer to root = lower priority
+                dirs.add(0, claudeDir);
+            }
             Path parent = current.getParent();
-            if (parent == null || parent.equals(current)) break;
+            if (parent == null || parent.equals(current)) {
+                break;
+            }
             current = parent;
         }
         return dirs;

@@ -44,7 +44,8 @@ public final class ContextSummarizer {
         int words = maxTokens / 4 * 3;
 
         try {
-            String result = model.complete(ModelRequest.builder()
+
+            return model.complete(ModelRequest.builder()
                     .addMessage("user", String.format("""
                             Summarize this conversation history concisely.
                             Include key facts, decisions, and the user's intent.
@@ -57,8 +58,6 @@ public final class ContextSummarizer {
                     .maxTokens(maxTokens)
                     .temperature(0.2)
                     .build()).content().trim();
-
-            return result;
         } catch (Exception e) {
             log.warn("Model summarization failed: {}", e.getMessage());
             return "[Earlier context: " + overflow.size() + " messages omitted]";

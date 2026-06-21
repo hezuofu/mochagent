@@ -113,7 +113,9 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
     /** Resolve the effective loop: configured loop, or default ReActLoop. */
     private AgentLoop<String, String> resolveLoop() {
-        if (agentLoop != null) return agentLoop;
+        if (agentLoop != null) {
+            return agentLoop;
+        }
         // Default: classic ReAct loop
         return new ReActLoop<>(
                 this::planStep,
@@ -218,8 +220,12 @@ public abstract class ReActAgent extends BaseAgent<String, String>
             MemoryManager memory, boolean globalMemory, boolean antiForgetting) {
         var ll = io.sketch.mochaagents.learn.LearningLoop.configure(memory)
                 .withSummaryRequired();
-        if (globalMemory) ll = ll.withGlobalMemory();
-        if (antiForgetting) ll = ll.withAntiForgetting(10, 65);
+        if (globalMemory) {
+            ll = ll.withGlobalMemory();
+        }
+        if (antiForgetting) {
+            ll = ll.withAntiForgetting(10, 65);
+        }
         return ll;
     }
 
@@ -232,7 +238,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
     // ============ Public API ============
 
-    public MemoryManager memory() { return memory; }
+    @Override public MemoryManager memory() { return memory; }
 
     private String cachedStaticPrefix;
 
@@ -336,9 +342,9 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
         // Streaming ReAct loop with integrated steps
         ReActLoop<String, String> loop = new ReActLoop<>(
-                (ReActLoop.PlanningFn<String>) this::planStep,
-                (ReActLoop.StepExecutor<String>) (step, input, mem) ->
-                        executeReActStepStreaming(step, input, mem, onToken),
+            this::planStep,
+            (step, input, mem) ->
+                    executeReActStepStreaming(step, input, mem, onToken),
                 planningInterval);
 
         Termination condition = new Termination(maxSteps).withSession(ctx.sessionId());
@@ -497,7 +503,9 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     private String extractLastModelOutput(MemoryManager memory) {
         var steps = memory.steps();
         for (int i = steps.size() - 1; i >= 0; i--) {
-            if (steps.get(i) instanceof ActionStep as) return as.modelOutput();
+            if (steps.get(i) instanceof ActionStep as) {
+                return as.modelOutput();
+            }
         }
         return "";
     }
@@ -524,7 +532,9 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         ReasoningChain chain = reasoner != null
                 ? reasoner.reason(task) : ReasoningChain.empty();
         this.activeReasoning = chain;
-        if (!chain.steps().isEmpty()) ctx.addChunk(newChunk("reasoning", chain.summarize()));
+        if (!chain.steps().isEmpty()) {
+            ctx.addChunk(newChunk("reasoning", chain.summarize()));
+        }
 
         // 4. Planning: generate execution blueprint
         planAndRemember(task, chain, ctx);
@@ -585,10 +595,14 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
     /** Perceive the environment after an action — what changed? */
     private void perceiveAfterAction(StepResult result) {
-        if (perceptor == null) return;
+        if (perceptor == null) {
+            return;
+        }
 
         String observation = result.observation();
-        if (observation == null || observation.isEmpty()) return;
+        if (observation == null || observation.isEmpty()) {
+            return;
+        }
 
         try {
             // Use PerceptionObserver if available for continuous tracking
@@ -616,7 +630,9 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
     /** Track plan progress: compare executed action against expected plan step. */
     private void trackPlanProgress(int stepNumber, StepResult result) {
-        if (activePlan == null || activePlan.getSteps().isEmpty()) return;
+        if (activePlan == null || activePlan.getSteps().isEmpty()) {
+            return;
+        }
 
         List<PlanStep> steps = activePlan.getSteps();
         if (planStepIndex >= steps.size()) {
@@ -658,27 +674,31 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
         // Direct keyword overlap
         for (String word : desc.split("\\s+")) {
-            if (word.length() > 3 && act.contains(word)) return true;
+            if (word.length() > 3 && act.contains(word)) {
+                return true;
+            }
         }
 
         // Observation contains expected output keywords from plan description
         if (observation != null) {
             String obs = observation.toLowerCase();
             for (String word : desc.split("\\s+")) {
-                if (word.length() > 3 && obs.contains(word)) return true;
+                if (word.length() > 3 && obs.contains(word)) {
+                    return true;
+                }
             }
         }
 
         // Managed agent delegation matches agentId
-        if (step.agentId() != null && !step.agentId().isEmpty()
-                && act.contains(step.agentId().toLowerCase())) return true;
-
-        return false;
+        return step.agentId() != null && !step.agentId().isEmpty()
+            && act.contains(step.agentId().toLowerCase());
     }
 
     /** Trigger replanning when too many deviations occur. */
     private void replanFromDeviation(String input, StepResult result) {
-        if (planner == null || activePlan == null) return;
+        if (planner == null || activePlan == null) {
+            return;
+        }
 
         log.info("Agent '{}' triggering replan after {} deviations", name, MAX_PLAN_DEVIATIONS);
 
@@ -722,7 +742,9 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     // ============ Internal methods ============
 
     protected String planStep(int stepNumber, String input, MemoryManager memory) {
-        if (planningPromptTemplate == null) return null;
+        if (planningPromptTemplate == null) {
+            return null;
+        }
 
         log.debug("Agent '{}' planning at step {}", name, stepNumber);
 
@@ -766,7 +788,9 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
     /** Initial perception + memory injection (called once before loop). */
     private void perceiveAndRemember(String input, Context ctx) {
-        if (perceptor == null) return;
+        if (perceptor == null) {
+            return;
+        }
         PerceptionResult<String> result = perceptor.perceive(input);
         String data = result.data() != null ? result.data() : "";
         if (!data.isEmpty()) {
@@ -778,9 +802,10 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
     /** Initial plan generation (called once before loop). */
     private void planAndRemember(String input, ReasoningChain chain, Context ctx) {
-        if (planner == null) return;
-        @SuppressWarnings("unchecked")
-        Plan<String> plan = (Plan<String>) planner.generatePlan(
+        if (planner == null) {
+            return;
+        }
+        Plan<String> plan = planner.generatePlan(
                 PlanningRequest.<String>builder()
                         .goal(input)
                         .context(chain != null ? chain.summarize() : "")
@@ -797,7 +822,9 @@ public abstract class ReActAgent extends BaseAgent<String, String>
 
     private void injectConversationHistory(AgentContext ctx) {
         String history = ctx.conversationHistory();
-        if (history == null || history.isEmpty()) return;
+        if (history == null || history.isEmpty()) {
+            return;
+        }
 
         String[] lines = history.split("\n");
         for (String line : lines) {
@@ -886,7 +913,7 @@ public abstract class ReActAgent extends BaseAgent<String, String>
         lastSerializedStep = total;
 
         log.debug("Agent '{}' messages: {} total ({} new)", name, cachedMessages.size(),
-                total - lastSerializedStep > 0 ? total - lastSerializedStep : 0);
+            Math.max(total - lastSerializedStep, 0));
         return cachedMessages;
     }
 
@@ -899,10 +926,12 @@ public abstract class ReActAgent extends BaseAgent<String, String>
             return List.of(Map.of("role", "assistant", "content", "Plan:\n" + ps.plan()));
         } else if (step instanceof ActionStep as) {
             List<Map<String, String>> msgs = new ArrayList<>();
-            if (as.modelOutput() != null && !as.modelOutput().isEmpty())
+            if (as.modelOutput() != null && !as.modelOutput().isEmpty()) {
                 msgs.add(Map.of("role", "assistant", "content", as.modelOutput()));
-            if (as.observation() != null && !as.observation().isEmpty())
+            }
+            if (as.observation() != null && !as.observation().isEmpty()) {
                 msgs.add(Map.of("role", "user", "content", "Observation:\n" + as.observation()));
+            }
             return msgs;
         }
         return List.of();
@@ -977,7 +1006,9 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     // ============ Init helpers ============
 
     private void setupManagedAgents(List<ReActAgent> agents) {
-        if (agents == null) return;
+        if (agents == null) {
+            return;
+        }
         for (ReActAgent a : agents) {
             managedAgents.put(a.name, a);
             if (orchestrator != null) {
@@ -987,7 +1018,9 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     }
 
     private void setupTools(List<Tool> tools) {
-        if (toolRegistry == null) return;
+        if (toolRegistry == null) {
+            return;
+        }
         if (tools != null) {
             tools.forEach(toolRegistry::register);
         }
@@ -1013,7 +1046,9 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     // ============ Formatting ============
 
     protected String formatTools() {
-        if (toolRegistry == null) return "None";
+        if (toolRegistry == null) {
+            return "None";
+        }
         StringBuilder sb = new StringBuilder();
         for (Tool t : toolRegistry.all()) {
             // shown separately
@@ -1026,7 +1061,9 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     }
 
     protected String formatManagedAgents() {
-        if (managedAgents.isEmpty()) return "None";
+        if (managedAgents.isEmpty()) {
+            return "None";
+        }
         StringBuilder sb = new StringBuilder();
         for (var entry : managedAgents.entrySet()) {
             sb.append("- delegate_").append(entry.getKey())
@@ -1112,7 +1149,9 @@ public abstract class ReActAgent extends BaseAgent<String, String>
     // ============ Utilities ============
 
     protected static String truncate(String s, int maxLen) {
-        if (s == null) return "null";
+        if (s == null) {
+            return "null";
+        }
         return s.length() <= maxLen ? s : s.substring(0, maxLen) + "...";
     }
 

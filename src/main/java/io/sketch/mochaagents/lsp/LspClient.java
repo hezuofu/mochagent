@@ -103,36 +103,50 @@ public class LspClient implements AutoCloseable {
         try (var reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
             while (running) {
                 String header = reader.readLine();
-                if (header == null) break;
+                if (header == null) {
+                    break;
+                }
                 int contentLength = 0;
                 while (header != null && !header.isEmpty()) {
-                    if (header.startsWith("Content-Length:"))
+                    if (header.startsWith("Content-Length:")) {
                         contentLength = Integer.parseInt(header.substring(15).trim());
+                    }
                     header = reader.readLine();
                 }
                 char[] buf = new char[contentLength];
                 int read = 0;
-                while (read < contentLength) read += reader.read(buf, read, contentLength - read);
+                while (read < contentLength) {
+                    read += reader.read(buf, read, contentLength - read);
+                }
                 JsonNode msg = JSON.readTree(new String(buf));
                 if (msg.has("id")) {
                     int id = msg.get("id").asInt();
                     CompletableFuture<JsonNode> f = pending.remove(id);
                     if (f != null) {
-                        if (msg.has("error")) f.completeExceptionally(new LspException(msg.get("error").get("message").asText()));
-                        else f.complete(msg.get("result"));
+                        if (msg.has("error")) {
+                            f.completeExceptionally(new LspException(msg.get("error").get("message").asText()));
+                        } else {
+                            f.complete(msg.get("result"));
+                        }
                     }
                 } else if (msg.has("method")) {
                     Consumer<JsonNode> h = notifications.get(msg.get("method").asText());
-                    if (h != null) h.accept(msg.get("params"));
+                    if (h != null) {
+                        h.accept(msg.get("params"));
+                    }
                 }
             }
         } catch (Exception e) {
-            if (running) log.warn("LSP read loop error: {}", e.getMessage());
+            if (running) {
+                log.warn("LSP read loop error: {}", e.getMessage());
+            }
         }
     }
 
     private void sendRaw(String raw) {
-        if (!running) return;
+        if (!running) {
+            return;
+        }
         synchronized (writer) {
             try {
                 writer.write("Content-Length: " + raw.getBytes(StandardCharsets.UTF_8).length + "\r\n\r\n" + raw);

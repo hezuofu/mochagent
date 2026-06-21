@@ -4,14 +4,11 @@
 package io.sketch.mochaagents.context;
 
 /**
- * 上下文策略 — 函数式接口，定义如何处理上下文.
- */
-@FunctionalInterface
-/**
  * ContextStrategy strategy interface.
  *
  * @author lanxia39@163.com
  */
+@FunctionalInterface
 public interface ContextStrategy {
 
     /**

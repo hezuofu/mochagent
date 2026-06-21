@@ -34,7 +34,8 @@ public class CompactionEngine {
 
     private static final Logger log = LoggerFactory.getLogger(CompactionEngine.class);
     private static final int DEFAULT_MAX_OBSERVATION_LENGTH = 2000;
-    private static final int SNIP_THRESHOLD = 6; // snip observations after N steps
+    // snip observations after N steps
+    private static final int SNIP_THRESHOLD = 6;
 
     private final AutoCompactor autoCompactor;
     private int snipThreshold = SNIP_THRESHOLD;
@@ -78,7 +79,9 @@ public class CompactionEngine {
                 snipCount++;
             }
         }
-        if (snipCount > 0) log.debug("SNIP: cleared {} old observations", snipCount);
+        if (snipCount > 0) {
+            log.debug("SNIP: cleared {} old observations", snipCount);
+        }
         return snipCount;
     }
 
@@ -99,16 +102,18 @@ public class CompactionEngine {
                     && as.action() != null && as.action().contains(toolName)
                     && as.observation() != null && !as.observation().isEmpty()
                     && !"[snipped]".equals(as.observation())) {
-                var cleared_step = new ActionStep(
+                var clearedStep = new ActionStep(
                         as.stepNumber(), as.modelInput(), as.modelOutput(),
                         as.action(), "[cleared:" + toolName + "]", as.error(),
                         as.inputTokens(), as.outputTokens(), as.isFinalAnswer(),
                         as.assistantBlocks(), as.toolResultBlocks());
-                memory.replaceStep(i, cleared_step);
+                memory.replaceStep(i, clearedStep);
                 cleared++;
             }
         }
-        if (cleared > 0) log.debug("MICRO: cleared {} results for tool '{}'", cleared, toolName);
+        if (cleared > 0) {
+            log.debug("MICRO: cleared {} results for tool '{}'", cleared, toolName);
+        }
         return cleared;
     }
 
@@ -135,16 +140,18 @@ public class CompactionEngine {
                 String truncated = as.observation().substring(0, maxLen / 2)
                         + "\n... [collapsed " + (as.observation().length() - maxLen) + " chars] ...\n"
                         + as.observation().substring(as.observation().length() - maxLen / 2);
-                var collapsed_step = new ActionStep(
+                var collapsedStep = new ActionStep(
                         as.stepNumber(), as.modelInput(), as.modelOutput(),
                         as.action(), truncated, as.error(),
                         as.inputTokens(), as.outputTokens(), as.isFinalAnswer(),
                         as.assistantBlocks(), as.toolResultBlocks());
-                memory.replaceStep(i, collapsed_step);
+                memory.replaceStep(i, collapsedStep);
                 collapsed++;
             }
         }
-        if (collapsed > 0) log.debug("COLLAPSE: truncated {} long observations", collapsed);
+        if (collapsed > 0) {
+            log.debug("COLLAPSE: truncated {} long observations", collapsed);
+        }
         return collapsed;
     }
 
@@ -152,7 +159,9 @@ public class CompactionEngine {
 
     /** Full LLM summarization via AutoCompactor. Returns null if unavailable or circuit open. */
     public String autoCompact(io.sketch.mochaagents.context.Context ctx) {
-        if (autoCompactor == null) return null;
+        if (autoCompactor == null) {
+            return null;
+        }
         return autoCompactor.compact(ctx);
     }
 
@@ -175,5 +184,9 @@ public class CompactionEngine {
     public CompactionEngine withSnipThreshold(int n) { this.snipThreshold = n; return this; }
     public CompactionEngine withMaxObservationLength(int n) { this.maxObservationLength = n; return this; }
     public boolean isCircuitOpen() { return autoCompactor != null && autoCompactor.isCircuitOpen(); }
-    public void reset() { if (autoCompactor != null) autoCompactor.reset(); }
+    public void reset() {
+        if (autoCompactor != null) {
+            autoCompactor.reset();
+        }
+    }
 }

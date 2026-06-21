@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.*;
 import java.security.SecureRandom;
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
@@ -128,7 +127,9 @@ public final class TaskManager {
     /** Update progress from an assistant message (called per-step). */
     public void updateProgress(String taskId, Consumer<ProgressTracker> updater) {
         ProgressTracker pt = progress.get(taskId);
-        if (pt != null) updater.accept(pt);
+        if (pt != null) {
+            updater.accept(pt);
+        }
     }
 
     // ============ Query ============
@@ -150,7 +151,9 @@ public final class TaskManager {
         };
         StringBuilder id = new StringBuilder().append(prefix);
         byte[] bytes = new byte[8]; RANDOM.nextBytes(bytes);
-        for (byte b : bytes) id.append(BASE36.charAt(Math.abs(b) % 36));
+        for (byte b : bytes) {
+            id.append(BASE36.charAt(Math.abs(b) % 36));
+        }
         return id.toString();
     }
 
@@ -162,9 +165,15 @@ public final class TaskManager {
         sb.append("<task_notification>\n");
         sb.append("  <task_id>").append(state.id).append("</task_id>\n");
         sb.append("  <status>").append(state.status.name().toLowerCase()).append("</status>\n");
-        if (state.description != null) sb.append("  <summary>").append(state.description).append("</summary>\n");
-        if (state.result != null) sb.append("  <result>").append(truncate(state.result.toString(), 500)).append("</result>\n");
-        if (state.error != null) sb.append("  <error>").append(state.error).append("</error>\n");
+        if (state.description != null) {
+            sb.append("  <summary>").append(state.description).append("</summary>\n");
+        }
+        if (state.result != null) {
+            sb.append("  <result>").append(truncate(state.result.toString(), 500)).append("</result>\n");
+        }
+        if (state.error != null) {
+            sb.append("  <error>").append(state.error).append("</error>\n");
+        }
         if (pt != null) {
             sb.append("  <usage>\n");
             sb.append("    <input_tokens>").append(pt.latestInputTokens).append("</input_tokens>\n");
@@ -191,8 +200,10 @@ public final class TaskManager {
     }
 
     private void postTaskEvent(String status, String id, Object data) {
-        if (eventBus != null) eventBus.post(
-                new io.sketch.mochaagents.event.AgentEvents.TaskStatusChanged(id, status, data, 0));
+        if (eventBus != null) {
+            eventBus.post(
+                    new io.sketch.mochaagents.event.AgentEvents.TaskStatusChanged(id, status, data, 0));
+        }
     }
 
     private void notifyListeners(TaskState state) {
@@ -201,7 +212,9 @@ public final class TaskManager {
 
     private void runCleanup(String id) {
         List<Runnable> cleanups = cleanupRegistry.remove(id);
-        if (cleanups != null) cleanups.forEach(r -> { try { r.run(); } catch (Exception e) { log.warn("Cleanup error", e); } });
+        if (cleanups != null) {
+            cleanups.forEach(r -> { try { r.run(); } catch (Exception e) { log.warn("Cleanup error", e); } });
+        }
     }
 
     private static String truncate(String s, int max) { return s.length() <= max ? s : s.substring(0, max) + "..."; }
@@ -257,7 +270,9 @@ public final class TaskManager {
         public void recordActivity(ToolActivity activity) {
             toolUseCount++;
             recentActivities.add(activity);
-            if (recentActivities.size() > MAX_ACTIVITIES) recentActivities.remove(0);
+            if (recentActivities.size() > MAX_ACTIVITIES) {
+                recentActivities.remove(0);
+            }
         }
 
         /** Total tokens consumed (input + output). */

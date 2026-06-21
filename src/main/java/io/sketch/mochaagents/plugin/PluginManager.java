@@ -46,7 +46,7 @@ public class PluginManager {
 
     /** Register a Plugin instance — reads @PluginInfo for metadata. */
     public void registerPlugin(Plugin plugin) {
-        PluginInfo info = plugin.getClass().getAnnotation(PluginInfo.class);
+        PluginMeta info = plugin.getClass().getAnnotation(PluginMeta.class);
         if (info == null) {
             throw new IllegalArgumentException(
                     "@PluginInfo required on " + plugin.getClass().getName());

@@ -35,7 +35,8 @@ public class LspManager implements AutoCloseable {
     // extension ("ts") → server name
     private final Map<String, String> extensionMap = new ConcurrentHashMap<>();
     private final Map<String, LspServer> servers = new ConcurrentHashMap<>();
-    private final Map<String, String> openFiles = new ConcurrentHashMap<>(); // filePath → server name
+    // filePath → server name
+    private final Map<String, String> openFiles = new ConcurrentHashMap<>();
 
     public void register(String serverName, String extension, LspServer.LspServerConfig config) {
         String ext = extension.startsWith(".") ? extension.substring(1) : extension;
@@ -44,33 +45,44 @@ public class LspManager implements AutoCloseable {
     }
 
     public void register(String serverName, List<String> extensions, LspServer.LspServerConfig config) {
-        for (String ext : extensions) register(serverName, ext, config);
+        for (String ext : extensions) {
+            register(serverName, ext, config);
+        }
     }
 
     public LspServer getServerForFile(String filePath) {
         String ext = extension(filePath);
-        if (ext == null) return null;
+        if (ext == null) {
+            return null;
+        }
         String name = extensionMap.get(ext);
         return name != null ? servers.get(name) : null;
     }
 
     public CompletableFuture<Void> ensureServerStarted(String filePath) {
         LspServer server = getServerForFile(filePath);
-        if (server == null) return CompletableFuture.failedFuture(new IllegalStateException("No LSP server for " + filePath));
-        if (server.isHealthy()) return CompletableFuture.completedFuture(null);
+        if (server == null) {
+            return CompletableFuture.failedFuture(new IllegalStateException("No LSP server for " + filePath));
+        }
+        if (server.isHealthy()) {
+            return CompletableFuture.completedFuture(null);
+        }
         return server.start();
     }
 
     public CompletableFuture<JsonNode> request(String filePath, String method, ObjectNode params) {
         LspServer server = getServerForFile(filePath);
-        if (server == null)
+        if (server == null) {
             return CompletableFuture.failedFuture(new IllegalStateException("No LSP server for " + filePath));
+        }
         return ensureOpen(filePath, server).thenCompose(v -> server.sendRequest(method, params));
     }
 
     public void didOpen(String filePath, String content) {
         LspServer server = getServerForFile(filePath);
-        if (server == null || !server.isHealthy()) return;
+        if (server == null || !server.isHealthy()) {
+            return;
+        }
         ObjectNode params = JSON.createObjectNode();
         params.set("textDocument", textDocumentItem(filePath, content));
         server.sendNotification("textDocument/didOpen", params);
@@ -79,7 +91,9 @@ public class LspManager implements AutoCloseable {
 
     public void didChange(String filePath, String newContent) {
         LspServer server = getServerForFile(filePath);
-        if (server == null || !server.isHealthy()) return;
+        if (server == null || !server.isHealthy()) {
+            return;
+        }
         ObjectNode params = JSON.createObjectNode();
         ObjectNode td = JSON.createObjectNode();
         td.put("uri", toUri(filePath));
@@ -92,7 +106,9 @@ public class LspManager implements AutoCloseable {
 
     public void didSave(String filePath) {
         LspServer server = getServerForFile(filePath);
-        if (server == null || !server.isHealthy()) return;
+        if (server == null || !server.isHealthy()) {
+            return;
+        }
         ObjectNode params = JSON.createObjectNode();
         ObjectNode td = JSON.createObjectNode();
         td.put("uri", toUri(filePath));
@@ -102,7 +118,9 @@ public class LspManager implements AutoCloseable {
 
     public void didClose(String filePath) {
         LspServer server = getServerForFile(filePath);
-        if (server == null) return;
+        if (server == null) {
+            return;
+        }
         if (!server.isHealthy()) { openFiles.remove(filePath); return; }
         ObjectNode params = JSON.createObjectNode();
         ObjectNode td = JSON.createObjectNode();
@@ -114,7 +132,9 @@ public class LspManager implements AutoCloseable {
 
     public void onDiagnostics(String filePath, java.util.function.Consumer<JsonNode> handler) {
         LspServer server = getServerForFile(filePath);
-        if (server != null) server.onNotification("textDocument/publishDiagnostics", handler);
+        if (server != null) {
+            server.onNotification("textDocument/publishDiagnostics", handler);
+        }
     }
 
     public Collection<LspServer> servers() { return Collections.unmodifiableCollection(servers.values()); }

@@ -35,14 +35,20 @@ public class ModelContextCompressor implements ContextCompressor {
 
     @Override
     public List<ContextChunk> compress(List<ContextChunk> chunks, int maxTokens) {
-        if (chunks.isEmpty()) return chunks;
+        if (chunks.isEmpty()) {
+            return chunks;
+        }
 
         int totalTokens = chunks.stream().mapToInt(ContextChunk::tokenCount).sum();
-        if (totalTokens <= maxTokens) return chunks;
+        if (totalTokens <= maxTokens) {
+            return chunks;
+        }
 
         // Split: keep the most recent (keepRatio * chunk count), summarize the rest
         int splitIdx = (int) (chunks.size() * (1.0 - keepRatio));
-        if (splitIdx <= 0) return chunks;
+        if (splitIdx <= 0) {
+            return chunks;
+        }
 
         List<ContextChunk> toSummarize = chunks.subList(0, splitIdx);
         List<ContextChunk> toKeep = chunks.subList(splitIdx, chunks.size());
