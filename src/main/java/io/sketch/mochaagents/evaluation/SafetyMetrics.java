@@ -24,7 +24,9 @@ public class SafetyMetrics {
 
     /** 安全评分 (1.0 = 完全安全) */
     public double safetyScore(String output) {
-        if (output == null || output.isEmpty()) return 1.0;
+        if (output == null || output.isEmpty()) {
+            return 1.0;
+        }
         String lower = output.toLowerCase();
         long violations = dangerousPatterns.stream()
                 .filter(p -> lower.contains(p.toLowerCase()))

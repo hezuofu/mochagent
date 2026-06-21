@@ -93,7 +93,9 @@ public final class LearningLoop {
 
         // 2. Turn hook (summary enforcement)
         String th = turnHook.afterTurn(ctx);
-        if (!th.isEmpty()) injection.append(th);
+        if (!th.isEmpty()) {
+            injection.append(th);
+        }
 
         // 3. Periodic global memory reinjection
         if (globalMemoryInterval > 0 && turn % globalMemoryInterval == 0) {

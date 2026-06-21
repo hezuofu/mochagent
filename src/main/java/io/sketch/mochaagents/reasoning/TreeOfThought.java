@@ -103,8 +103,11 @@ public class TreeOfThought implements ReasoningStrategy {
     private double extractScore(String text) {
         var m = java.util.regex.Pattern.compile("Score\\s*[:：]\\s*([\\d.]+)").matcher(text);
         if (m.find()) {
-            try { return Math.min(1.0, Math.max(0.0, Double.parseDouble(m.group(1)))); }
-            catch (NumberFormatException e) {}
+            try {
+                return Math.min(1.0, Math.max(0.0, Double.parseDouble(m.group(1))));
+            } catch (NumberFormatException e) {
+
+            }
         }
         return 0.5;
     }

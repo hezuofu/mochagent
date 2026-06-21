@@ -61,7 +61,9 @@ public final class StreamingToolExecutor implements ToolExecutionStrategy {
         TrackedTool tt = new TrackedTool(name, args, "queued", false);
         tools.add(tt);
 
-        if (canExecute(tt)) executeTool(tt, tool);
+        if (canExecute(tt)) {
+            executeTool(tt, tool);
+        }
         return this;
     }
 
@@ -83,7 +85,9 @@ public final class StreamingToolExecutor implements ToolExecutionStrategy {
         for (TrackedTool tt : tools) {
             if ("queued".equals(tt.status)) {
                 Tool tool = registry.get(tt.name);
-                if (tool != null && canExecute(tt)) executeTool(tt, tool);
+                if (tool != null && canExecute(tt)) {
+                    executeTool(tt, tool);
+                }
             }
         }
         // Wait for running tools
@@ -104,14 +108,20 @@ public final class StreamingToolExecutor implements ToolExecutionStrategy {
     public void onEvent(Consumer<ToolEvent> listener) { listeners.add(listener); }
 
     private boolean canExecute(TrackedTool tt) {
-        if (!"queued".equals(tt.status)) return false;
+        if (!"queued".equals(tt.status)) {
+            return false;
+        }
         Tool tool = registry.get(tt.name);
-        if (tool == null) return true;
+        if (tool == null) {
+            return true;
+        }
         if (!tool.isConcurrencySafe()) {
             for (TrackedTool other : tools) {
                 if (other != tt && "running".equals(other.status)) {
                     Tool otherTool = registry.get(other.name);
-                    if (otherTool != null && !otherTool.isConcurrencySafe()) return false;
+                    if (otherTool != null && !otherTool.isConcurrencySafe()) {
+                        return false;
+                    }
                 }
             }
         }
@@ -136,8 +146,9 @@ public final class StreamingToolExecutor implements ToolExecutionStrategy {
                 // Sibling abort: if a bash-like tool errors, cancel concurrent siblings
                 if (tool.isDestructive() || !tool.isConcurrencySafe()) {
                     for (TrackedTool sib : tools) {
-                        if (sib != tt && sib.future != null && !sib.future.isDone())
+                        if (sib != tt && sib.future != null && !sib.future.isDone()) {
                             sib.future.cancel(true);
+                        }
                     }
                 }
             }

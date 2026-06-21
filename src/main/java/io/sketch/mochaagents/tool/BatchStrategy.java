@@ -32,8 +32,12 @@ class BatchStrategy implements ToolExecutionStrategy {
 
     @Override
     public List<ToolResult> executeBatch(List<ToolCall> calls) {
-        if (calls.isEmpty()) return List.of();
-        if (calls.size() == 1) return List.of(delegate.execute(calls.get(0).name(), calls.get(0).arguments()));
+        if (calls.isEmpty()) {
+            return List.of();
+        }
+        if (calls.size() == 1) {
+            return List.of(delegate.execute(calls.get(0).name(), calls.get(0).arguments()));
+        }
 
         var batches = partition(calls);
         var results = new ArrayList<ToolResult>();
@@ -41,15 +45,23 @@ class BatchStrategy implements ToolExecutionStrategy {
 
         for (var batch : batches) {
             if (abort.get()) {
-                for (var tc : batch) results.add(ToolResult.Builder.failure(tc.name(), "Aborted: sibling error", null));
+                for (var tc : batch) {
+                    results.add(ToolResult.Builder.failure(tc.name(), "Aborted: sibling error", null));
+                }
                 continue;
             }
             if (batch.size() > 1 && isConcurrencySafe(batch.get(0).name())) {
                 results.addAll(executeParallel(batch, abort));
             } else {
                 for (var tc : batch) {
-                    if (abort.get()) results.add(ToolResult.Builder.failure(tc.name(), "Aborted", null));
-                    else { var r = delegate.execute(tc.name(), tc.arguments()); results.add(r); if (r.isError() && isDestructive(tc.name())) abort.set(true); }
+                    if (abort.get()) {
+                        results.add(ToolResult.Builder.failure(tc.name(), "Aborted", null));
+                    } else {
+                        var r = delegate.execute(tc.name(), tc.arguments()); results.add(r);
+                        if (r.isError() && isDestructive(tc.name())) {
+                            abort.set(true);
+                        }
+                    }
                 }
             }
         }
@@ -66,19 +78,24 @@ class BatchStrategy implements ToolExecutionStrategy {
             else if (concurrent && safe) current.add(tc);
             else { batches.add(List.copyOf(current)); current = new ArrayList<>(); current.add(tc); concurrent = safe; }
         }
-        if (!current.isEmpty()) batches.add(List.copyOf(current));
+        if (!current.isEmpty()) {
+            batches.add(List.copyOf(current));
+        }
         return batches;
     }
 
     private List<ToolResult> executeParallel(List<ToolCall> batch, AtomicBoolean abort) {
         var results = new ArrayList<ToolResult>();
         var futures = new ArrayList<CompletableFuture<ToolResult>>();
-        for (int i = 0; i < batch.size(); i++) {
-            final var tc = batch.get(i);
+        for (final ToolCall tc : batch) {
             futures.add(CompletableFuture.supplyAsync(() -> {
-                if (abort.get()) return ToolResult.Builder.failure(tc.name(), "Aborted", null);
+                if (abort.get()) {
+                    return ToolResult.Builder.failure(tc.name(), "Aborted", null);
+                }
                 var r = delegate.execute(tc.name(), tc.arguments());
-                if (r.isError() && isDestructive(tc.name())) abort.set(true);
+                if (r.isError() && isDestructive(tc.name())) {
+                    abort.set(true);
+                }
                 return r;
             }));
         }

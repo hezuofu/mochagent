@@ -51,7 +51,9 @@ class SequentialStrategy implements ToolExecutionStrategy {
                 lastError = io.sketch.mochaagents.MochaException.ToolException.timeout(toolName);
                 log.warn("Tool '{}' timeout (attempt {}/{})", toolName, attempt, maxRetries + 1);
             } catch (ExecutionException e) {
-                if (e.getCause() instanceof IllegalArgumentException iae) throw iae;
+                if (e.getCause() instanceof IllegalArgumentException iae) {
+                    throw iae;
+                }
                 lastError = io.sketch.mochaagents.MochaException.ToolException.execution(toolName, e.getMessage(), e);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -61,8 +63,11 @@ class SequentialStrategy implements ToolExecutionStrategy {
             }
 
             if (attempt <= maxRetries) {
-                try { Thread.sleep(retryDelayMs * attempt); }
-                catch (InterruptedException ie) { Thread.currentThread().interrupt(); break; }
+                try {
+                    Thread.sleep(retryDelayMs * attempt);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt(); break;
+                }
             }
         }
         return ToolResult.Builder.failure(toolName, lastError.getMessage(), null);

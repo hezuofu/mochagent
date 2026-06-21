@@ -47,7 +47,9 @@ public final class Notifications {
                                BiFunction<Notification, Notification, Notification> foldFn) {
         Notification n = new Notification(key, text, priority, timeoutMs, foldFn);
         Notification existing = active.get(key);
-        if (existing != null && foldFn != null) n = foldFn.apply(existing, n);
+        if (existing != null && foldFn != null) {
+            n = foldFn.apply(existing, n);
+        }
         active.put(key, n);
         queue.offer(n);
         final Notification finalN = n;
@@ -77,9 +79,13 @@ public final class Notifications {
                 // Extract count from existing text, increment
                 int count = 2;
                 String existingText = existing.text();
-                if (existingText.matches(".*\\d+.*"))
-                    try { count = Integer.parseInt(existingText.replaceAll("[^0-9]", "")) + 1; }
-                    catch (NumberFormatException ignored) {}
+                if (existingText.matches(".*\\d+.*")) {
+                    try {
+                        count = Integer.parseInt(existingText.replaceAll("[^0-9]", "")) + 1;
+                    } catch (NumberFormatException ignored) {
+
+                    }
+                }
                 return new Notification(existing.key(), count + " " + existingText.replaceAll("\\d+ ", ""),
                         existing.priority(), existing.timeoutMs(), existing.foldFn());
             };

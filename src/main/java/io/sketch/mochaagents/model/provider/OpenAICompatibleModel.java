@@ -92,7 +92,9 @@ public class OpenAICompatibleModel extends OpenAIModel {
         public CompatibleBuilder baseUrl(String url) { this.baseUrl = url; return this; }
 
         public OpenAICompatibleModel build() {
-            if (modelId == null) modelId = "default";
+            if (modelId == null) {
+                modelId = "default";
+            }
             return new OpenAICompatibleModel(this);
         }
     }

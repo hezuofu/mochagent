@@ -208,7 +208,11 @@ public class FileReadTool extends AbstractTool {
             return ((Number) v).intValue();
         }
         if (v instanceof String) {
-            try { return Integer.parseInt((String) v); } catch (NumberFormatException ignored) {}
+            try {
+                return Integer.parseInt((String) v);
+            } catch (NumberFormatException ignored) {
+
+            }
         }
         return defaultVal;
     }

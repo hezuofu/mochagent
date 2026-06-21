@@ -5,7 +5,6 @@ package io.sketch.mochaagents.tool;
 
 import java.io.IOException;
 import java.nio.file.*;
-import java.util.Map;
 
 /**
  * Tool result overflow management — when results exceed max size, save to disk
@@ -34,8 +33,12 @@ public final class ToolResultStorage {
 
     /** Store a tool result, offloading to disk if too large. Returns display string. */
     public String store(String toolName, String result) {
-        if (result == null) return "(null)";
-        if (result.length() <= maxResultChars) return result;
+        if (result == null) {
+            return "(null)";
+        }
+        if (result.length() <= maxResultChars) {
+            return result;
+        }
 
         // Offload to disk
         String fileName = toolName + "-" + System.currentTimeMillis() + ".txt";

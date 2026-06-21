@@ -55,7 +55,9 @@ public class PluginManager {
         var ref = new java.util.concurrent.atomic.AtomicReference<>(desc);
         plugin.extensions().forEach(e -> ref.set(ref.get().withExtension(e)));
         register(ref.get());
-        if (plugin instanceof AutoCloseable ac) { /* lifecycle managed by caller */ }
+        if (plugin instanceof AutoCloseable ac) {
+            /* lifecycle managed by caller */
+        }
     }
 
     /** 注销插件. */

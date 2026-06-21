@@ -36,8 +36,9 @@ public class LspServer implements AutoCloseable {
     public LspServer(String name, LspServerConfig config) { this.name = name; this.config = config; }
 
     public CompletableFuture<Void> start() {
-        if (!state.compareAndSet(State.STOPPED, State.STARTING))
+        if (!state.compareAndSet(State.STOPPED, State.STARTING)) {
             return CompletableFuture.completedFuture(null);
+        }
         restartCount = 0;
         startTime = System.currentTimeMillis();
         return doStart();
@@ -61,7 +62,13 @@ public class LspServer implements AutoCloseable {
                     log.warn("LSP server {} crashed, restart {}/{}: {}",
                             name, restartCount, config.maxRestarts(), e.getMessage());
                     state.set(State.STOPPED);
-                    start().whenComplete((v, ex) -> { if (ex == null) f.complete(null); else f.completeExceptionally(ex); });
+                    start().whenComplete((v, ex) -> {
+                        if (ex == null) {
+                           f.complete(null);
+                        } else {
+                            f.completeExceptionally(ex);
+                        }
+                    });
                 } else {
                     f.completeExceptionally(e);
                     log.error("LSP server {} failed after {} restarts", name, restartCount);
@@ -69,17 +76,22 @@ public class LspServer implements AutoCloseable {
             }
         });
         CompletableFuture.runAsync(() -> {
-            try { f.get(config.startupTimeout(), TimeUnit.SECONDS); }
-            catch (TimeoutException e) { f.completeExceptionally(new TimeoutException("Startup timeout: " + name)); }
-            catch (Exception ignored) {}
+            try {
+                f.get(config.startupTimeout(), TimeUnit.SECONDS);
+            } catch (TimeoutException e) {
+                f.completeExceptionally(new TimeoutException("Startup timeout: " + name));
+            }catch (Exception ignored) {
+
+            }
         });
         return f;
     }
 
     /** Send request with ContentModified retry (-32801). */
     public CompletableFuture<JsonNode> sendRequest(String method, JsonNode params) {
-        if (state.get() != State.RUNNING || client == null)
+        if (state.get() != State.RUNNING || client == null) {
             return CompletableFuture.failedFuture(new IllegalStateException("Server not running: " + name));
+        }
         return sendWithRetry(method, params, 0);
     }
 
@@ -93,7 +105,13 @@ public class LspServer implements AutoCloseable {
                     try { Thread.sleep(delay); }
                     catch (InterruptedException ie) { Thread.currentThread().interrupt(); return; }
                     sendWithRetry(method, params, attempt + 1)
-                            .whenComplete((r, e) -> { if (e != null) retry.completeExceptionally(e); else retry.complete(r); });
+                            .whenComplete((r, e) -> {
+                                if (e != null) {
+                                   retry.completeExceptionally(e);
+                                } else {
+                                    retry.complete(r);
+                                }
+                            });
                 });
                 return retry;
             }
@@ -107,12 +125,15 @@ public class LspServer implements AutoCloseable {
     }
 
     public void sendNotification(String method, JsonNode params) {
-        if (state.get() == State.RUNNING && client != null)
+        if (state.get() == State.RUNNING && client != null) {
             client.sendNotification(method, params);
+        }
     }
 
     public void onNotification(String method, java.util.function.Consumer<JsonNode> handler) {
-        if (client != null) client.onNotification(method, handler);
+        if (client != null) {
+            client.onNotification(method, handler);
+        }
     }
 
     private void handleCrash() {
@@ -124,7 +145,9 @@ public class LspServer implements AutoCloseable {
         }
     }
 
-    public boolean isHealthy() { return state.get() == State.RUNNING && client != null && client.isRunning(); }
+    public boolean isHealthy() {
+        return state.get() == State.RUNNING && client != null && client.isRunning();
+    }
     public String name() { return name; }
     public State state() { return state.get(); }
     public LspServerConfig config() { return config; }

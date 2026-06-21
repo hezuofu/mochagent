@@ -197,7 +197,9 @@ public class FileEditTool extends AbstractTool {
      * Tries exact match first, then curvy quote variants.
      */
     static String findActualString(String content, String search) {
-        if (content.contains(search)) return search;
+        if (content.contains(search)) {
+            return search;
+        }
 
         // Try normalized quote variants
         String normalized = search
@@ -229,13 +231,12 @@ public class FileEditTool extends AbstractTool {
         }
 
         // Map the quote styles from actual → replacement
-        String style = actual;
         String result = replacement;
 
-        if (style.contains("\u201C") && !replacement.contains("\u201C")) {
+        if (actual.contains("\u201C") && !replacement.contains("\u201C")) {
             result = result.replace("\"", "\u201C");
         }
-        if (style.contains("\u201D") && !replacement.contains("\u201D")) {
+        if (actual.contains("\u201D") && !replacement.contains("\u201D")) {
             result = result.replace("\"", "\u201D");
         }
 

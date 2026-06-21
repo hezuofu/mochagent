@@ -55,11 +55,15 @@ public final class AgentBootstrap {
 
     /** Apply extension points from all enabled plugins to the agent builder. */
     private void applyPluginExtensions(MochaAgent.Builder builder) {
-        if (pluginBootstrap == null) return;
+        if (pluginBootstrap == null) {
+            return;
+        }
         var plugins = pluginBootstrap.pluginManager().getPlugins().enabled();
         for (var plugin : plugins) {
             var desc = pluginBootstrap.pluginManager().getDescriptor(plugin.name());
-            if (desc == null) continue;
+            if (desc == null) {
+                continue;
+            }
             for (var ext : desc.extensionPoints()) {
                 switch (ext.type()) {
                     case "TOOL" -> {
@@ -110,10 +114,14 @@ public final class AgentBootstrap {
                     }
                     case "MCP_SERVER" -> {
                         if (ext.component() instanceof String cmd) {
-                            if (mcpClient == null) mcpClient = new io.sketch.mochaagents.tool.mcp.StdioMcpClient();
+                            if (mcpClient == null) {
+                                mcpClient = new io.sketch.mochaagents.tool.mcp.StdioMcpClient();
+                            }
                             mcpClient.connect(cmd);
                             if (mcpClient.isConnected()) {
-                                for (var t : mcpClient.discoverTools()) toolRegistry.register(t);
+                                for (var t : mcpClient.discoverTools()) {
+                                    toolRegistry.register(t);
+                                }
                                 log.info("Plugin '{}' connected MCP: {}", plugin.name(), cmd);
                             }
                         }
@@ -162,8 +170,11 @@ public final class AgentBootstrap {
                 cmd = cmd.trim();
                 if (!cmd.isEmpty()) {
                     mcpClient.connect(cmd);
-                    if (mcpClient.isConnected())
-                        for (var t : mcpClient.discoverTools()) toolRegistry.register(t);
+                    if (mcpClient.isConnected()) {
+                        for (var t : mcpClient.discoverTools()) {
+                            toolRegistry.register(t);
+                        }
+                    }
                 }
             }
         }
@@ -209,7 +220,9 @@ public final class AgentBootstrap {
     }
 
     public AgentBootstrap withApprovalHandler(io.sketch.mochaagents.interaction.ApprovalBroker.Handler handler) {
-        if (approvalBroker == null) approvalBroker = new io.sketch.mochaagents.interaction.ApprovalBroker();
+        if (approvalBroker == null) {
+            approvalBroker = new io.sketch.mochaagents.interaction.ApprovalBroker();
+        }
         decisionPipeline = io.sketch.mochaagents.interaction.DecisionPipeline.standard();
         approvalBroker.register(handler);
         return this;
@@ -223,7 +236,9 @@ public final class AgentBootstrap {
     private io.sketch.mochaagents.lsp.LspManager lspManager;
 
     private io.sketch.mochaagents.lsp.LspManager getOrCreateLsp() {
-        if (lspManager == null) lspManager = new io.sketch.mochaagents.lsp.LspManager();
+        if (lspManager == null) {
+            lspManager = new io.sketch.mochaagents.lsp.LspManager();
+        }
         return lspManager;
     }
 

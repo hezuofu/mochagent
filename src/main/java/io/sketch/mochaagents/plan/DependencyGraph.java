@@ -25,18 +25,26 @@ public class DependencyGraph {
         Set<String> visited = new HashSet<>();
         Set<String> stack = new HashSet<>();
         for (String node : adjacency.keySet()) {
-            if (hasCycleDfs(node, visited, stack)) return true;
+            if (hasCycleDfs(node, visited, stack)) {
+                return true;
+            }
         }
         return false;
     }
 
     private boolean hasCycleDfs(String node, Set<String> visited, Set<String> stack) {
-        if (stack.contains(node)) return true;
-        if (visited.contains(node)) return false;
+        if (stack.contains(node)) {
+            return true;
+        }
+        if (visited.contains(node)) {
+            return false;
+        }
         visited.add(node);
         stack.add(node);
         for (String dep : adjacency.getOrDefault(node, List.of())) {
-            if (hasCycleDfs(dep, visited, stack)) return true;
+            if (hasCycleDfs(dep, visited, stack)) {
+                return true;
+            }
         }
         stack.remove(node);
         return false;
@@ -56,7 +64,9 @@ public class DependencyGraph {
         }
         Queue<String> queue = new LinkedList<>();
         for (Map.Entry<String, Integer> e : inDegree.entrySet()) {
-            if (e.getValue() == 0) queue.add(e.getKey());
+            if (e.getValue() == 0) {
+                queue.add(e.getKey());
+            }
         }
         List<String> order = new ArrayList<>();
         while (!queue.isEmpty()) {
@@ -64,7 +74,9 @@ public class DependencyGraph {
             order.add(n);
             for (String dep : adjacency.getOrDefault(n, List.of())) {
                 inDegree.merge(dep, -1, Integer::sum);
-                if (inDegree.get(dep) == 0) queue.add(dep);
+                if (inDegree.get(dep) == 0) {
+                    queue.add(dep);
+                }
             }
         }
         return order;
@@ -88,7 +100,9 @@ public class DependencyGraph {
             if (total > globalMax) { globalMax = total; endNode = node; }
         }
         List<String> path = new ArrayList<>();
-        for (String cur = endNode; cur != null; cur = prev.get(cur)) path.add(0, cur);
+        for (String cur = endNode; cur != null; cur = prev.get(cur)) {
+            path.add(0, cur);
+        }
         return new AbstractMap.SimpleEntry<>(path, globalMax);
     }
     public int nodeCount() { return adjacency.size(); }

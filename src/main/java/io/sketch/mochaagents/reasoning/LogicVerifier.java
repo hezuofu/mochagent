@@ -5,8 +5,6 @@ package io.sketch.mochaagents.reasoning;
 
 import io.sketch.mochaagents.model.Model;
 import io.sketch.mochaagents.model.ModelRequest;
-import io.sketch.mochaagents.reasoning.ReasoningChain;
-import io.sketch.mochaagents.reasoning.ReasoningStep;
 
 /**
  * 逻辑验证器 — 用 Model 判断推理链的结论是否能从前提中逻辑推导出来.
@@ -26,7 +24,9 @@ public class LogicVerifier implements ReasoningVerifier {
 
     @Override
     public boolean verify(ReasoningChain chain) {
-        if (chain.steps().isEmpty()) return false;
+        if (chain.steps().isEmpty()) {
+            return false;
+        }
 
         StringBuilder sb = new StringBuilder();
         for (ReasoningStep s : chain.steps()) {

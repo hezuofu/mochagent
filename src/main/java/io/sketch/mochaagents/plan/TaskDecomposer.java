@@ -3,7 +3,6 @@
 
 package io.sketch.mochaagents.plan;
 
-import io.sketch.mochaagents.plan.PlanStep;
 import java.util.List;
 
 /**

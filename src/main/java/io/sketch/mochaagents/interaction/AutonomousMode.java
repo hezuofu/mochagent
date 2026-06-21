@@ -32,7 +32,8 @@ public class AutonomousMode implements Interactor {
     @Override
     public String ask(String prompt) {
         log.debug("[Autonomous] question: {}", truncate(prompt, 120));
-        return null; // no user to answer, agent must self-resolve
+        // no user to answer, agent must self-resolve
+        return null;
     }
 
     @Override

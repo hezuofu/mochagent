@@ -4,14 +4,10 @@
 package io.sketch.mochaagents.plan;
 
 /**
- * 规划策略 — 函数式接口.
- */
-@FunctionalInterface
-/**
  * PlanningStrategy strategy interface.
- *
  * @author lanxia39@163.com
  */
+@FunctionalInterface
 public interface PlanningStrategy {
 
     Plan<?> plan(PlanningRequest<?> request);

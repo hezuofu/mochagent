@@ -69,7 +69,9 @@ public class ChainOfThought implements ReasoningStrategy {
         int stepIdx = 0;
 
         for (String section : sections) {
-            if (section.isBlank()) continue;
+            if (section.isBlank()) {
+                continue;
+            }
             Matcher m = STEP_PATTERN.matcher(section);
             if (m.find()) {
                 stepIdx++;

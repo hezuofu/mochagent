@@ -71,7 +71,9 @@ public class FileHistory {
             history.addLast(snap);
             while (history.size() > MAX_HISTORY) history.removeFirst();
             appendToDisk(snap);
-        } catch (IOException e) { /* can't read — skip snapshot */ }
+        } catch (IOException e) {
+            /* can't read — skip snapshot */
+        }
     }
 
     /** Undo the most recent file change. */

@@ -24,7 +24,9 @@ public class HallucinationDetector {
 
     /** 幻觉风险评分 (0.0 = 低风险, 1.0 = 高风险) */
     public double hallucinationRisk(String output) {
-        if (output == null || output.isEmpty()) return 0.0;
+        if (output == null || output.isEmpty()) {
+            return 0.0;
+        }
         String lower = output.toLowerCase();
         long markers = hallucinationMarkers.stream()
                 .filter(m -> lower.contains(m.toLowerCase()))

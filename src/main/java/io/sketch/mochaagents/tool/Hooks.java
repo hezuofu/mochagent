@@ -3,7 +3,6 @@
 
 package io.sketch.mochaagents.tool;
 
-import io.sketch.mochaagents.tool.Tool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +60,9 @@ public final class Hooks {
                     log.info("Pre-tool hook denied '{}': {}", tool.getName(), d.reason());
                     return d;
                 }
-                if (d.modifiedArgs() != null) current = d.modifiedArgs();
+                if (d.modifiedArgs() != null) {
+                    current = d.modifiedArgs();
+                }
             } catch (Exception e) { log.warn("Pre-tool hook '{}' error: {}", tool.getName(), e.getMessage()); }
         }
         return HookDecision.allow(current);
@@ -71,7 +72,9 @@ public final class Hooks {
     public void applyPostTool(Tool tool, Map<String, Object> arguments, Object result,
                                Consumer<HookMessage> onMessage) {
         for (var reg : postHooks) {
-            if (!matches(reg.matcher, tool.getName())) continue;
+            if (!matches(reg.matcher, tool.getName())) {
+                continue;
+            }
             try { reg.hook.apply(tool, arguments, result, onMessage); }
             catch (Exception e) { log.warn("Post-tool hook '{}' error: {}", tool.getName(), e.getMessage()); }
         }
@@ -124,11 +127,17 @@ public final class Hooks {
     private record Registration<T>(String matcher, T hook) {}
 
     private static boolean matches(String matcher, String toolName) {
-        if (matcher == null) return true;
+        if (matcher == null) {
+            return true;
+        }
         return toolName.matches(matcher.replace("*", ".*"));
     }
 
     private void safeRun(Runnable r, String hookType) {
-        try { r.run(); } catch (Exception e) { log.warn("Hook '{}' error: {}", hookType, e.getMessage()); }
+        try {
+            r.run();
+        } catch (Exception e) {
+            log.warn("Hook '{}' error: {}", hookType, e.getMessage());
+        }
     }
 }

@@ -77,7 +77,9 @@ public class AnthropicModel extends BaseApiModel implements Model.NativeTools {
         double temp = request.temperature() >= 0 ? request.temperature() : 1.0;
         body.put("temperature", Math.max(temp, 0.0001));
 
-        if (request.topP() >= 0) body.put("top_p", request.topP());
+        if (request.topP() >= 0) {
+            body.put("top_p", request.topP());
+        }
 
         if (!request.stopSequences().isEmpty()) {
             ArrayNode stops = JSON.createArrayNode();
@@ -204,7 +206,9 @@ public class AnthropicModel extends BaseApiModel implements Model.NativeTools {
                 String type = safeStr(block, "type");
                 if ("text".equals(type)) {
                     String text = safeStr(block, "text");
-                    if (!content.isEmpty()) content.append("\n");
+                    if (!content.isEmpty()) {
+                        content.append("\n");
+                    }
                     content.append(text);
                     blocks.add(new io.sketch.mochaagents.message.ContentBlock.TextBlock(text));
                 } else if ("tool_use".equals(type)) {
@@ -213,7 +217,9 @@ public class AnthropicModel extends BaseApiModel implements Model.NativeTools {
                     JsonNode inputNode = block.get("input");
                     Map<String, Object> inputMap = inputNode != null && !inputNode.isNull()
                             ? jsonNodeToMap(inputNode) : Map.of();
-                    if (!content.isEmpty()) content.append("\n");
+                    if (!content.isEmpty()) {
+                        content.append("\n");
+                    }
                     content.append("[tool_use: ").append(name)
                             .append("(").append(inputNode).append(")]");
                     blocks.add(new io.sketch.mochaagents.message.ContentBlock.ToolUseBlock(id, name, inputMap));
@@ -252,15 +258,18 @@ public class AnthropicModel extends BaseApiModel implements Model.NativeTools {
         node.put("role", "user");
         if (!u.toolResults().isEmpty()) {
             ArrayNode content = JSON.createArrayNode();
-            if (u.content() != null && !u.content().isEmpty())
+            if (u.content() != null && !u.content().isEmpty()) {
                 content.addObject().put("type", "text").put("text", u.content());
+            }
             for (var tr : u.toolResults()) {
                 if (tr instanceof io.sketch.mochaagents.message.ContentBlock.ToolResultBlock tb) {
                     ObjectNode trNode = content.addObject();
                     trNode.put("type", "tool_result");
                     trNode.put("tool_use_id", tb.toolUseId());
                     trNode.put("content", tb.content());
-                    if (tb.isError()) trNode.put("is_error", true);
+                    if (tb.isError()) {
+                        trNode.put("is_error", true);
+                    }
                 }
             }
             node.set("content", content);
@@ -278,9 +287,9 @@ public class AnthropicModel extends BaseApiModel implements Model.NativeTools {
         } else {
             ArrayNode content = JSON.createArrayNode();
             for (var b : a.content()) {
-                if (b instanceof io.sketch.mochaagents.message.ContentBlock.TextBlock t)
+                if (b instanceof io.sketch.mochaagents.message.ContentBlock.TextBlock t) {
                     content.addObject().put("type", "text").put("text", t.text());
-                else if (b instanceof io.sketch.mochaagents.message.ContentBlock.ToolUseBlock tu) {
+                } else if (b instanceof io.sketch.mochaagents.message.ContentBlock.ToolUseBlock tu) {
                     ObjectNode tuNode = content.addObject();
                     tuNode.put("type", "tool_use");
                     tuNode.put("id", tu.id());
@@ -290,7 +299,9 @@ public class AnthropicModel extends BaseApiModel implements Model.NativeTools {
                     ObjectNode thNode = content.addObject();
                     thNode.put("type", "thinking");
                     thNode.put("thinking", th.thought());
-                    if (th.signature() != null) thNode.put("signature", th.signature());
+                    if (th.signature() != null) {
+                        thNode.put("signature", th.signature());
+                    }
                 }
             }
             node.set("content", content);
@@ -316,7 +327,9 @@ public class AnthropicModel extends BaseApiModel implements Model.NativeTools {
         public AnthropicBuilder promptCaching(boolean v) { this.usePromptCaching = v; return this; }
 
         public AnthropicModel build() {
-            if (modelId == null) modelId = "claude-sonnet-4-20250514";
+            if (modelId == null) {
+                modelId = "claude-sonnet-4-20250514";
+            }
             return new AnthropicModel(this);
         }
     }

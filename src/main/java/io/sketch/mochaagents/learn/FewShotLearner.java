@@ -34,7 +34,7 @@ public class FewShotLearner<I, O> implements Learner<I, O> {
         if (examples.size() > maxExamples) {
             // 淘汰最低奖励的经验
             examples.stream()
-                    .min(Comparator.<Experience<I, O>>comparingDouble(e -> e.reward()))
+                    .min(Comparator.<Experience<I, O>>comparingDouble(Experience::reward))
                     .ifPresent(examples::remove);
         }
     }
@@ -48,7 +48,7 @@ public class FewShotLearner<I, O> implements Learner<I, O> {
     public O infer(I input) {
         // 返回最相似输入的最佳经验输出
         return examples.stream()
-                .max(Comparator.<Experience<I, O>>comparingDouble(e -> e.reward()))
+                .max(Comparator.<Experience<I, O>>comparingDouble(Experience::reward))
                 .map(Experience::output)
                 .orElse(null);
     }
@@ -65,7 +65,7 @@ public class FewShotLearner<I, O> implements Learner<I, O> {
     /** 获取前 N 个最佳示例（用于 prompt 构建） */
     public java.util.List<Experience<I, O>> topExamples(int n) {
         return examples.stream()
-                .sorted(Comparator.<Experience<I, O>>comparingDouble(e -> e.reward()).reversed())
+                .sorted(Comparator.<Experience<I, O>>comparingDouble(Experience::reward).reversed())
                 .limit(n)
                 .toList();
     }

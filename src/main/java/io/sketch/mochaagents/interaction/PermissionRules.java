@@ -40,11 +40,17 @@ public final class PermissionRules {
     /** Simple tool-name-only resolve (backward compat). */
     public Behavior resolve(String toolName) {
         var deny = matchDeny(toolName, null);
-        if (deny != null) return Behavior.DENY;
+        if (deny != null) {
+            return Behavior.DENY;
+        }
         var allow = matchAllow(toolName, null);
-        if (allow != null) return Behavior.ALLOW;
+        if (allow != null) {
+            return Behavior.ALLOW;
+        }
         var ask = matchAsk(toolName, null);
-        if (ask != null) return Behavior.ASK;
+        if (ask != null) {
+            return Behavior.ASK;
+        }
         return defaultBehavior;
     }
 
@@ -69,10 +75,18 @@ public final class PermissionRules {
     private Rule match(String toolName, String content, Behavior behavior) {
         Rule best = null;
         for (Rule r : rules) {
-            if (r.behavior != behavior) continue;
-            if (!r.toolPattern.matcher(toolName).matches()) continue;
-            if (r.contentPattern != null && content != null && !r.contentPattern.matcher(content).find()) continue;
-            if (best == null || r.source.ordinal() > best.source.ordinal()) best = r;
+            if (r.behavior != behavior) {
+                continue;
+            }
+            if (!r.toolPattern.matcher(toolName).matches()) {
+                continue;
+            }
+            if (r.contentPattern != null && content != null && !r.contentPattern.matcher(content).find()) {
+                continue;
+            }
+            if (best == null || r.source.ordinal() > best.source.ordinal()) {
+                best = r;
+            }
         }
         return best;
     }

@@ -116,7 +116,11 @@ public class SessionManager {
     public void archive(Session session) {
         if (session == null) return;
         session.status = SessionStatus.ARCHIVED;
-        try { saveMeta(session); } catch (IOException e) { /* best-effort */ }
+        try {
+            saveMeta(session);
+        } catch (IOException e) {
+            /* best-effort */
+        }
     }
 
     /** Unarchive — restore to ENDED. */

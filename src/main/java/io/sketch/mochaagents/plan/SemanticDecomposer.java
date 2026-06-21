@@ -36,17 +36,23 @@ public class SemanticDecomposer implements TaskDecomposer {
         List<PlanStep> steps = new ArrayList<>();
         for (String line : response.split("\n")) {
             line = line.trim();
-            if (!line.startsWith("- ") && !line.matches("\\d+[.)]\\s+.*")) continue;
+            if (!line.startsWith("- ") && !line.matches("\\d+[.)]\\s+.*")) {
+                continue;
+            }
 
             String cleaned = line.replaceFirst("^[-\\d.)]+\\s*", "");
             String[] parts = cleaned.split("\\s*\\|\\s*depends?\\s*[:：]\\s*", 2);
             String desc = parts[0].trim();
-            if (desc.isEmpty()) continue;
+            if (desc.isEmpty()) {
+                continue;
+            }
 
             List<String> deps = new ArrayList<>();
             if (parts.length > 1 && !parts[1].trim().equalsIgnoreCase("none")) {
                 for (String d : parts[1].trim().split("[,\\s]+")) {
-                    if (!d.isBlank()) deps.add(d.matches("\\d+") ? "step-" + d : d);
+                    if (!d.isBlank()) {
+                        deps.add(d.matches("\\d+") ? "step-" + d : d);
+                    }
                 }
             }
 

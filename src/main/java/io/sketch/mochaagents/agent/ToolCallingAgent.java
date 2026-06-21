@@ -163,7 +163,9 @@ public final class ToolCallingAgent extends ReActAgent {
                                     : io.sketch.mochaagents.message.ContentBlock.ToolResultBlock.success(
                                             toolUseId, toolName, String.valueOf(r.output())));
                         }
-                        if (!obsBuilder.isEmpty()) obsBuilder.append("\n");
+                        if (!obsBuilder.isEmpty()) {
+                            obsBuilder.append("\n");
+                        }
                         obsBuilder.append(r.isError() ? "Error: " + r.error() : String.valueOf(r.output()));
                         if ("final_answer".equals(actions.get(i).name())) {
                             isFinalAnswer = true;

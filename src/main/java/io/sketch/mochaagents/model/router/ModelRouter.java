@@ -39,7 +39,9 @@ public class ModelRouter {
 
     /** Route to best provider — cost + latency weighted. */
     public Model route(ModelRequest request) {
-        if (providers.isEmpty()) throw new MochaException.ConfigException("No providers");
+        if (providers.isEmpty()) {
+            throw new MochaException.ConfigException("No providers");
+        }
 
         List<Provider> healthy = providers.values().stream()
                 .filter(Provider::isHealthy)
@@ -51,7 +53,9 @@ public class ModelRouter {
                     .filter(p -> p.state == ProviderState.HALF_OPEN)
                     .toList();
         }
-        if (healthy.isEmpty()) throw new MochaException.ConfigException("All providers unhealthy");
+        if (healthy.isEmpty()) {
+            throw new MochaException.ConfigException("All providers unhealthy");
+        }
 
         return costOptimizer.select(
                 healthy.stream().map(p -> p.model).toList(), request);
@@ -66,7 +70,9 @@ public class ModelRouter {
     /** Record failure — may trip circuit breaker. */
     public void recordFailure(String providerName) {
         Provider p = providers.get(providerName);
-        if (p != null) p.recordFailure();
+        if (p != null) {
+            p.recordFailure();
+        }
     }
 
     // ── Getters ──

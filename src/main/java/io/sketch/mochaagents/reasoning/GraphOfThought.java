@@ -5,9 +5,6 @@ package io.sketch.mochaagents.reasoning;
 
 import io.sketch.mochaagents.model.Model;
 import io.sketch.mochaagents.model.ModelRequest;
-import io.sketch.mochaagents.reasoning.ReasoningChain;
-import io.sketch.mochaagents.reasoning.ReasoningStep;
-import io.sketch.mochaagents.reasoning.ReasoningStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +50,9 @@ public class GraphOfThought implements ReasoningStrategy {
 
         List<ThoughtNode> nodes = parseNodes(response);
         Map<String, ThoughtNode> nodeMap = new LinkedHashMap<>();
-        for (ThoughtNode n : nodes) nodeMap.put(n.id, n);
+        for (ThoughtNode n : nodes) {
+            nodeMap.put(n.id, n);
+        }
 
         chain.add(new ReasoningStep(0, "Graph: " + nodes.size() + " nodes",
                 "Edges: " + nodes.stream().mapToInt(n -> n.deps.size()).sum(), 1.0));
@@ -61,7 +60,9 @@ public class GraphOfThought implements ReasoningStrategy {
         // Topological sort
         Set<String> visited = new LinkedHashSet<>();
         List<ThoughtNode> ordered = new ArrayList<>();
-        for (ThoughtNode n : nodes) traverse(n, nodeMap, visited, ordered, new HashSet<>());
+        for (ThoughtNode n : nodes) {
+            traverse(n, nodeMap, visited, ordered, new HashSet<>());
+        }
 
         for (int i = 0; i < ordered.size(); i++) {
             ThoughtNode n = ordered.get(i);
@@ -77,27 +78,40 @@ public class GraphOfThought implements ReasoningStrategy {
     private List<ThoughtNode> parseNodes(String text) {
         List<ThoughtNode> nodes = new ArrayList<>();
         for (String block : text.split("(?=ID\\s*[:：])")) {
-            if (block.isBlank()) continue;
+            if (block.isBlank()) {
+                continue;
+            }
             String id = extractField(block, "ID\\s*[:：]\\s*", "N" + (nodes.size() + 1));
             String thought = extractField(block, "Thought\\s*[:：]\\s*", block);
             String deps = extractField(block, "DependsOn\\s*[:：]\\s*", "");
             double conf = extractConfidence(block);
             Set<String> depSet = new LinkedHashSet<>();
-            if (!deps.isEmpty() && !"none".equalsIgnoreCase(deps))
-                for (String d : deps.split("[,\\s]+")) if (!d.isBlank()) depSet.add(d.trim());
+            if (!deps.isEmpty() && !"none".equalsIgnoreCase(deps)) {
+                for (String d : deps.split("[,\\s]+")) {
+                    if (!d.isBlank()) {
+                        depSet.add(d.trim());
+                    }
+                }
+            }
             nodes.add(new ThoughtNode(id.trim(), thought.trim(), depSet, conf));
         }
-        if (nodes.isEmpty()) nodes.add(new ThoughtNode("N1", text.trim(), Set.of(), 0.8));
+        if (nodes.isEmpty()) {
+            nodes.add(new ThoughtNode("N1", text.trim(), Set.of(), 0.8));
+        }
         return nodes;
     }
 
     private void traverse(ThoughtNode node, Map<String, ThoughtNode> all,
                           Set<String> visited, List<ThoughtNode> result, Set<String> path) {
-        if (visited.contains(node.id) || path.contains(node.id)) return;
+        if (visited.contains(node.id) || path.contains(node.id)) {
+            return;
+        }
         path.add(node.id);
         for (String depId : node.deps) {
             ThoughtNode dep = all.get(depId);
-            if (dep != null) traverse(dep, all, visited, result, path);
+            if (dep != null) {
+                traverse(dep, all, visited, result, path);
+            }
         }
         visited.add(node.id);
         result.add(node);
@@ -114,8 +128,11 @@ public class GraphOfThought implements ReasoningStrategy {
     private double extractConfidence(String text) {
         var m = java.util.regex.Pattern.compile("Confidence\\s*[:：]\\s*([\\d.]+)").matcher(text);
         if (m.find()) {
-            try { return Math.min(1.0, Math.max(0.0, Double.parseDouble(m.group(1)))); }
-            catch (NumberFormatException e) {}
+            try {
+                return Math.min(1.0, Math.max(0.0, Double.parseDouble(m.group(1))));
+            } catch (NumberFormatException e) {
+
+            }
         }
         return 0.7;
     }

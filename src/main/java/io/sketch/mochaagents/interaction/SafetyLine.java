@@ -33,14 +33,18 @@ public final class SafetyLine {
 
     /** Check if a command is hard-blocked. Never returns null. */
     public static Decision hardBlock(ToolUse use) {
-        if (!"bash".equals(use.toolName()) && !"powershell".equals(use.toolName()))
+        if (!"bash".equals(use.toolName()) && !"powershell".equals(use.toolName())) {
             return Decision.allow("not a shell command");
+        }
         String content = use.content();
-        if (content == null || content.isBlank()) return Decision.allow("empty");
+        if (content == null || content.isBlank()) {
+            return Decision.allow("empty");
+        }
 
         for (Pattern p : HARDLINE) {
-            if (p.matcher(content).find())
+            if (p.matcher(content).find()) {
                 return Decision.hardDeny("Safety line crossed: " + p.pattern());
+            }
         }
         return Decision.allow("safe");
     }

@@ -4,8 +4,6 @@
 package io.sketch.mochaagents.reasoning;
 
 import io.sketch.mochaagents.model.Model;
-import io.sketch.mochaagents.reasoning.ChainOfThought;
-import io.sketch.mochaagents.reasoning.TreeOfThought;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,14 +26,17 @@ public class DefaultReasoner implements Reasoner {
     private int activeStrategyIdx;
 
     public DefaultReasoner(Model model) {
+        // fallback: branch exploration when CoT confidence < 0.5
         this(List.of(
                 new ChainOfThought(model),
-                new TreeOfThought(model, 3, 2) // fallback: branch exploration when CoT confidence < 0.5
+                new TreeOfThought(model, 3, 2)
         ));
     }
 
     public DefaultReasoner(List<ReasoningStrategy> strategies) {
-        if (strategies.isEmpty()) throw new IllegalArgumentException("At least one strategy required");
+        if (strategies.isEmpty()) {
+            throw new IllegalArgumentException("At least one strategy required");
+        }
         this.strategies = new ArrayList<>(strategies);
         this.activeStrategyIdx = 0;
     }
@@ -89,8 +90,9 @@ public class DefaultReasoner implements Reasoner {
 
     /** 设置当前活跃策略索引 */
     public void setActiveStrategy(int idx) {
-        if (idx < 0 || idx >= strategies.size())
+        if (idx < 0 || idx >= strategies.size()) {
             throw new IllegalArgumentException("Invalid strategy index: " + idx);
+        }
         this.activeStrategyIdx = idx;
     }
 }

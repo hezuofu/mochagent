@@ -42,10 +42,15 @@ public class StreamingResponse implements Iterable<String> {
             try {
                 while (!completed || !tokens.isEmpty()) {
                     String token = tokens.poll(100, TimeUnit.MILLISECONDS);
-                    if (token != null) onToken.accept(token);
+                    if (token != null) {
+                        onToken.accept(token);
+                    }
                 }
-                if (error != null) onError.accept(error);
-                else onComplete.run();
+                if (error != null) {
+                    onError.accept(error);
+                } else {
+                    onComplete.run();
+                }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 onError.accept(e);
@@ -60,7 +65,9 @@ public class StreamingResponse implements Iterable<String> {
             @Override public String next() {
                 try {
                     String token = tokens.poll(100, TimeUnit.MILLISECONDS);
-                    if (token == null && completed) throw new NoSuchElementException();
+                    if (token == null && completed) {
+                        throw new NoSuchElementException();
+                    }
                     return token;
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();

@@ -5,7 +5,6 @@ package io.sketch.mochaagents.plan;
 
 import io.sketch.mochaagents.model.Model;
 import io.sketch.mochaagents.model.ModelRequest;
-import io.sketch.mochaagents.plan.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +28,7 @@ public class ReplanningStrategy implements PlanningStrategy {
         int maxSteps = request.maxSteps() > 0 ? request.maxSteps() : 5;
 
         String prompt;
-        if (context != null && !context.isEmpty()) {
+        if (!context.isEmpty()) {
             prompt = String.format("""
                     Previous plan failed. Analyze why and create new plan.
                     Goal: %s

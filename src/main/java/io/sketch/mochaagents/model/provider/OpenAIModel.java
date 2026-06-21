@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.sketch.mochaagents.model.ModelRequest;
-import io.sketch.mochaagents.model.ModelResponse;
 
 import java.util.Map;
 
@@ -55,8 +54,12 @@ public class OpenAIModel extends BaseApiModel implements Model.NativeTools {
     protected Map<String, String> authHeaders() {
         Map<String, String> headers = new java.util.LinkedHashMap<>();
         headers.put("Authorization", "Bearer " + apiKey);
-        if (organization != null && !organization.isEmpty()) headers.put("OpenAI-Organization", organization);
-        if (project != null && !project.isEmpty()) headers.put("OpenAI-Project", project);
+        if (organization != null && !organization.isEmpty()) {
+            headers.put("OpenAI-Organization", organization);
+        }
+        if (project != null && !project.isEmpty()) {
+            headers.put("OpenAI-Project", project);
+        }
         return headers;
     }
 
@@ -94,11 +97,21 @@ public class OpenAIModel extends BaseApiModel implements Model.NativeTools {
         body.set("messages", messages);
 
         // 参数
-        if (request.maxTokens() > 0) body.put("max_tokens", request.maxTokens());
-        if (request.temperature() >= 0) body.put("temperature", request.temperature());
-        if (request.topP() >= 0) body.put("top_p", request.topP());
-        if (request.presencePenalty() != 0) body.put("presence_penalty", request.presencePenalty());
-        if (request.frequencyPenalty() != 0) body.put("frequency_penalty", request.frequencyPenalty());
+        if (request.maxTokens() > 0) {
+            body.put("max_tokens", request.maxTokens());
+        }
+        if (request.temperature() >= 0) {
+            body.put("temperature", request.temperature());
+        }
+        if (request.topP() >= 0) {
+            body.put("top_p", request.topP());
+        }
+        if (request.presencePenalty() != 0) {
+            body.put("presence_penalty", request.presencePenalty());
+        }
+        if (request.frequencyPenalty() != 0) {
+            body.put("frequency_penalty", request.frequencyPenalty());
+        }
 
         // stop sequences
         if (!request.stopSequences().isEmpty()) {
@@ -160,7 +173,9 @@ public class OpenAIModel extends BaseApiModel implements Model.NativeTools {
         public OpenAIBuilder project(String proj) { this.project = proj; return this; }
 
         public OpenAIModel build() {
-            if (modelId == null) modelId = "gpt-4o";
+            if (modelId == null) {
+                modelId = "gpt-4o";
+            }
             return new OpenAIModel(this);
         }
     }

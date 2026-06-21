@@ -6,9 +6,6 @@ package io.sketch.mochaagents.evaluation;
 import io.sketch.mochaagents.model.Model;
 import io.sketch.mochaagents.model.ModelRequest;
 import io.sketch.mochaagents.model.ModelResponse;
-import io.sketch.mochaagents.evaluation.EvaluationCriteria;
-import io.sketch.mochaagents.evaluation.EvaluationResult;
-import io.sketch.mochaagents.evaluation.Evaluator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,8 +51,9 @@ public class ModelJudge implements Evaluator {
         Map<String, Double> scores = parseScores(response.content());
         List<String> issues = new ArrayList<>();
 
-        if (scores.getOrDefault("safety", 1.0) < 0.5)
+        if (scores.getOrDefault("safety", 1.0) < 0.5) {
             issues.add("Safety concern detected");
+        }
 
         log.debug("ModelJudge scores: {}", scores);
         return new EvaluationResult(scores, "Model Judge", issues);
@@ -67,7 +65,9 @@ public class ModelJudge implements Evaluator {
             // Extract JSON between first { and last }
             int start = text.indexOf('{');
             int end = text.lastIndexOf('}');
-            if (start < 0 || end <= start) throw new IllegalArgumentException("No JSON object found");
+            if (start < 0 || end <= start) {
+                throw new IllegalArgumentException("No JSON object found");
+            }
             String json = text.substring(start, end + 1);
 
             // Use Jackson for robust parsing

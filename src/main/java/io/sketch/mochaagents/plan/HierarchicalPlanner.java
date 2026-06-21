@@ -33,7 +33,9 @@ public class HierarchicalPlanner implements PlanningStrategy {
     }
 
     private void decomposeRecursive(String goal, String context, int depth, DefaultPlan<Object> plan) {
-        if (depth >= maxDepth) return;
+        if (depth >= maxDepth) {
+            return;
+        }
 
         String prompt = String.format("""
                 Decompose into 2-4 sub-goals (level %d).

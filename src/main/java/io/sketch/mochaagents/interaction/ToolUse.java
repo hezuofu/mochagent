@@ -20,7 +20,9 @@ public record ToolUse(String toolName, Map<String, Object> arguments, String con
     }
 
     private static String extractContent(String name, Map<String, Object> args) {
-        if (args == null) return "";
+        if (args == null) {
+            return "";
+        }
         return switch (name) {
             case "bash", "powershell" -> String.valueOf(args.getOrDefault("command", ""));
             case "file_write", "file_edit" -> String.valueOf(args.getOrDefault("filePath", ""));

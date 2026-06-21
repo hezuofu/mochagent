@@ -195,9 +195,12 @@ public abstract class BaseApiModel implements Model {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                if (line.startsWith("data: ")) data = line.substring(6);
-                else if (line.isEmpty() && !data.isEmpty()) {
-                    if (!"[DONE]".equals(data)) parseSseData(data, response);
+                if (line.startsWith("data: ")) {
+                    data = line.substring(6);
+                } else if (line.isEmpty() && !data.isEmpty()) {
+                    if (!"[DONE]".equals(data)) {
+                        parseSseData(data, response);
+                    }
                     data = "";
                 }
             }
@@ -238,8 +241,9 @@ public abstract class BaseApiModel implements Model {
         for (var msg : messages) {
             if (msg instanceof io.sketch.mochaagents.message.Message.AssistantMessage am) {
                 for (var b : am.content()) {
-                    if (b instanceof io.sketch.mochaagents.message.ContentBlock.ToolUseBlock tu)
+                    if (b instanceof io.sketch.mochaagents.message.ContentBlock.ToolUseBlock tu) {
                         map.put(tu.id(), tu.name());
+                    }
                 }
             }
         }
@@ -252,20 +256,23 @@ public abstract class BaseApiModel implements Model {
         for (var msg : messages) {
             if (msg instanceof io.sketch.mochaagents.message.Message.AssistantMessage am) {
                 for (var b : am.content()) {
-                    if (b instanceof io.sketch.mochaagents.message.ContentBlock.ToolUseBlock tu)
+                    if (b instanceof io.sketch.mochaagents.message.ContentBlock.ToolUseBlock tu) {
                         pending.putIfAbsent(tu.id(), false);
+                    }
                 }
             } else if (msg instanceof io.sketch.mochaagents.message.Message.UserMessage um) {
                 for (var tr : um.toolResults()) {
-                    if (tr instanceof io.sketch.mochaagents.message.ContentBlock.ToolResultBlock tb)
+                    if (tr instanceof io.sketch.mochaagents.message.ContentBlock.ToolResultBlock tb) {
                         pending.put(tb.toolUseId(), true);
+                    }
                 }
             }
         }
         long unpaired = pending.values().stream().filter(v -> !v).count();
-        if (unpaired > 0)
+        if (unpaired > 0) {
             LoggerFactory.getLogger(BaseApiModel.class)
                     .warn("{} tool_use block(s) without matching tool_result — API may reject", unpaired);
+        }
     }
 
     protected static ArrayNode messagesToJson(List<Map<String, String>> messages) {
@@ -285,38 +292,44 @@ public abstract class BaseApiModel implements Model {
             ObjectNode node = JSON.createObjectNode();
             node.put("role", msg.role());
             if (msg instanceof io.sketch.mochaagents.message.Message.UserMessage u) {
-                if (u.toolResults().isEmpty()) node.put("content", u.content());
-                else {
+                if (u.toolResults().isEmpty()) {
+                    node.put("content", u.content());
+                } else {
                     ArrayNode content = arr.arrayNode();
-                    if (u.content() != null && !u.content().isEmpty())
+                    if (u.content() != null && !u.content().isEmpty()) {
                         content.addObject().put("type", "text").put("text", u.content());
-                    for (var tr : u.toolResults())
+                    }
+                    for (var tr : u.toolResults()) {
                         if (tr instanceof io.sketch.mochaagents.message.ContentBlock.ToolResultBlock tb) {
                             ObjectNode trNode = content.addObject();
                             trNode.put("type", "tool_result"); trNode.put("tool_use_id", tb.toolUseId());
                             trNode.put("content", tb.content());
                             if (tb.isError()) trNode.put("is_error", true);
                         }
+                    }
                     node.set("content", content);
                 }
             } else if (msg instanceof io.sketch.mochaagents.message.Message.AssistantMessage a) {
                 ArrayNode content = arr.arrayNode();
                 for (var b : a.content()) {
-                    if (b instanceof io.sketch.mochaagents.message.ContentBlock.TextBlock t)
+                    if (b instanceof io.sketch.mochaagents.message.ContentBlock.TextBlock t) {
                         content.addObject().put("type", "text").put("text", t.text());
-                    else if (b instanceof io.sketch.mochaagents.message.ContentBlock.ToolUseBlock tu) {
+                    } else if (b instanceof io.sketch.mochaagents.message.ContentBlock.ToolUseBlock tu) {
                         ObjectNode tuNode = content.addObject();
                         tuNode.put("type", "tool_use"); tuNode.put("id", tu.id());
                         tuNode.put("name", tu.name()); tuNode.set("input", JSON.valueToTree(tu.input()));
                     } else if (b instanceof io.sketch.mochaagents.message.ContentBlock.ThinkingBlock th) {
                         ObjectNode thNode = content.addObject();
                         thNode.put("type", "thinking"); thNode.put("thinking", th.thought());
-                        if (th.signature() != null) thNode.put("signature", th.signature());
+                        if (th.signature() != null) {
+                            thNode.put("signature", th.signature());
+                        }
                     }
                 }
                 node.set("content", content);
-            } else if (msg instanceof io.sketch.mochaagents.message.Message.SystemMessage s)
+            } else if (msg instanceof io.sketch.mochaagents.message.Message.SystemMessage s) {
                 node.put("content", s.content());
+            }
             arr.add(node);
         }
         return arr;

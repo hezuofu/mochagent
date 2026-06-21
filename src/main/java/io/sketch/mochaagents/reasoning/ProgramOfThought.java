@@ -5,9 +5,6 @@ package io.sketch.mochaagents.reasoning;
 
 import io.sketch.mochaagents.model.Model;
 import io.sketch.mochaagents.model.ModelRequest;
-import io.sketch.mochaagents.reasoning.ReasoningChain;
-import io.sketch.mochaagents.reasoning.ReasoningStep;
-import io.sketch.mochaagents.reasoning.ReasoningStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,19 +65,28 @@ public class ProgramOfThought implements ReasoningStrategy {
     private String executeCode(String code) {
         try {
             ScriptEngine engine = new ScriptEngineManager().getEngineByName("graal.js");
-            if (engine == null) engine = new ScriptEngineManager().getEngineByName("JavaScript");
-            if (engine == null) engine = new ScriptEngineManager().getEngineByName("nashorn");
+            if (engine == null) {
+                engine = new ScriptEngineManager().getEngineByName("JavaScript");
+            }
+            if (engine == null) {
+                engine = new ScriptEngineManager().getEngineByName("nashorn");
+            }
             if (engine != null) {
                 Object result = engine.eval(code);
                 return result != null ? result.toString() : "null";
             }
-        } catch (Exception e) { log.debug("ScriptEngine failed: {}", e.getMessage()); }
+        } catch (Exception e) {
+            log.debug("ScriptEngine failed: {}", e.getMessage());
+        }
         // Simple math evaluation fallback
         var m = java.util.regex.Pattern.compile("print\\s*\\(\\s*(.+?)\\s*\\)").matcher(code);
         if (m.find()) {
-            try { return String.valueOf(Double.parseDouble(
-                    m.group(1).replaceAll("\"", "").replaceAll("'", "").trim())); }
-            catch (NumberFormatException e) {}
+            try {
+                return String.valueOf(Double.parseDouble(
+                    m.group(1).replaceAll("\"", "").replaceAll("'", "").trim()));
+            } catch (NumberFormatException e) {
+
+            }
         }
         return "[Requires GraalJS for full execution]";
     }

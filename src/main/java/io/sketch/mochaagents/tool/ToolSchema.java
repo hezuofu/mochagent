@@ -39,7 +39,6 @@ public final class ToolSchema {
      * @param <T> the record type
      * @return validation result with typed value or error message
      */
-    @SuppressWarnings("unchecked")
     public <T> ValidationResult validate(Map<String, Object> arguments, Class<T> targetType) {
         // 1. Check required fields (List or String[])
         Object requiredObj = inputSchema.get("required");
@@ -64,7 +63,9 @@ public final class ToolSchema {
             for (var entry : props.entrySet()) {
                 String fieldName = entry.getKey().toString();
                 Object value = arguments.get(fieldName);
-                if (value == null) continue;
+                if (value == null) {
+                    continue;
+                }
 
                 if (entry.getValue() instanceof Map<?, ?> fieldSchema) {
                     String expectedType = Objects.toString(fieldSchema.get("type"), "");

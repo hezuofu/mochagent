@@ -79,10 +79,14 @@ public class PluginLoader {
     /** Discover all plugins from configured directories. */
     public void discoverAll() {
         for (Path dir : pluginDirs) {
-            if (!Files.isDirectory(dir)) continue;
+            if (!Files.isDirectory(dir)) {
+                continue;
+            }
             try (var stream = Files.newDirectoryStream(dir)) {
                 for (Path pluginDir : stream) {
-                    if (!Files.isDirectory(pluginDir)) continue;
+                    if (!Files.isDirectory(pluginDir)) {
+                        continue;
+                    }
                     PluginDescriptor desc = discoverPlugin(pluginDir);
                     if (desc != null) {
                         discovered.put(desc.name(), desc);
@@ -98,7 +102,9 @@ public class PluginLoader {
 
     private PluginDescriptor discoverPlugin(Path pluginDir) {
         Path jsonFile = pluginDir.resolve("plugin.json");
-        if (!Files.exists(jsonFile)) return null;
+        if (!Files.exists(jsonFile)) {
+            return null;
+        }
 
         try {
             String json = Files.readString(jsonFile);
@@ -178,7 +184,9 @@ public class PluginLoader {
         }
     }
 
-    /** Register tool/extension extensions immediately. */
+    /**
+     * Register tool/extension extensions immediately.
+     *  */
     private void applyPluginExtensions(PluginDescriptor desc) {
         for (var ext : desc.extensionPoints()) {
             if ("TOOL".equals(ext.type()) && ext.component() instanceof Tool t) {
@@ -189,7 +197,9 @@ public class PluginLoader {
                     var mcp = new io.sketch.mochaagents.tool.mcp.StdioMcpClient();
                     mcp.connect(cmd);
                     if (mcp.isConnected()) {
-                        for (var tool : mcp.discoverTools()) toolRegistry.register(tool);
+                        for (var tool : mcp.discoverTools()) {
+                            toolRegistry.register(tool);
+                        }
                         log.info("Plugin '{}' MCP server connected: {}", desc.name(), cmd);
                     }
                 } catch (Exception e) {
@@ -200,17 +210,23 @@ public class PluginLoader {
         }
     }
 
-    /** Discovered plugins. */
+    /**
+     * Discovered plugins.
+     * */
     public Map<String, PluginDescriptor> plugins() { return Collections.unmodifiableMap(discovered); }
 
     // ── Dynamic loading ──
 
-    /** Load a plugin from its class, activating it immediately. */
+    /**
+     * Load a plugin from its class, activating it immediately.
+     * */
     public <T extends Plugin> T loadPlugin(Class<T> pluginClass) {
         try {
             PluginInfo info = pluginClass.getAnnotation(PluginInfo.class);
-            if (info == null) throw new IllegalArgumentException(
-                    "@PluginInfo required on " + pluginClass.getName());
+            if (info == null) {
+                throw new IllegalArgumentException(
+                        "@PluginInfo required on " + pluginClass.getName());
+            }
 
             T plugin = pluginClass.getDeclaredConstructor().newInstance();
             PluginDescriptor desc = PluginDescriptor.of(info.name(), info.version(), info.description());
@@ -227,7 +243,9 @@ public class PluginLoader {
         }
     }
 
-    /** Load all Plugin implementations found via Java ServiceLoader. */
+    /**
+     * Load all Plugin implementations found via Java ServiceLoader.
+     *  */
     public void loadFromServiceLoader() {
         for (Plugin plugin : java.util.ServiceLoader.load(Plugin.class)) {
             loadPlugin(plugin.getClass());

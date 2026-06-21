@@ -66,7 +66,8 @@ public class CachingModel implements Model {
 
     @Override
     public StreamingResponse stream(ModelRequest request) {
-        return delegate.stream(request); // streaming not cached
+        // streaming not cached
+        return delegate.stream(request);
     }
 
     @Override public String modelName() { return delegate.modelName(); }
@@ -88,10 +89,13 @@ public class CachingModel implements Model {
         StringBuilder sb = new StringBuilder();
         sb.append(request.temperature()).append("|").append(request.maxTokens());
         if (request.messages() != null) {
-            for (var m : request.messages())
+            for (var m : request.messages()) {
                 sb.append("|").append(m.get("role")).append(":").append(m.get("content"));
+            }
         }
-        if (request.prompt() != null) sb.append("|").append(request.prompt());
+        if (request.prompt() != null) {
+            sb.append("|").append(request.prompt());
+        }
         // Simple hash — use content length as lightweight key
         return Integer.toHexString(sb.toString().hashCode()) + ":" + sb.length();
     }

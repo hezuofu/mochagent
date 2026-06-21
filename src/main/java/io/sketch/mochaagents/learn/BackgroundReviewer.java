@@ -31,7 +31,9 @@ public class BackgroundReviewer {
             try {
                 // Distill verified facts from the task result
                 var snapshots = memory.snapshot();
-                if (snapshots.isEmpty()) return;
+                if (snapshots.isEmpty()) {
+                    return;
+                }
 
                 // Save episodic memory
                 for (var entry : snapshots) {

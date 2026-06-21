@@ -23,6 +23,10 @@ public final class ExecutionResult {
     public long durationMs() { return durationMs; }
     public boolean isError() { return error != null && !error.isEmpty(); }
 
-    public static ExecutionResult success(Object output) { return new ExecutionResult(output, null, 0); }
-    public static ExecutionResult failure(String error) { return new ExecutionResult(null, error, 0); }
+    public static ExecutionResult success(Object output) {
+        return new ExecutionResult(output, null, 0);
+    }
+    public static ExecutionResult failure(String error) {
+        return new ExecutionResult(null, error, 0);
+    }
 }

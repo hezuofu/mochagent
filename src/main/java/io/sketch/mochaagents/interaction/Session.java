@@ -6,7 +6,6 @@ package io.sketch.mochaagents.interaction;
 import java.time.Instant;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * Per-session interaction state — permissions, denials, mode.

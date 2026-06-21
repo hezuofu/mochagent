@@ -2,7 +2,6 @@
 // Copyright 2024-2026 MochaAgents Authors
 
 package io.sketch.mochaagents.model.router;
-import io.sketch.mochaagents.MochaException;
 
 import io.sketch.mochaagents.model.Model;
 import java.util.List;
@@ -28,7 +27,9 @@ public class FallbackStrategy {
      */
     public Model fallback(Model failed, List<Model> alternatives) {
         for (Model alt : alternatives) {
-            if (alt != failed) return alt;
+            if (alt != failed) {
+                return alt;
+            }
         }
         throw new IllegalStateException("No fallback Model available");
     }

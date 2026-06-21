@@ -39,7 +39,9 @@ public final class ThinkingConfig {
 
     /** Fixed thinking budget. */
     public static ThinkingConfig enabled(int budgetTokens) {
-        if (budgetTokens <= 0) throw new IllegalArgumentException("budgetTokens must be > 0");
+        if (budgetTokens <= 0) {
+            throw new IllegalArgumentException("budgetTokens must be > 0");
+        }
         return new ThinkingConfig(Type.ENABLED, budgetTokens);
     }
 
@@ -50,7 +52,9 @@ public final class ThinkingConfig {
 
     /** Resolve the effective thinking config for a given model. */
     public static ThinkingConfig resolveForModel(String modelId) {
-        if (modelId == null) return disabled();
+        if (modelId == null) {
+            return disabled();
+        }
 
         String lower = modelId.toLowerCase();
         // Claude 4.6+ supports adaptive thinking
@@ -73,11 +77,19 @@ public final class ThinkingConfig {
 
     /** Get max thinking tokens for a model. */
     public static int getMaxThinkingTokens(String modelId) {
-        if (modelId == null) return 2048;
+        if (modelId == null) {
+            return 2048;
+        }
         String lower = modelId.toLowerCase();
-        if (lower.contains("opus")) return 8192;
-        if (lower.contains("sonnet")) return 4096;
-        if (lower.contains("haiku")) return 2048;
+        if (lower.contains("opus")) {
+            return 8192;
+        }
+        if (lower.contains("sonnet")) {
+            return 4096;
+        }
+        if (lower.contains("haiku")) {
+            return 2048;
+        }
         return 2048;
     }
 

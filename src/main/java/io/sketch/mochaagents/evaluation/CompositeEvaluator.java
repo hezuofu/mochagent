@@ -57,8 +57,12 @@ public class CompositeEvaluator implements Evaluator {
                     mergedScores.merge(key, entry.getValue() * weight, Double::sum);
                 }
 
-                if (result.issues() != null) allIssues.addAll(result.issues());
-                if (result.summary() != null) summary.append("[").append(result.summary()).append("] ");
+                if (result.issues() != null) {
+                    allIssues.addAll(result.issues());
+                }
+                if (result.summary() != null) {
+                    summary.append("[").append(result.summary()).append("] ");
+                }
             } catch (Exception e) {
                 log.warn("Judge {} failed: {}", judge.getClass().getSimpleName(), e.getMessage());
             }
@@ -69,7 +73,7 @@ public class CompositeEvaluator implements Evaluator {
                 .average().orElse(0.5);
 
         return new EvaluationResult(mergedScores,
-                summary.length() > 0 ? summary.toString().trim() : "Composite evaluation",
+            !summary.isEmpty() ? summary.toString().trim() : "Composite evaluation",
                 allIssues);
     }
 
@@ -80,7 +84,7 @@ public class CompositeEvaluator implements Evaluator {
 
     private static double[] defaultWeights(int count) {
         double[] w = new double[count];
-        for (int i = 0; i < count; i++) w[i] = 1.0 / count;
+        Arrays.fill(w, 1.0 / count);
         return w;
     }
 
@@ -102,7 +106,9 @@ public class CompositeEvaluator implements Evaluator {
         }
 
         public CompositeEvaluator build() {
-            if (judges.isEmpty()) throw new IllegalStateException("At least one judge required");
+            if (judges.isEmpty()) {
+                throw new IllegalStateException("At least one judge required");
+            }
             return new CompositeEvaluator(this);
         }
     }

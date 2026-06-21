@@ -31,7 +31,9 @@ public class CostOptimizer {
      * 基于预估 token 成本和能力选择最优 Model.
      */
     public Model select(List<Model> candidates, ModelRequest request) {
-        if (candidates.isEmpty()) throw new IllegalArgumentException("No candidates");
+        if (candidates.isEmpty()) {
+            throw new IllegalArgumentException("No candidates");
+        }
 
         // Estimate token usage
         int estimatedTokens = estimateTokens(request);
@@ -54,7 +56,9 @@ public class CostOptimizer {
 
     private int estimateTokens(ModelRequest request) {
         int tokens = 0;
-        if (request.prompt() != null) tokens += request.prompt().length() / 4;
+        if (request.prompt() != null) {
+            tokens += request.prompt().length() / 4;
+        }
         if (request.messages() != null) {
             tokens += request.messages().stream()
                     .mapToInt(m -> m.getOrDefault("content", "").length() / 4).sum();
