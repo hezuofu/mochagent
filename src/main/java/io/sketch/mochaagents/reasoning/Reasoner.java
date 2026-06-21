@@ -1,14 +1,14 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.reasoning;
 
 /**
- * 推理器接口 — 统一推理入口，策略可插拔.
- * @author lanxia39@163.com
+ * Minimal reasoning — analyze a question and return a reasoning chain.
+  * @author lanxia39@163.com
  */
+@FunctionalInterface
 public interface Reasoner {
 
     ReasoningChain reason(String question);
-
-    void setStrategy(ReasoningStrategy strategy);
-
-    ReasoningStrategy getStrategy();
 }

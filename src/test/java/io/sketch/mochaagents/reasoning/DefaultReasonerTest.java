@@ -1,10 +1,13 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.reasoning;
 
-import io.sketch.mochaagents.llm.LLM;
-import io.sketch.mochaagents.llm.LLMRequest;
-import io.sketch.mochaagents.llm.LLMResponse;
-import io.sketch.mochaagents.reasoning.strategy.ChainOfThought;
-import io.sketch.mochaagents.reasoning.strategy.TreeOfThought;
+import io.sketch.mochaagents.model.Model;
+import io.sketch.mochaagents.model.ModelRequest;
+import io.sketch.mochaagents.model.ModelResponse;
+import io.sketch.mochaagents.reasoning.ChainOfThought;
+import io.sketch.mochaagents.reasoning.TreeOfThought;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -14,15 +17,15 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class DefaultReasonerTest {
 
-    private static LLM mockLlm(String response) {
-        return new LLM() {
-            @Override public LLMResponse complete(LLMRequest req) {
-                return new LLMResponse(response, "mock", 10, 5, 0, Map.of());
+    private static Model mockLlm(String response) {
+        return new Model() {
+            @Override public ModelResponse complete(ModelRequest req) {
+                return new ModelResponse(response, "mock", 10, 5, 0, Map.of());
             }
-            @Override public java.util.concurrent.CompletableFuture<LLMResponse> completeAsync(LLMRequest req) {
+            @Override public java.util.concurrent.CompletableFuture<ModelResponse> completeAsync(ModelRequest req) {
                 return java.util.concurrent.CompletableFuture.completedFuture(complete(req));
             }
-            @Override public io.sketch.mochaagents.llm.StreamingResponse stream(LLMRequest req) {
+            @Override public io.sketch.mochaagents.model.StreamingResponse stream(ModelRequest req) {
                 throw new UnsupportedOperationException();
             }
             @Override public String modelName() { return "mock"; }
@@ -42,8 +45,8 @@ class DefaultReasonerTest {
 
     @Test
     void reasonerFallsBackOnLowConfidence() {
-        LLM badLlm = mockLlm("Step 1: Vague\nConfidence: 0.2");
-        LLM goodLlm = mockLlm("Step 1: Clear analysis\nConfidence: 0.9");
+        Model badLlm = mockLlm("Step 1: Vague\nConfidence: 0.2");
+        Model goodLlm = mockLlm("Step 1: Clear analysis\nConfidence: 0.9");
 
         DefaultReasoner reasoner = new DefaultReasoner(List.of(
                 new ChainOfThought(badLlm),
@@ -68,7 +71,7 @@ class DefaultReasonerTest {
 
     @Test
     void multipleStrategiesRegistered() {
-        LLM llm = mockLlm("Step 1: Test\nConfidence: 0.7");
+        Model llm = mockLlm("Step 1: Test\nConfidence: 0.7");
         DefaultReasoner reasoner = new DefaultReasoner(List.of(
                 new ChainOfThought(llm), new TreeOfThought(llm)));
 

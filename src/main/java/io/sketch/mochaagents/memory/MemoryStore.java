@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.memory;
 
 import java.util.List;
@@ -22,10 +25,10 @@ import java.util.stream.Stream;
 public interface MemoryStore {
 
     /** 存储一条记忆. */
-    void store(Memory memory);
+    void store(MemoryRecord memory);
 
     /** 按 ID 检索. */
-    Optional<Memory> get(String id);
+    Optional<MemoryRecord> get(String id);
 
     /** 删除记忆. */
     void forget(String id);
@@ -37,14 +40,14 @@ public interface MemoryStore {
     int size();
 
     /** 全文搜索（简单包含匹配），按重要性降序. */
-    List<Memory> search(String query);
+    List<MemoryRecord> search(String query);
 
     /** 按类型检索. */
-    List<Memory> getByType(String type);
+    List<MemoryRecord> getByType(String type);
 
     /** 按标签检索. */
-    List<Memory> searchByTag(String tag);
+    List<MemoryRecord> searchByTag(String tag);
 
     /** 遍历所有记忆. */
-    Stream<Memory> entries();
+    Stream<MemoryRecord> entries();
 }

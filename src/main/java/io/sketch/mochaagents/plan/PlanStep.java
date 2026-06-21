@@ -1,6 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.plan;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,9 +44,15 @@ public class PlanStep {
     public Map<String, Object> parameters() { return parameters; }
     public int priority() { return priority; }
     public StepStatus status() { return status; }
-    public void markRunning() { this.status = StepStatus.RUNNING; this.startTime = System.currentTimeMillis(); }
-    public void markSuccess(ExecutionResult result) { this.status = StepStatus.SUCCESS; this.result = result; this.endTime = System.currentTimeMillis(); }
-    public void markFailed(ExecutionResult result) { this.status = StepStatus.FAILED; this.result = result; this.endTime = System.currentTimeMillis(); }
+    public void markRunning() {
+        this.status = StepStatus.RUNNING; this.startTime = System.currentTimeMillis();
+    }
+    public void markSuccess(ExecutionResult result) {
+        this.status = StepStatus.SUCCESS; this.result = result; this.endTime = System.currentTimeMillis();
+    }
+    public void markFailed(ExecutionResult result) {
+        this.status = StepStatus.FAILED; this.result = result; this.endTime = System.currentTimeMillis();
+    }
     public ExecutionResult result() { return result; }
 
     public static Builder builder() { return new Builder(); }

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.perception;
 
 import org.slf4j.Logger;
@@ -7,7 +10,6 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.function.Consumer;
 
 /**
  * Continuous perception loop — observes the environment after each action,
@@ -108,7 +110,7 @@ public class PerceptionObserver {
     }
 
     /**
-     * Build enriched context for injection into the next LLM call.
+     * Build enriched context for injection into the next Model call.
      * Includes recent perceptions (last 5) and summary stats.
      */
     public String buildEnrichedContext() {

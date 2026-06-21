@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.safety;
 
 import org.slf4j.Logger;
@@ -33,7 +36,7 @@ public final class NoopSandbox implements Sandbox {
     }
 
     @Override
-    public String execute(String code, String language) {
+    public String exec(String code, String language) {
         log.warn(WARNING);
         return "[NoopSandbox] Code NOT executed — no execution backend configured. "
                 + "Language: " + language + ", code length: " + code.length() + " chars. "

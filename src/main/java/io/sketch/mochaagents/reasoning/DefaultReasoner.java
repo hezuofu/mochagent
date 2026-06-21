@@ -1,8 +1,9 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.reasoning;
 
-import io.sketch.mochaagents.llm.LLM;
-import io.sketch.mochaagents.reasoning.strategy.ChainOfThought;
-import io.sketch.mochaagents.reasoning.strategy.TreeOfThought;
+import io.sketch.mochaagents.model.Model;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,15 +25,18 @@ public class DefaultReasoner implements Reasoner {
     private final List<ReasoningStrategy> strategies;
     private int activeStrategyIdx;
 
-    public DefaultReasoner(LLM llm) {
+    public DefaultReasoner(Model model) {
+        // fallback: branch exploration when CoT confidence < 0.5
         this(List.of(
-                new ChainOfThought(llm),
-                new TreeOfThought(llm, 3, 2) // fallback: branch exploration when CoT confidence < 0.5
+                new ChainOfThought(model),
+                new TreeOfThought(model, 3, 2)
         ));
     }
 
     public DefaultReasoner(List<ReasoningStrategy> strategies) {
-        if (strategies.isEmpty()) throw new IllegalArgumentException("At least one strategy required");
+        if (strategies.isEmpty()) {
+            throw new IllegalArgumentException("At least one strategy required");
+        }
         this.strategies = new ArrayList<>(strategies);
         this.activeStrategyIdx = 0;
     }
@@ -71,15 +75,13 @@ public class DefaultReasoner implements Reasoner {
         return best;
     }
 
-    @Override
-    public void setStrategy(ReasoningStrategy strategy) {
+        public void setStrategy(ReasoningStrategy strategy) {
         strategies.clear();
         strategies.add(strategy);
         activeStrategyIdx = 0;
     }
 
-    @Override
-    public ReasoningStrategy getStrategy() {
+        public ReasoningStrategy getStrategy() {
         return strategies.get(activeStrategyIdx);
     }
 
@@ -88,8 +90,9 @@ public class DefaultReasoner implements Reasoner {
 
     /** 设置当前活跃策略索引 */
     public void setActiveStrategy(int idx) {
-        if (idx < 0 || idx >= strategies.size())
+        if (idx < 0 || idx >= strategies.size()) {
             throw new IllegalArgumentException("Invalid strategy index: " + idx);
+        }
         this.activeStrategyIdx = idx;
     }
 }

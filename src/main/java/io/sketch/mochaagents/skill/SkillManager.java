@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.skill;
 
 import io.sketch.mochaagents.tool.ToolRegistry;
@@ -49,11 +52,21 @@ public class SkillManager {
         init.registerBundledSkills();
         init.loadFileSystemSkills();
         init.registerSkillTool();
+        // Register all skills as Plugins via PluginLoader
+        init.registerAsPlugins();
         log.info("Skills system initialized: {} skills loaded ({} bundled, {} file-system)",
                 init.skillRegistry.size(),
                 init.skillRegistry.filterBySource(SkillSource.BUNDLED).size(),
                 init.skillRegistry.filterBySource(SkillSource.FILE_SYSTEM).size());
         return init;
+    }
+
+    private void registerAsPlugins() {
+        io.sketch.mochaagents.plugin.PluginManager pm =
+                io.sketch.mochaagents.plugin.PluginBootstrap.bootstrap(skillRegistry).pluginManager();
+        for (Skill skill : skillRegistry.all()) {
+            pm.registerPlugin(skill);
+        }
     }
 
     /** 获取全局技能注册表. */
@@ -178,7 +191,7 @@ public class SkillManager {
 
     /**
      * 向 ToolRegistry 注册 SkillTool.
-     * 使 LLM 可以通过 Skill 工具调用技能。
+     * 使 Model 可以通过 Skill 工具调用技能。
      */
     private void registerSkillTool() {
         toolRegistry.registerSkillTool(skillRegistry);

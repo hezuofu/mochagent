@@ -1,10 +1,17 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.learn;
 
 /**
  * 学习策略接口 — 定义 Agent 如何从经验中提取模式和调整行为.
  */
 @FunctionalInterface
-/** @author lanxia39@163.com */
+/**
+ * LearningStrategy strategy interface.
+ *
+ * @author lanxia39@163.com
+ */
 public interface LearningStrategy {
 
     /** 学习策略的权重更新 */
@@ -24,7 +31,9 @@ public interface LearningStrategy {
     /** 默认复合策略 — 新经验影响更大 */
     static LearningStrategy weightedRecent(double learningRate, double recencyBias) {
         return (weight, exp, history) -> {
-            if (history.isEmpty()) return weight;
+            if (history.isEmpty()) {
+                return weight;
+            }
             int recencyIndex = Math.max(0, history.size() - 1);
             double recencyFactor = Math.exp(-recencyBias * recencyIndex);
             return weight + learningRate * exp.reward() * recencyFactor;

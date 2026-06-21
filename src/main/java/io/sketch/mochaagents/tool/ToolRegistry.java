@@ -1,11 +1,13 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.tool;
 
 import io.sketch.mochaagents.skill.SkillRegistry;
-import io.sketch.mochaagents.tool.impl.SkillTool;
+import io.sketch.mochaagents.tool.builtin.SkillTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -112,7 +114,7 @@ public class ToolRegistry {
 
     /**
      * 注册 SkillTool 桥接器.
-     * 将 SkillRegistry 中的技能通过 SkillTool 暴露给 LLM 调用。
+     * 将 SkillRegistry 中的技能通过 SkillTool 暴露给 Model 调用。
      */
     public SkillTool registerSkillTool(SkillRegistry skillRegistry) {
         SkillTool skillTool = new SkillTool(skillRegistry);

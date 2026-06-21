@@ -1,9 +1,13 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.cli;
 
 import io.sketch.mochaagents.AgentBootstrap;
-import io.sketch.mochaagents.agent.impl.ToolCallingAgent;
-import io.sketch.mochaagents.agent.react.PlanMode;
-import io.sketch.mochaagents.llm.LLM;
+import io.sketch.mochaagents.agent.ToolCallingAgent;
+import io.sketch.mochaagents.agent.loop.PlanMode;
+import io.sketch.mochaagents.event.AgentEvents;
+import io.sketch.mochaagents.model.Model;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,12 +62,14 @@ final class Repl implements CliCommand {
             ╚═╝     ╚═╝ ╚═════╝  ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝""";
 
     private final ModelConfig modelCfg;
-    private ToolCallingAgent agent;
+    private final String resumeSessionId;
+    private io.sketch.mochaagents.agent.MochaAgent agent;
     private AgentBootstrap bootstrap;
-    private LLM llm;
+    private Model model;
     private PrintStream out;
     private PrintStream err;
     private PlanMode planMode;
+    private final CommandRegistry commands = CommandRegistry.builtin();
     private double sessionCost;
     private long sessionInputTokens;
     private long sessionOutputTokens;
@@ -71,8 +77,13 @@ final class Repl implements CliCommand {
     // Diff tracking — capture tool outputs that modify files for real-time display
     private final List<FileChange> pendingChanges = new ArrayList<>();
     private boolean currentRunHasDiff;
+    private boolean titleGenerated;
 
-    Repl(ModelConfig modelCfg) { this.modelCfg = modelCfg; }
+    Repl(ModelConfig modelCfg) { this(modelCfg, null); }
+    Repl(ModelConfig modelCfg, String resumeSessionId) {
+        this.modelCfg = modelCfg;
+        this.resumeSessionId = resumeSessionId;
+    }
 
     @Override
     public int run(String[] args, PrintStream out, PrintStream err) {
@@ -118,7 +129,7 @@ final class Repl implements CliCommand {
     }
 
     private void printEnvInfo() {
-        String modelName = llm().modelName();
+        String modelName = model().modelName();
         String modelLabel = modelCfg.hasModels() ? modelName : dim("fallback (use --model flag)");
 
         out.println("  " + bold("Model:") + "    " + green(modelLabel));
@@ -128,8 +139,7 @@ final class Repl implements CliCommand {
         out.println("  " + bold("Java:") + "     " + System.getProperty("java.version"));
 
         if (bootstrap != null) {
-            out.println("  " + bold("Tools:") + "    " + bootstrap.toolRegistry().size()
-                    + (bootstrap.agentTool() != null ? " (+agent tool)" : ""));
+            out.println("  " + bold("Tools:") + "    " + bootstrap.toolRegistry().size());
         }
     }
 
@@ -157,58 +167,47 @@ final class Repl implements CliCommand {
             var a = agent();
             currentRunHasDiff = false;
 
-            // Real-time event display (claude-code style)
-            var unsub = a.onEvent(e -> {
-                switch (e.type()) {
-                    case io.sketch.mochaagents.agent.AgentEvents.STARTED ->
-                        out.print(dim("  Thinking"));
-                    case io.sketch.mochaagents.agent.AgentEvents.TOOL_CALL -> {
-                        @SuppressWarnings("unchecked")
-                        Map<String, Object> d = (Map<String, Object>) e.data();
-                        String toolName = (String) d.get("toolName");
-                        String file = (String) d.get("file");
-                        if (file != null) {
-                            // File-modifying tool — show diff immediately
-                            if (!currentRunHasDiff) { out.println(); currentRunHasDiff = true; }
-                            String type = (String) d.getOrDefault("type", "modify");
-                            out.print("  " + dim("│ ") + colorForType(type) + " " + bold(file));
-                            long elapsed = e.elapsedMs();
-                            out.println(dim("  (" + elapsed + "ms)"));
-                            // Show diff content inline
-                            String oldContent = (String) d.get("oldContent");
-                            String newContent = (String) d.get("newContent");
-                            if (newContent != null) {
-                                showInlineDiff(oldContent, newContent);
-                            }
-                            // Track for summary
-                            pendingChanges.add(new FileChange(file,
-                                    oldContent, newContent, type, ZonedDateTime.now()));
-                        } else {
-                            // Non-file tool — brief notification
-                            if (!currentRunHasDiff) out.print(".");
-                        }
-                    }
-                    case io.sketch.mochaagents.agent.AgentEvents.COST -> {
-                        double[] c = (double[]) e.data();
-                        sessionCost += c[0];
-                        sessionInputTokens += (long) c[1];
-                        sessionOutputTokens += (long) c[2];
-                    }
-                    case io.sketch.mochaagents.agent.AgentEvents.COMPLETED -> {
-                        long elapsed = e.elapsedMs();
-                        if (currentRunHasDiff) {
-                            out.println(dim("  │"));
-                        }
-                        out.println(dim("  ✓ " + elapsed + "ms | $"
-                                + String.format("%.4f", sessionCost)
-                                + " | " + formatTokens(sessionInputTokens) + " in / "
-                                + formatTokens(sessionOutputTokens) + " out"));
-                    }
+            // Real-time event display via typed subscriptions
+            var bus = a.events();
+            var unsubs = new ArrayList<Runnable>();
+            unsubs.add(bus.on(AgentEvents.Started.class,
+                    e -> out.print(dim("  Thinking"))));
+            unsubs.add(bus.on(AgentEvents.ToolCalled.class, e -> {
+                String file = e.file();
+                if (file != null) {
+                    if (!currentRunHasDiff) { out.println(); currentRunHasDiff = true; }
+                    out.print("  " + dim("│ ") + colorForType("modify") + " " + bold(file));
+                    out.println(dim("  (" + e.elapsedMs() + "ms)"));
+                    String oldContent = (String) e.arguments().get("old_content");
+                    String newContent = (String) e.arguments().get("content");
+                    if (newContent != null) showInlineDiff(oldContent, newContent);
+                    pendingChanges.add(new FileChange(file, oldContent, newContent, "modify", ZonedDateTime.now()));
+                } else {
+                    if (!currentRunHasDiff) out.print(".");
                 }
-            });
+            }));
+            unsubs.add(bus.on(AgentEvents.Completed.class, e -> {
+                if (currentRunHasDiff) out.println(dim("  │"));
+                sessionCost += e.estimatedCost();
+                sessionInputTokens += e.inputTokens();
+                sessionOutputTokens += e.outputTokens();
+                out.println(dim("  ✓ " + e.elapsedMs() + "ms | $"
+                        + String.format("%.4f", sessionCost)
+                        + " | " + formatTokens(sessionInputTokens) + " in / "
+                        + formatTokens(sessionOutputTokens) + " out"));
+            }));
 
             String result = a.run(task);
-            unsub.run();
+            unsubs.forEach(Runnable::run);
+
+            // Auto-generate session title after first exchange
+            if (!titleGenerated) {
+                titleGenerated = true;
+                String title = a.generateTitle(model);
+                if (title != null) {
+                    out.println(dim("  Session: " + title));
+                }
+            }
 
             // Display result
             out.println();
@@ -307,47 +306,34 @@ final class Repl implements CliCommand {
         String name = parts[0].toLowerCase();
         String arg = parts.length > 1 ? parts[1] : "";
 
-        return switch (name) {
-            case "help", "h" -> { showHelp(); yield false; }
-            case "exit", "quit", "q" -> { out.println("Goodbye."); yield true; }
-            case "version" -> { out.println(VERSION); yield false; }
-            case "model" -> { showModelInfo(); yield false; }
-            case "cost" -> { showCost(); yield false; }
-            case "clear" -> { clearSession(); yield false; }
-            case "compact" -> { compactContext(); yield false; }
-            case "plan" -> { enterPlanMode(); yield false; }
-            case "exitplan" -> { exitPlanMode(); yield false; }
-            case "diff" -> { showDiffCmd(arg); yield false; }
-            case "status" -> { showStatus(); yield false; }
-            case "tools" -> { showTools(); yield false; }
-            default -> { out.println(red("Unknown command: /" + name + " (use /help)")); yield false; }
-        };
+        SlashCommand command = commands.get(name);
+        if (command == null) {
+            // Check aliases
+            for (var c : commands.all()) {
+                if (c.aliases().contains(name)) {
+                    command = c;
+                    break;
+                }
+            }
+        }
+        if (command == null) {
+            out.println(red("Unknown command: /" + name + " (use /help)"));
+            return false;
+        }
+
+        try {
+            return command.execute(arg, new ReplContext(agent, model, out, err));
+        } catch (Exception e) {
+            out.println(red("Command error: ") + e.getMessage());
+            return false;
+        }
     }
 
-    private void showHelp() {
-        out.println();
-        out.println(bold("Commands:"));
-        String[][] commands = {
-            {"/help", "Show this help"},
-            {"/model", "Show model configuration"},
-            {"/cost", "Show session cost and token usage"},
-            {"/clear", "Clear conversation context"},
-            {"/compact", "Compact context window"},
-            {"/plan", "Enter plan mode (read-only exploration)"},
-            {"/exitplan", "Exit plan mode"},
-            {"/diff [file]", "Show pending file changes"},
-            {"/status", "Show agent status"},
-            {"/tools", "List available tools"},
-            {"/exit, /quit", "Exit REPL"},
-        };
-        for (String[] c : commands) {
-            out.println("  " + bold(String.format("%-18s", c[0])) + dim(c[1]));
-        }
-        out.println();
-    }
+    /** Get the command registry (for external command registration). */
+    public CommandRegistry commands() { return commands; }
 
     private void showModelInfo() {
-        LLM l = llm();
+        Model l = model();
         out.println(bold("Model:") + " " + green(l.modelName()));
         out.println(bold("Context:") + " " + l.maxContextTokens() + " tokens");
         out.println(bold("Temp:") + " " + String.format("%.2f", modelCfg.temperature()));
@@ -409,11 +395,32 @@ final class Repl implements CliCommand {
     }
 
     private void showStatus() {
-        out.println(bold("Agent:") + " " + (agent != null ? agent.metadata().name() : "not loaded"));
-        out.println(bold("Tools:") + " " + (bootstrap != null ? bootstrap.toolRegistry().size() : 0));
-        out.println(bold("Plan mode:") + " " + (planMode != null && planMode.isReadOnly() ? "active" : "inactive"));
-        out.println(bold("Session:") + " $" + String.format("%.4f", sessionCost)
-                + " | " + formatTokens(sessionInputTokens + sessionOutputTokens) + " tokens");
+        String agentName = agent != null ? agent.metadata().name() : "not loaded";
+        String modelLabel = model != null ? green(model.modelName()) : dim("none");
+        int toolCount = bootstrap != null ? bootstrap.toolRegistry().size() : 0;
+        String planState = planMode != null && planMode.isReadOnly() ? yellow("active") : dim("inactive");
+
+        out.println(bold("Agent:") + " " + agentName);
+        out.println(bold("Model:") + " " + modelLabel);
+        out.println(bold("Tools:") + " " + toolCount + " | " + bold("Plan:") + " " + planState);
+
+        if (agent != null) {
+            var mem = agent.memory();
+            var session = agent.currentSession();
+            String sessionId = session != null ? dim(session.id().substring(0, 8) + "...") : dim("none");
+            out.println(bold("Session:") + " " + sessionId
+                    + " | " + bold("Steps:") + " " + mem.stepCount()
+                    + " | " + bold("Turns:") + " " + mem.maxStepNumber());
+
+            int undoCount = io.sketch.mochaagents.tool.FileHistory.getInstance().size();
+            out.println(bold("Memory:") + " " + mem.store().size() + " records"
+                    + " | " + bold("Undo:") + " " + undoCount + " snapshots"
+                    + " | " + bold("Changes:") + " " + pendingChanges.size() + " pending");
+        }
+        long totalTokens = sessionInputTokens + sessionOutputTokens;
+        out.println(bold("Cost:") + " $" + String.format("%.4f", sessionCost)
+                + " | " + formatTokens(sessionInputTokens) + " in / " + formatTokens(sessionOutputTokens) + " out"
+                + " (" + formatTokens(totalTokens) + " total)");
     }
 
     private void showTools() {
@@ -424,25 +431,170 @@ final class Repl implements CliCommand {
         }
     }
 
+    private void resumeCmd(String sessionId) {
+        if (agent == null) { out.println(dim("Start a conversation first")); return; }
+        if (sessionId.isEmpty()) sessionId = "latest";
+        resumeSession(sessionId);
+    }
+
+    private void turnsCmd() {
+        if (agent == null) { out.println(dim("Start a conversation first")); return; }
+        var turns = agent.memory().turnSummaries();
+        if (turns.isEmpty()) { out.println(dim("No turns yet.")); return; }
+        int maxStep = agent.memory().maxStepNumber();
+        out.println(bold("Conversation turns (") + turns.size() + " steps, max=" + maxStep + "):");
+        for (var t : turns) out.println("  " + dim(t));
+        out.println(dim("  /restore <step> to roll back to a specific turn"));
+    }
+
+    private void restoreCmd(String arg) {
+        if (agent == null) { out.println(dim("Start a conversation first")); return; }
+        int step;
+        try { step = Integer.parseInt(arg.trim()); }
+        catch (NumberFormatException e) { out.println(red("Usage: /restore <step_number>")); return; }
+
+        // 1. Roll back file changes after this step
+        var restoredFiles = io.sketch.mochaagents.tool.FileHistory.getInstance().undoSinceStep(step);
+        if (!restoredFiles.isEmpty()) {
+            out.println(green("✓ Restored ") + restoredFiles.size() + dim(" file(s):"));
+            for (String f : restoredFiles) out.println(dim("    " + f));
+        }
+
+        // 2. Truncate conversation memory
+        int removed = agent.memory().truncateToStep(step);
+        agent.invalidateMessageCaches();
+        out.println(green("✓ Restored to step ") + step
+                + dim(" — " + removed + " entries" + (restoredFiles.isEmpty() ? "" : " + " + restoredFiles.size() + " files")));
+        if (removed > 0 || !restoredFiles.isEmpty()) {
+            out.println(dim("  Conversation and files rolled back. Continue with new input."));
+        } else {
+            out.println(dim("  Nothing to restore after step " + step + "."));
+        }
+    }
+
+    private void searchCmd(String query) {
+        if (agent == null || query.isEmpty()) {
+            out.println(dim("Usage: /search <keyword>"));
+            return;
+        }
+        String cwd = System.getProperty("user.dir", ".");
+        var results = agent.searchSessions(query, cwd, 8);
+
+        if (results.isEmpty()) {
+            out.println(dim("No results for: ") + query);
+            return;
+        }
+        out.println(bold("Search: ") + query + dim(" — " + results.size() + " sessions"));
+        for (var r : results) {
+            String ts = r.startedAt().toString().substring(0, 10);
+            out.println("  " + bold(r.title()) + dim("  " + ts + "  " + r.sessionId().substring(0, 8)));
+            for (String s : r.matches()) {
+                out.println(dim("    ..." + s.trim() + "..."));
+            }
+        }
+    }
+
+    private void undoCmd(String fileFilter) {
+        var fh = io.sketch.mochaagents.tool.FileHistory.getInstance();
+        if (fh.size() == 0) {
+            out.println(dim("Nothing to undo."));
+            return;
+        }
+        if (!fileFilter.isEmpty()) {
+            String restored = fh.undo(fileFilter);
+            if (restored != null) out.println(green("✓ Undo: ") + dim(restored));
+            else out.println(red("No changes found for: ") + fileFilter);
+        } else {
+            String restored = fh.undo();
+            if (restored != null) out.println(green("✓ Undo last change: ") + dim(restored));
+            int remaining = fh.size();
+            if (remaining > 0) out.println(dim("  " + remaining + " more undo(s) available. /undo <file> for specific file."));
+        }
+    }
+
+    private void listSessionsCmd() {
+        if (agent == null) { out.println(dim("Start a conversation first")); return; }
+        String cwd = System.getProperty("user.dir", ".");
+        var sessions = agent.listSessions(cwd);
+        if (sessions.isEmpty()) {
+            out.println(dim("No sessions found in current project."));
+            return;
+        }
+        out.println(bold("Recent sessions:"));
+        int count = 0;
+        for (var s : sessions) {
+            if (count++ >= 10) break;
+            String title = s.title() != null ? s.title() : "(untitled)";
+            String ts = s.startedAt().toString().substring(0, 16).replace("T", " ");
+            out.printf("  %s  %s  %s  %d msgs%n",
+                    dim(s.id().substring(0, 8)), ts, title, s.messageCount());
+        }
+        out.println(dim("  /resume <id> to continue a session"));
+    }
+
     // ============ Agent lifecycle ============
 
-    private ToolCallingAgent agent() {
+    private io.sketch.mochaagents.agent.MochaAgent agent() {
         if (agent == null) {
-            bootstrap = AgentBootstrap.init();
-            llm = modelCfg.build();
-            agent = ToolCallingAgent.builder()
-                    .name("repl-agent").llm(llm)
-                    .toolRegistry(bootstrap.toolRegistry())
-                    .maxSteps(modelCfg.maxTokens() > 0 ? 20 : 10)
-                    .build();
-            log.info("REPL agent created — model: {}", llm.modelName());
+            model = modelCfg.build();
+            // Wire permissions + CLI approval
+            bootstrap = AgentBootstrap.init(model)
+                    .withPermissions(io.sketch.mochaagents.interaction.InteractionMode.COLLABORATIVE)
+                    .withApprovalHandler((use, sid) -> {
+                        out.print(bold("\n  Allow ") + cyan(use.toolName())
+                                + dim(" ? [y/n/s(ession)/a(lways)] "));
+                        out.flush();
+                        try {
+                            var console = System.console();
+                            String line = console != null ? console.readLine() : null;
+                            if (line == null) return java.util.concurrent.CompletableFuture
+                                    .completedFuture(io.sketch.mochaagents.interaction.Decision.deny("EOF"));
+                            return java.util.concurrent.CompletableFuture.completedFuture(switch (line.trim().toLowerCase()) {
+                                case "y", "yes" -> io.sketch.mochaagents.interaction.Decision.allow("user");
+                                case "s", "session" -> io.sketch.mochaagents.interaction.Decision.allow("session", true);
+                                case "a", "always" -> io.sketch.mochaagents.interaction.Decision.allow("always", true);
+                                default -> io.sketch.mochaagents.interaction.Decision.deny("user said no");
+                            });
+                        } catch (Exception e) {
+                            return java.util.concurrent.CompletableFuture
+                                    .completedFuture(io.sketch.mochaagents.interaction.Decision.deny("error"));
+                        }
+                    });
+            agent = bootstrap.buildAgent("repl-agent");
+
+            // Resume previous session if requested
+            if (resumeSessionId != null) {
+                resumeSession(resumeSessionId);
+            }
+
+            log.info("REPL agent created — model: {}", model.modelName());
         }
         return agent;
     }
 
-    private LLM llm() {
-        if (llm == null) llm = modelCfg.build();
-        return llm;
+    private void resumeSession(String sessionId) {
+        var mem = agent.memory();
+        String cwd = System.getProperty("user.dir", ".");
+        String userId = System.getProperty("user.name", "anonymous");
+
+        if ("latest".equals(sessionId)) {
+            var sessions = agent.listSessions(cwd);
+            if (!sessions.isEmpty()) {
+                sessionId = sessions.get(0).id();
+            } else {
+                out.println(dim("No previous sessions found. Starting fresh."));
+                return;
+            }
+        }
+
+        agent.resumeSession(sessionId, cwd, userId);
+        out.println(green("✓ Resumed session ") + dim(sessionId.substring(0, 8) + "..."));
+        out.println(dim("  " + mem.steps().size() + " previous messages restored"));
+    }
+
+    private Model model() {
+        if (model == null) model = modelCfg.build();
+        return model;
     }
 
     // ============ Git detection ============

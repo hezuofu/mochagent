@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.safety;
 
 import org.slf4j.Logger;
@@ -28,7 +31,7 @@ public class ProcessSandbox implements Sandbox {
     public ProcessSandbox() { this(30_000, 50_000, true); }
 
     @Override
-    public String execute(String code, String language) {
+    public String exec(String code, String language) {
         try {
             ProcessBuilder pb = buildProcess(code, language);
             Process proc = pb.start();
@@ -59,20 +62,6 @@ public class ProcessSandbox implements Sandbox {
         } catch (Exception e) {
             log.error("ProcessSandbox execution failed: {}", e.getMessage());
             return "[ProcessSandbox] Error: " + e.getMessage();
-        }
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public <T> T execute(java.util.function.Supplier<T> operation) {
-        // Process sandbox: run the supplier in current JVM but with timeout via CompletableFuture
-        try {
-            var future = java.util.concurrent.CompletableFuture.supplyAsync(operation);
-            return future.get(timeoutMs, TimeUnit.MILLISECONDS);
-        } catch (java.util.concurrent.TimeoutException e) {
-            throw new RuntimeException("Sandbox operation timed out after " + timeoutMs + "ms", e);
-        } catch (Exception e) {
-            throw new RuntimeException("Sandbox operation failed: " + e.getMessage(), e);
         }
     }
 

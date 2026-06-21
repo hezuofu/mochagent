@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.memory;
 
 import java.time.Instant;
@@ -12,7 +15,7 @@ import java.util.*;
  * {@link Memory#TYPE_SEMANTIC}.
  * @author lanxia39@163.com
  */
-public final class MemoryEntry implements Memory {
+public final class MemoryEntry implements MemoryRecord {
 
     private final String id;
     private final String content;
@@ -72,15 +75,15 @@ public final class MemoryEntry implements Memory {
     // ============ 快捷工厂 ============
 
     public static MemoryEntry working(String content) {
-        return builder().type(Memory.TYPE_WORKING).content(content).build();
+        return builder().type(MemoryRecord.TYPE_WORKING).content(content).build();
     }
 
     public static MemoryEntry episodic(String content, String episodeId) {
-        return builder().type(Memory.TYPE_EPISODIC).content(content).episodeId(episodeId).build();
+        return builder().type(MemoryRecord.TYPE_EPISODIC).content(content).episodeId(episodeId).build();
     }
 
     public static MemoryEntry semantic(String content, Set<String> concepts) {
-        return builder().type(Memory.TYPE_SEMANTIC).content(content).concepts(concepts).build();
+        return builder().type(MemoryRecord.TYPE_SEMANTIC).content(content).concepts(concepts).build();
     }
 
     public static Builder builder() { return new Builder(); }

@@ -1,14 +1,14 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.evaluation;
 
 /**
- * 评估器接口 — Agent 输出质量评估的核心抽象.
- * @author lanxia39@163.com
+ * Minimal evaluation — assess agent output quality.
+  * @author lanxia39@163.com
  */
+@FunctionalInterface
 public interface Evaluator {
 
-    /** 评估 Agent 输出 */
     EvaluationResult evaluate(String input, String output, String expected);
-
-    /** 获取评估标准 */
-    EvaluationCriteria getCriteria();
 }

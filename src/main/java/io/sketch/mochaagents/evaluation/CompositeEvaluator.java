@@ -1,7 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.evaluation;
 
-import io.sketch.mochaagents.evaluation.judge.AutomatedJudge;
-import io.sketch.mochaagents.evaluation.judge.LLMJudge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,7 +11,7 @@ import java.util.*;
 /**
  * 组合评估器 — 链式调用多个 Judge 策略，合并评分为综合结果.
  *
- * <p>默认链: AutomatedJudge(指标评分) → LLMJudge(语义评判) → 加权合并.
+ * <p>默认链: AutomatedJudge(指标评分) → ModelJudge(语义评判) → 加权合并.
  * <p>策略模式: 每个 Judge 是一个 {@link Evaluator} 策略，按注册顺序执行.
  * @author lanxia39@163.com
  */
@@ -29,11 +30,11 @@ public class CompositeEvaluator implements Evaluator {
                 : defaultWeights(builder.judges.size());
     }
 
-    /** 使用 Automated + LLM 评估器的默认组合. */
-    public static CompositeEvaluator defaults(LLMJudge llmJudge) {
+    /** 使用 Automated + Model 评估器的默认组合. */
+    public static CompositeEvaluator defaults(ModelJudge modelJudge) {
         return builder()
                 .addJudge(new AutomatedJudge())
-                .addJudge(llmJudge)
+                .addJudge(modelJudge)
                 .build();
     }
 
@@ -56,8 +57,12 @@ public class CompositeEvaluator implements Evaluator {
                     mergedScores.merge(key, entry.getValue() * weight, Double::sum);
                 }
 
-                if (result.issues() != null) allIssues.addAll(result.issues());
-                if (result.summary() != null) summary.append("[").append(result.summary()).append("] ");
+                if (result.issues() != null) {
+                    allIssues.addAll(result.issues());
+                }
+                if (result.summary() != null) {
+                    summary.append("[").append(result.summary()).append("] ");
+                }
             } catch (Exception e) {
                 log.warn("Judge {} failed: {}", judge.getClass().getSimpleName(), e.getMessage());
             }
@@ -68,19 +73,18 @@ public class CompositeEvaluator implements Evaluator {
                 .average().orElse(0.5);
 
         return new EvaluationResult(mergedScores,
-                summary.length() > 0 ? summary.toString().trim() : "Composite evaluation",
+            !summary.isEmpty() ? summary.toString().trim() : "Composite evaluation",
                 allIssues);
     }
 
-    @Override
-    public EvaluationCriteria getCriteria() { return criteria; }
+        public EvaluationCriteria getCriteria() { return criteria; }
 
     /** 注册的 Judge 数量 */
     public int judgeCount() { return judges.size(); }
 
     private static double[] defaultWeights(int count) {
         double[] w = new double[count];
-        for (int i = 0; i < count; i++) w[i] = 1.0 / count;
+        Arrays.fill(w, 1.0 / count);
         return w;
     }
 
@@ -102,7 +106,9 @@ public class CompositeEvaluator implements Evaluator {
         }
 
         public CompositeEvaluator build() {
-            if (judges.isEmpty()) throw new IllegalStateException("At least one judge required");
+            if (judges.isEmpty()) {
+                throw new IllegalStateException("At least one judge required");
+            }
             return new CompositeEvaluator(this);
         }
     }

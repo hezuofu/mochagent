@@ -1,7 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.context;
 
-import io.sketch.mochaagents.context.strategy.HybridContextStrategy;
-import io.sketch.mochaagents.context.strategy.SlidingWindowStrategy;
+import io.sketch.mochaagents.context.HybridContextStrategy;
+import io.sketch.mochaagents.context.SlidingWindowStrategy;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;

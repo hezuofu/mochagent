@@ -1,7 +1,7 @@
-package io.sketch.mochaagents.interaction;
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
 
-import io.sketch.mochaagents.interaction.permission.PermissionLevel;
-import io.sketch.mochaagents.interaction.permission.PermissionRequest;
+package io.sketch.mochaagents.interaction;
 
 /**
  * 权限控制 — Agent 操作权限的授权与管控.

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.safety;
 
 import org.slf4j.Logger;
@@ -51,7 +54,7 @@ public class SafetyManager {
             return "Code rejected by safety validator";
         }
         log.debug("Executing code safely in sandbox, language={}", language);
-        String result = sandbox.execute(code, language);
+        String result = sandbox.exec(code, language);
         log.debug("Sandbox execution completed");
         return result;
     }

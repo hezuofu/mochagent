@@ -1,12 +1,14 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.cli;
 
-import io.sketch.mochaagents.llm.LLM;
-import io.sketch.mochaagents.llm.LLMRequest;
-import io.sketch.mochaagents.llm.LLMResponse;
-import io.sketch.mochaagents.llm.provider.*;
-import io.sketch.mochaagents.llm.router.LLMRouter;
-import io.sketch.mochaagents.llm.router.CostOptimizer;
-import io.sketch.mochaagents.llm.router.FallbackStrategy;
+import io.sketch.mochaagents.model.Model;
+import io.sketch.mochaagents.model.ModelRequest;
+import io.sketch.mochaagents.model.ModelResponse;
+import io.sketch.mochaagents.model.provider.*;
+import io.sketch.mochaagents.model.router.ModelRouter;
+import io.sketch.mochaagents.model.router.CostOptimizer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,38 +41,37 @@ public class ModelConfig {
     public boolean debug() { return debug; }
     public boolean hasModels() { return !models.isEmpty(); }
 
-    /** Build LLM(s) from config. Single model → direct LLM. Multiple → LLMRouter. */
-    public LLM build() {
-        if (models.isEmpty()) return new io.sketch.mochaagents.llm.FallbackLLM();
+    /** Build LLM(s) from config. Single model → direct Model. Multiple → ModelRouter. */
+    public Model build() {
+        if (models.isEmpty()) return new io.sketch.mochaagents.model.FallbackModel();
 
         if (models.size() == 1) {
             return buildOne(models.get(0));
         }
 
-        // Multiple models: use LLMRouter for cost-optimized selection
-        LLMRouter router = new LLMRouter(new io.sketch.mochaagents.llm.router.CostOptimizer(),
-                new io.sketch.mochaagents.llm.router.FallbackStrategy());
+        // Multiple models: use ModelRouter for cost-optimized selection
+        ModelRouter router = new ModelRouter(new CostOptimizer());
         for (Entry e : models) {
             router.register(e.modelId(), buildOne(e));
         }
         return new RouterAdapter(router);
     }
 
-    private LLM buildOne(Entry e) {
+    private Model buildOne(Entry e) {
         String provider = e.provider();
         String modelId = e.modelId();
 
         return switch (provider) {
-            case "openai" -> OpenAILLM.builder().modelId(modelId)
+            case "openai" -> OpenAIModel.builder().modelId(modelId)
                     .apiKey(env("OPENAI_API_KEY")).build();
-            case "deepseek" -> DeepSeekLLM.deepseekBuilder().modelId(modelId)
+            case "deepseek" -> DeepSeekModel.deepseekBuilder().modelId(modelId)
                     .apiKey(env("DEEPSEEK_API_KEY")).build();
-            case "anthropic" -> AnthropicLLM.builder().modelId(modelId)
+            case "anthropic" -> AnthropicModel.builder().modelId(modelId)
                     .apiKey(env("ANTHROPIC_API_KEY")).build();
-            case "ollama" -> OpenAICompatibleLLM.forOllama(modelId);
-            case "groq" -> OpenAICompatibleLLM.compatibleBuilder().modelId(modelId)
+            case "ollama" -> OpenAICompatibleModel.forOllama(modelId);
+            case "groq" -> OpenAICompatibleModel.compatibleBuilder().modelId(modelId)
                     .apiKey(env("GROQ_API_KEY")).baseUrl("https://api.groq.com/openai/v1").build();
-            default -> OpenAICompatibleLLM.compatibleBuilder().modelId(modelId)
+            default -> OpenAICompatibleModel.compatibleBuilder().modelId(modelId)
                     .apiKey(env(provider.toUpperCase() + "_API_KEY")).baseUrl(provider).build();
         };
     }
@@ -87,15 +88,15 @@ public class ModelConfig {
         return "openai"; // default
     }
 
-    /** Thin adapter so Router can be used as direct LLM for simple cases. */
-    private record RouterAdapter(LLMRouter router) implements LLM {
-        @Override public LLMResponse complete(LLMRequest req) {
+    /** Thin adapter so Router can be used as direct Model for simple cases. */
+    private record RouterAdapter(ModelRouter router) implements Model {
+        @Override public ModelResponse complete(ModelRequest req) {
             return router.route(req).complete(req);
         }
-        @Override public CompletableFuture<LLMResponse> completeAsync(LLMRequest req) {
+        @Override public CompletableFuture<ModelResponse> completeAsync(ModelRequest req) {
             return router.route(req).completeAsync(req);
         }
-        @Override public io.sketch.mochaagents.llm.StreamingResponse stream(LLMRequest req) {
+        @Override public io.sketch.mochaagents.model.StreamingResponse stream(ModelRequest req) {
             return router.route(req).stream(req);
         }
         @Override public String modelName() { return "router[" + router.getProviders().size() + "]"; }

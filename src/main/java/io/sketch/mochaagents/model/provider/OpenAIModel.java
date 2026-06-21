@@ -1,0 +1,182 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
+package io.sketch.mochaagents.model.provider;
+
+import io.sketch.mochaagents.MochaException;
+import io.sketch.mochaagents.model.Model;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.sketch.mochaagents.model.ModelRequest;
+
+import java.util.Map;
+
+/**
+ * OpenAI Model 提供者 — 通过 Chat Completions API 调用 OpenAI 模型.
+ *
+ * <pre>{@code
+ * // 从环境变量读取 API Key
+ * OpenAIModel model = OpenAIModel.builder()
+ *         .modelId("gpt-4o")
+ *         .apiKey(System.getenv("OPENAI_API_KEY"))
+ *         .build();
+ *
+ * // 或使用自定义端点 (Azure / 代理)
+ * OpenAIModel model = OpenAIModel.builder()
+ *         .modelId("gpt-4o-mini")
+ *         .apiKey("sk-...")
+ *         .baseUrl("https://api.openai.com/v1")
+ *         .build();
+ * }</pre>
+ * @author lanxia39@163.com
+ */
+public class OpenAIModel extends BaseApiModel implements Model.NativeTools {
+
+    private final String apiKey;
+    private final String baseUrl;
+    private final String organization;
+    private final String project;
+
+    protected OpenAIModel(OpenAIBuilder builder) {
+        super(builder);
+        this.apiKey = builder.apiKey;
+        this.baseUrl = builder.baseUrl;
+        this.organization = builder.organization;
+        this.project = builder.project;
+
+        if (apiKey == null || apiKey.isBlank()) {
+            log.warn("OpenAI API key not set. Set OPENAI_API_KEY or pass apiKey to builder.");
+        }
+    }
+
+    @Override
+    protected Map<String, String> authHeaders() {
+        Map<String, String> headers = new java.util.LinkedHashMap<>();
+        headers.put("Authorization", "Bearer " + apiKey);
+        if (organization != null && !organization.isEmpty()) {
+            headers.put("OpenAI-Organization", organization);
+        }
+        if (project != null && !project.isEmpty()) {
+            headers.put("OpenAI-Project", project);
+        }
+        return headers;
+    }
+
+    @Override
+    protected String apiUrl() {
+        return baseUrl + "/chat/completions";
+    }
+
+    @Override
+    protected String buildRequestBody(ModelRequest request) {
+        return buildRequestBody(request, false);
+    }
+
+    @Override
+    protected String buildStreamRequestBody(ModelRequest request) {
+        return buildRequestBody(request, true);
+    }
+
+    private String buildRequestBody(ModelRequest request, boolean stream) {
+        ObjectNode body = JSON.createObjectNode();
+        body.put("model", modelId);
+
+        if (stream) {
+            body.put("stream", true);
+        }
+
+        // 消息 — prefer typed path when available
+        ArrayNode messages = resolveMessages(request);
+        if (messages.isEmpty()) {
+            ObjectNode userMsg = JSON.createObjectNode();
+            userMsg.put("role", "user");
+            userMsg.put("content", request.prompt() != null ? request.prompt() : "");
+            messages.add(userMsg);
+        }
+        body.set("messages", messages);
+
+        // 参数
+        if (request.maxTokens() > 0) {
+            body.put("max_tokens", request.maxTokens());
+        }
+        if (request.temperature() >= 0) {
+            body.put("temperature", request.temperature());
+        }
+        if (request.topP() >= 0) {
+            body.put("top_p", request.topP());
+        }
+        if (request.presencePenalty() != 0) {
+            body.put("presence_penalty", request.presencePenalty());
+        }
+        if (request.frequencyPenalty() != 0) {
+            body.put("frequency_penalty", request.frequencyPenalty());
+        }
+
+        // stop sequences
+        if (!request.stopSequences().isEmpty()) {
+            ArrayNode stops = JSON.createArrayNode();
+            request.stopSequences().forEach(stops::add);
+            body.set("stop", stops);
+        }
+
+        // extra params
+        for (var entry : request.extraParams().entrySet()) {
+            body.putPOJO(entry.getKey(), entry.getValue());
+        }
+
+        return body.toString();
+    }
+
+    @Override
+    protected ResponseParseResult parseResponseContent(JsonNode root) {
+        JsonNode choices = root.get("choices");
+        if (choices == null || !choices.isArray() || choices.isEmpty()) {
+            throw new MochaException.LlmException("No choices in response: " + root, 0, modelId);
+        }
+
+        JsonNode message = choices.get(0).get("message");
+        String content = "";
+        if (message != null) {
+            content = safeStr(message, "content");
+            // 函数调用时 content 可能为 null
+            if (content.isEmpty() && message.has("tool_calls")) {
+                content = message.get("tool_calls").toString();
+            }
+        }
+
+        JsonNode usage = root.get("usage");
+        int promptTokens = usage != null ? safeInt(usage, "prompt_tokens") : 0;
+        int completionTokens = usage != null ? safeInt(usage, "completion_tokens") : 0;
+
+        return new ResponseParseResult(content, promptTokens, completionTokens);
+    }
+
+    @Override public String modelName() { return modelId; }
+
+
+    // ============ Builder ============
+
+    public static OpenAIBuilder builder() {
+        return new OpenAIBuilder();
+    }
+
+    public static final class OpenAIBuilder extends Builder<OpenAIBuilder> {
+        private String apiKey = System.getenv("OPENAI_API_KEY");
+        private String baseUrl = "https://api.openai.com/v1";
+        private String organization;
+        private String project;
+
+        public OpenAIBuilder apiKey(String key) { this.apiKey = key; return this; }
+        public OpenAIBuilder baseUrl(String url) { this.baseUrl = url; return this; }
+        public OpenAIBuilder organization(String org) { this.organization = org; return this; }
+        public OpenAIBuilder project(String proj) { this.project = proj; return this; }
+
+        public OpenAIModel build() {
+            if (modelId == null) {
+                modelId = "gpt-4o";
+            }
+            return new OpenAIModel(this);
+        }
+    }
+}

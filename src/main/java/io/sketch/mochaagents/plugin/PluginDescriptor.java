@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.plugin;
 
 import io.sketch.mochaagents.skill.Skill;
@@ -57,6 +60,20 @@ public final class PluginDescriptor {
     /** 检查插件是否在当前环境中可用. */
     public boolean isAvailable() {
         return isAvailable != null ? isAvailable.get() : true;
+    }
+
+    // ==================== Convenience factory ====================
+
+    public static PluginDescriptor of(String name, String version, String description) {
+        return new Builder(name, description).version(version).build();
+    }
+
+    public PluginDescriptor withExtension(ExtensionPoint<?> ext) {
+        List<ExtensionPoint<?>> updated = new java.util.ArrayList<>(this.extensionPoints);
+        updated.add(ext);
+        return new Builder(name, description).version(version)
+                .skills(skills).extensionPoints(updated)
+                .defaultEnabled(defaultEnabled).isAvailable(isAvailable).build();
     }
 
     // ==================== Builder ====================

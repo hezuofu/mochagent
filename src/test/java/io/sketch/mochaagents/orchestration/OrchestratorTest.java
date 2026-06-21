@@ -1,8 +1,12 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.orchestration;
+import io.sketch.mochaagents.agent.event.AgentEvent;
+import io.sketch.mochaagents.agent.event.AgentListener;
 
 import io.sketch.mochaagents.agent.Agent;
 import io.sketch.mochaagents.agent.AgentContext;
-import io.sketch.mochaagents.agent.AgentListener;
 import io.sketch.mochaagents.agent.AgentMetadata;
 import org.junit.jupiter.api.Test;
 
@@ -20,7 +24,7 @@ class OrchestratorTest {
                 return CompletableFuture.completedFuture(execute(input, ctx));
             }
             @Override public AgentMetadata metadata() {
-                return AgentMetadata.builder().name(name).build();
+                return new AgentMetadata(name);
             }
             @Override public void addListener(AgentListener<String, String> l) {}
             @Override public void removeListener(AgentListener<String, String> l) {}

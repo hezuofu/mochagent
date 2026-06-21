@@ -1,0 +1,167 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
+package io.sketch.mochaagents.model.provider;
+
+import io.sketch.mochaagents.agent.AgentContext;
+import io.sketch.mochaagents.agent.ToolCallingAgent;
+import io.sketch.mochaagents.model.Model;
+import io.sketch.mochaagents.tool.Tool;
+import io.sketch.mochaagents.tool.ToolInput;
+import io.sketch.mochaagents.tool.ToolRegistry;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+/**
+ * Real Model integration tests — requires API key to run.
+ *
+ * <p>Activate with: {@code mvn test -Dtest=RealModelIntegrationTest}
+ *
+ * <p>Supported free-tier providers:
+ * <ul>
+ * <li><b>DeepSeek</b>: set env {@code DEEPSEEK_API_KEY} (free quota)</li>
+ * <li><b>Groq</b>: set env {@code GROQ_API_KEY} (free tier, fast)</li>
+ * <li><b>Google Gemini</b>: set env {@code GEMINI_API_KEY} (free quota)</li>
+ * <li><b>Ollama</b>: local, no env needed</li>
+ * </ul>
+ * @author lanxia39@163.com
+ */
+@Disabled("Requires real Model API key. Set DEEPSEEK_API_KEY or GROQ_API_KEY env var and remove @Disabled")
+class RealModelIntegrationTest {
+
+    private static Model resolveModel() {
+        String groqKey = System.getenv("GROQ_API_KEY");
+        if (groqKey != null && !groqKey.isEmpty()) {
+            return OpenAICompatibleModel.compatibleBuilder()
+                    .modelId("llama-3.3-70b-versatile")
+                    .apiKey(groqKey)
+                    .baseUrl("https://api.groq.com/openai/v1")
+                    .build();
+        }
+
+        String dsKey = System.getenv("DEEPSEEK_API_KEY");
+        if (dsKey != null && !dsKey.isEmpty()) {
+            return OpenAICompatibleModel.compatibleBuilder()
+                    .modelId("deepseek-chat")
+                    .apiKey(dsKey)
+                    .baseUrl("https://api.deepseek.com/v1")
+                    .build();
+        }
+
+        String geminiKey = System.getenv("GEMINI_API_KEY");
+        if (geminiKey != null && !geminiKey.isEmpty()) {
+            return OpenAICompatibleModel.compatibleBuilder()
+                    .modelId("gemini-2.0-flash")
+                    .apiKey(geminiKey)
+                    .baseUrl("https://generativelanguage.googleapis.com/v1beta/openai")
+                    .build();
+        }
+
+        // Try Ollama local
+        OpenAICompatibleModel ollama = OpenAICompatibleModel.forOllama("llama3.2");
+        try {
+            ollama.complete(io.sketch.mochaagents.model.ModelRequest.builder()
+                    .addMessage("user", "hi").maxTokens(5).build());
+            return ollama;
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                    "No Model API key found. Set DEEPSEEK_API_KEY, GROQ_API_KEY, or GEMINI_API_KEY, or start Ollama locally.");
+        }
+    }
+
+    // ============ Tests ============
+
+    @Test
+    void toolCallingAgentCompletesSimpleTask() {
+        Model model = resolveModel();
+        ToolRegistry registry = new ToolRegistry();
+
+        // Register a simple calculator tool
+        registry.register(new Tool() {
+            @Override public String getName() { return "calculator"; }
+            @Override public String getDescription() { return "Evaluate a math expression. Input: expression (e.g. 2+3*4)"; }
+            @Override public Map<String, ToolInput> getInputs() {
+                return Map.of("expression", ToolInput.string("Math expression to evaluate"));
+            }
+            @Override public String getOutputType() { return "string"; }
+            @Override public Object call(Map<String, Object> args) {
+                String expr = (String) args.getOrDefault("expression", "0");
+                try {
+                    javax.script.ScriptEngineManager mgr = new javax.script.ScriptEngineManager();
+                    javax.script.ScriptEngine engine = mgr.getEngineByName("JavaScript");
+                    if (engine == null) engine = mgr.getEngineByName("graal.js");
+                    if (engine != null) return engine.eval(expr).toString();
+                } catch (Exception e) { /* fall through */ }
+                // Simple eval fallback
+                try { return String.valueOf(evalSimple(expr)); }
+                catch (Exception e) { return "Error: " + e.getMessage(); }
+            }
+            @Override public SecurityLevel getSecurityLevel() { return SecurityLevel.LOW; }
+        });
+
+        ToolCallingAgent agent = ToolCallingAgent.builder()
+                .name("math-agent")
+                .model(model)
+                .toolRegistry(registry)
+                .maxSteps(5)
+                .build();
+
+        String result = agent.run("What is 15 * 7 + 3?");
+
+        assertNotNull(result);
+        assertFalse(result.isEmpty());
+        System.out.println("ToolCallingAgent result: " + result);
+    }
+
+    @Test
+    void agentWithAgentContextUsesHistory() {
+        Model model = resolveModel();
+
+        ToolCallingAgent agent = ToolCallingAgent.builder()
+                .name("context-agent")
+                .model(model)
+                .maxSteps(3)
+                .build();
+
+        AgentContext ctx = AgentContext.builder()
+                .sessionId("test-001")
+                .userId("tester")
+                .userMessage("What is 2 + 2?")
+                .metadata("instructions", "Answer in exactly one word: the number")
+                .build();
+
+        String result = agent.run(ctx);
+
+        assertNotNull(result);
+        System.out.println("ContextAgent result: " + result);
+        assertTrue(result.contains("4") || result.contains("four"),
+                "Expected answer to contain 4 or four, got: " + result);
+    }
+
+    // Helper: simple expression evaluator
+    private static double evalSimple(String expr) {
+        expr = expr.replaceAll("\\s+", "");
+        // Handle multiplication first
+        if (expr.contains("*")) {
+            String[] parts = expr.split("\\*", 2);
+            return evalSimple(parts[0]) * evalSimple(parts[1]);
+        }
+        if (expr.contains("+")) {
+            String[] parts = expr.split("\\+", 2);
+            return evalSimple(parts[0]) + evalSimple(parts[1]);
+        }
+        if (expr.contains("-") && expr.lastIndexOf('-') > 0) {
+            String[] parts = expr.split("-", 2);
+            return evalSimple(parts[0]) - evalSimple(parts[1]);
+        }
+        if (expr.contains("/")) {
+            String[] parts = expr.split("/", 2);
+            return evalSimple(parts[0]) / evalSimple(parts[1]);
+        }
+        return Double.parseDouble(expr);
+    }
+}

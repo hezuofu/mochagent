@@ -1,6 +1,9 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.plugin;
 
-import io.sketch.mochaagents.agent.react.AgenticLoop;
+import io.sketch.mochaagents.agent.AgentLoop;
 import io.sketch.mochaagents.evaluation.Evaluator;
 import io.sketch.mochaagents.perception.Perceptor;
 import io.sketch.mochaagents.plan.Planner;
@@ -76,10 +79,14 @@ public class PluginLoader {
     /** Discover all plugins from configured directories. */
     public void discoverAll() {
         for (Path dir : pluginDirs) {
-            if (!Files.isDirectory(dir)) continue;
+            if (!Files.isDirectory(dir)) {
+                continue;
+            }
             try (var stream = Files.newDirectoryStream(dir)) {
                 for (Path pluginDir : stream) {
-                    if (!Files.isDirectory(pluginDir)) continue;
+                    if (!Files.isDirectory(pluginDir)) {
+                        continue;
+                    }
                     PluginDescriptor desc = discoverPlugin(pluginDir);
                     if (desc != null) {
                         discovered.put(desc.name(), desc);
@@ -95,7 +102,9 @@ public class PluginLoader {
 
     private PluginDescriptor discoverPlugin(Path pluginDir) {
         Path jsonFile = pluginDir.resolve("plugin.json");
-        if (!Files.exists(jsonFile)) return null;
+        if (!Files.exists(jsonFile)) {
+            return null;
+        }
 
         try {
             String json = Files.readString(jsonFile);
@@ -157,9 +166,9 @@ public class PluginLoader {
                         ? Optional.of(ExtensionPoint.planner(p, priority)) : Optional.empty();
                 case "EVALUATOR" -> instance instanceof Evaluator e
                         ? Optional.of(ExtensionPoint.evaluator(e, priority)) : Optional.empty();
-                case "LOOP" -> instance instanceof AgenticLoop<?,?> l
+                case "LOOP" -> instance instanceof AgentLoop<?,?> l
                         ? Optional.of(ExtensionPoint.loop(
-                                (AgenticLoop<String, String>) l, priority))
+                                (AgentLoop<String, String>) l, priority))
                         : Optional.empty();
                 case "MCP_SERVER" -> instance instanceof String s
                         ? Optional.of(ExtensionPoint.mcpServer(s, priority)) : Optional.empty();
@@ -175,7 +184,9 @@ public class PluginLoader {
         }
     }
 
-    /** Register tool/extension extensions immediately. */
+    /**
+     * Register tool/extension extensions immediately.
+     *  */
     private void applyPluginExtensions(PluginDescriptor desc) {
         for (var ext : desc.extensionPoints()) {
             if ("TOOL".equals(ext.type()) && ext.component() instanceof Tool t) {
@@ -186,7 +197,9 @@ public class PluginLoader {
                     var mcp = new io.sketch.mochaagents.tool.mcp.StdioMcpClient();
                     mcp.connect(cmd);
                     if (mcp.isConnected()) {
-                        for (var tool : mcp.discoverTools()) toolRegistry.register(tool);
+                        for (var tool : mcp.discoverTools()) {
+                            toolRegistry.register(tool);
+                        }
                         log.info("Plugin '{}' MCP server connected: {}", desc.name(), cmd);
                     }
                 } catch (Exception e) {
@@ -198,50 +211,44 @@ public class PluginLoader {
     }
 
     /**
-     * Apply plugin extensions to an agent configuration.
-     * Highest-priority extension for each type wins.
-     */
-    public void applyExtensions(io.sketch.mochaagents.agent.MochaAgent.Config config) {
-        ExtensionPoint<?> bestPerceptor = null;
-        ExtensionPoint<?> bestReasoner = null;
-        ExtensionPoint<?> bestPlanner = null;
-        ExtensionPoint<?> bestEvaluator = null;
-        ExtensionPoint<?> bestLoop = null;
+     * Discovered plugins.
+     * */
+    public Map<String, PluginDescriptor> plugins() { return Collections.unmodifiableMap(discovered); }
 
-        for (var desc : discovered.values()) {
-            for (var ext : desc.extensionPoints()) {
-                switch (ext.type()) {
-                    case "PERCEPTOR":
-                        if (bestPerceptor == null || ext.priority() > bestPerceptor.priority())
-                            bestPerceptor = ext;
-                        break;
-                    case "REASONER":
-                        if (bestReasoner == null || ext.priority() > bestReasoner.priority())
-                            bestReasoner = ext;
-                        break;
-                    case "PLANNER":
-                        if (bestPlanner == null || ext.priority() > bestPlanner.priority())
-                            bestPlanner = ext;
-                        break;
-                    case "EVALUATOR":
-                        if (bestEvaluator == null || ext.priority() > bestEvaluator.priority())
-                            bestEvaluator = ext;
-                        break;
-                    case "LOOP":
-                        if (bestLoop == null || ext.priority() > bestLoop.priority())
-                            bestLoop = ext;
-                        break;
-                }
+    // ── Dynamic loading ──
+
+    /**
+     * Load a plugin from its class, activating it immediately.
+     * */
+    public <T extends Plugin> T loadPlugin(Class<T> pluginClass) {
+        try {
+            PluginMeta info = pluginClass.getAnnotation(PluginMeta.class);
+            if (info == null) {
+                throw new IllegalArgumentException(
+                        "@PluginInfo required on " + pluginClass.getName());
             }
-        }
 
-        if (bestPerceptor != null) config.setPerceptor((Perceptor<String, String>) bestPerceptor.component());
-        if (bestReasoner != null) config.setReasoner((Reasoner) bestReasoner.component());
-        if (bestPlanner != null) config.setPlanner((Planner<?>) bestPlanner.component());
-        if (bestEvaluator != null) config.setEvaluator((Evaluator) bestEvaluator.component());
-        if (bestLoop != null) config.setLoop((AgenticLoop<String, String>) bestLoop.component());
+            T plugin = pluginClass.getDeclaredConstructor().newInstance();
+            PluginDescriptor desc = PluginDescriptor.of(info.name(), info.version(), info.description());
+            var ref = new java.util.concurrent.atomic.AtomicReference<>(desc);
+            plugin.extensions().forEach(ext -> ref.set(ref.get().withExtension(ext)));
+            desc = ref.get();
+            discovered.put(desc.name(), desc);
+            applyPluginExtensions(desc);
+            log.info("Plugin loaded: {} v{}", info.name(), info.version());
+            return plugin;
+        } catch (Exception e) {
+            log.error("Failed to load plugin {}: {}", pluginClass.getName(), e.getMessage());
+            return null;
+        }
     }
 
-    /** Discovered plugins. */
-    public Map<String, PluginDescriptor> plugins() { return Collections.unmodifiableMap(discovered); }
+    /**
+     * Load all Plugin implementations found via Java ServiceLoader.
+     *  */
+    public void loadFromServiceLoader() {
+        for (Plugin plugin : java.util.ServiceLoader.load(Plugin.class)) {
+            loadPlugin(plugin.getClass());
+        }
+    }
 }

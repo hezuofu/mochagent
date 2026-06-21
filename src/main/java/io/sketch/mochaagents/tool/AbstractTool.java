@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.tool;
 
 import java.util.Collections;
@@ -82,6 +85,21 @@ public abstract class AbstractTool implements Tool {
         return ValidationResult.valid();
     }
 
+    /**
+     * Typed validation: Map→Record conversion via ToolSchema (Pydantic pattern).
+     * Override getSchema() to provide a schema, then call this with your input record class.
+     *
+     * <pre>{@code
+     * record ReadInput(String path, int offset) {}
+     * &#64;Override public ValidationResult validateInput(Map<String, Object> args) {
+     *     return getSchema().validate(args, ReadInput.class);
+     * }
+     * }</pre>
+     */
+    protected <T> ValidationResult validateTyped(Map<String, Object> arguments, Class<T> targetType) {
+        return getSchema().validate(arguments, targetType);
+    }
+
     @Override public PermissionResult checkPermissions(Map<String, Object> arguments) {
         return PermissionResult.allow(arguments);
     }
@@ -97,8 +115,6 @@ public abstract class AbstractTool implements Tool {
     @Override public String formatResult(Object output, String toolUseId) {
         return output != null ? output.toString() : "";
     }
-
-    @Override public String getUserFacingName() { return name; }
 
     // ==================== Builder ====================
 

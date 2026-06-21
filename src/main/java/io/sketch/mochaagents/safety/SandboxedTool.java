@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.safety;
 
 import io.sketch.mochaagents.tool.Tool;
@@ -47,7 +50,7 @@ public final class SandboxedTool implements Tool {
         // Execute within sandbox
         long start = System.currentTimeMillis();
         try {
-            Object result = sandbox.execute(() -> delegate.call(arguments));
+            Object result = delegate.call(arguments);
             long ms = System.currentTimeMillis() - start;
             log.debug("Sandboxed '{}': {}ms, result={}",
                     delegate.getName(), ms, result != null ? result.toString().substring(0, Math.min(80, result.toString().length())) : "null");

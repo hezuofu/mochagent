@@ -1,20 +1,22 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.context;
 
-import io.sketch.mochaagents.llm.LLM;
-import io.sketch.mochaagents.llm.LLMRequest;
-import io.sketch.mochaagents.llm.LLMResponse;
+import io.sketch.mochaagents.model.Model;
+import io.sketch.mochaagents.model.ModelRequest;
+import io.sketch.mochaagents.model.ModelResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.function.Supplier;
 
 /**
  * Full replication of claude-code's compactConversation algorithm (compact.ts:387-763).
  *
  * <p>Algorithm:
  * <ol>
- *   <li>Build compact prompt → stream compact summary via LLM</li>
+ *   <li>Build compact prompt → stream compact summary via Model</li>
  *   <li>PTL recovery: if compact itself hits prompt-too-long, truncate oldest
  *       API-round groups and retry (max 3 attempts)</li>
  *   <li>Validate summary (not null, not API error)</li>
@@ -33,26 +35,28 @@ public final class CompactConversation {
     private static final int MAX_TOTAL_RESTORE_TOKENS = 50000;
     private static final String PTL_ERROR_PREFIX = "prompt_too_long";
 
-    private final LLM llm;
+    private final Model model;
     private final int compactMaxTokens;
     private final Set<String> recentFiles = new LinkedHashSet<>();
     private int compactionCount;
     private int consecutiveFailures;
     private int totalPtLRecoveries;
 
-    public CompactConversation(LLM llm, int compactMaxTokens) {
-        this.llm = llm;
+    public CompactConversation(Model model, int compactMaxTokens) {
+        this.model = model;
         this.compactMaxTokens = compactMaxTokens;
     }
 
-    public CompactConversation(LLM llm) { this(llm, 1024); }
+    public CompactConversation(Model model) { this(model, 1024); }
 
     /**
      * Run compaction on a list of context chunks.
      * Returns the compacted chunk list, or null if compaction failed.
      */
     public CompactionResult compact(List<ContextChunk> chunks, String customInstructions) {
-        if (chunks.isEmpty()) return null;
+        if (chunks.isEmpty()) {
+            return null;
+        }
 
         int preCompactTokens = totalTokens(chunks);
         String transcript = buildTranscript(chunks);
@@ -64,7 +68,7 @@ public final class CompactConversation {
         String currentTranscript = transcript;
 
         while (ptlAttempts <= MAX_PTL_RETRIES) {
-            LLMResponse response = llm.complete(LLMRequest.builder()
+            ModelResponse response = model.complete(ModelRequest.builder()
                     .addMessage("user", compactPrompt)
                     .maxTokens(compactMaxTokens)
                     .temperature(0.2)
@@ -76,7 +80,9 @@ public final class CompactConversation {
                 consecutiveFailures++;
                 return null;
             }
-            if (!summary.startsWith(PTL_ERROR_PREFIX)) break;
+            if (!summary.startsWith(PTL_ERROR_PREFIX)) {
+                break;
+            }
 
             // PTL recovery: truncate oldest messages and retry
             ptlAttempts++;
@@ -147,8 +153,9 @@ public final class CompactConversation {
     private String buildCompactPrompt(String instructions, String transcript) {
         StringBuilder sb = new StringBuilder();
         sb.append("Summarize this conversation concisely. Keep key facts, decisions, and the user's intent.\n");
-        if (instructions != null && !instructions.isEmpty())
+        if (instructions != null && !instructions.isEmpty()) {
             sb.append("Additional instructions: ").append(instructions).append("\n");
+        }
         sb.append("\n---\n").append(transcript).append("\n---\nSummary:");
         return sb.toString();
     }
@@ -159,7 +166,8 @@ public final class CompactConversation {
      */
     private String truncateHeadForPTLRetry(String transcript, int preCompactTokens) {
         String[] paragraphs = transcript.split("\n\n");
-        int dropCount = Math.max(1, paragraphs.length / 3); // drop oldest third
+        // drop oldest third
+        int dropCount = Math.max(1, paragraphs.length / 3);
         return String.join("\n\n",
                 Arrays.copyOfRange(paragraphs, dropCount, paragraphs.length));
     }
@@ -181,15 +189,21 @@ public final class CompactConversation {
     private void restoreRecentFiles(List<ContextChunk> result) {
         int restoredTokens = 0;
         for (String file : new ArrayList<>(recentFiles)) {
-            if (restoredTokens >= MAX_TOTAL_RESTORE_TOKENS) break;
+            if (restoredTokens >= MAX_TOTAL_RESTORE_TOKENS) {
+                break;
+            }
             try {
                 String content = java.nio.file.Files.readString(java.nio.file.Paths.get(file));
                 int fileTokens = Math.max(1, content.length() / 4);
-                if (fileTokens > MAX_FILE_TOKENS) content = content.substring(0, MAX_FILE_TOKENS * 4);
+                if (fileTokens > MAX_FILE_TOKENS) {
+                    content = content.substring(0, MAX_FILE_TOKENS * 4);
+                }
                 result.add(new ContextChunk("restore-" + file.hashCode(), "system",
                         "[File: " + file + "]\n" + content, Math.min(fileTokens, MAX_FILE_TOKENS)));
                 restoredTokens += fileTokens;
-                if (result.stream().filter(c -> c.role().equals("system") && c.content().startsWith("[File:")).count() >= MAX_FILES_TO_RESTORE) break;
+                if (result.stream().filter(c -> c.role().equals("system") && c.content().startsWith("[File:")).count() >= MAX_FILES_TO_RESTORE) {
+                    break;
+                }
             } catch (Exception ignored) {}
         }
     }

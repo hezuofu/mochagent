@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.safety;
 
 import io.sketch.mochaagents.tool.Tool;
@@ -41,7 +44,7 @@ class SandboxTest {
     @Test
     void processSandboxExecutesCode() {
         ProcessSandbox sb = new ProcessSandbox(5000, 1000, true);
-        String result = sb.execute("echo hello", "shell");
+        String result = sb.exec("echo hello", "shell");
         assertTrue(result.contains("hello") || result.contains("Error"));
     }
 

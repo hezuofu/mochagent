@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.cli;
 
 import io.sketch.mochaagents.AgentBootstrap;
@@ -12,10 +15,8 @@ import java.io.PrintStream;
  *
  * <pre>
  *   mocha mcp serve    → MCP server on stdio
- *   mocha plugin ...   → plugin management
+ *   mocha plugin list  → list loaded plugins
  *   mocha doctor       → diagnostics
- *   mocha update       → version check
- *   mocha auth ...     → authentication
  *   mocha              → interactive REPL
  * </pre>
  * @author lanxia39@163.com
@@ -42,8 +43,25 @@ public final class Main {
             printUsage(out); return 0;
         }
 
+        // ── Session listing ──
+        if (args.length == 1 && "--list".equals(args[0])) {
+            printSessionList(out); return 0;
+        }
+
+        // ── Session resume flags ──
+        String resumeSessionId = null;
+        for (int i = 0; i < args.length; i++) {
+            if ("--resume".equals(args[i]) && i + 1 < args.length) {
+                resumeSessionId = args[++i];
+            } else if ("--continue".equals(args[i])) {
+                resumeSessionId = "latest";
+            }
+        }
+
         ModelConfig modelCfg = parseModelArgs(args);
-        Repl repl = new Repl(modelCfg);
+        Repl repl = resumeSessionId != null
+                ? new Repl(modelCfg, resumeSessionId)
+                : new Repl(modelCfg);
 
         CliCommand mcp = (a, o, e) -> {
             if (a.length == 0) { o.println("Usage: mocha mcp <serve>"); return 1; }
@@ -66,36 +84,22 @@ public final class Main {
         };
 
         CliCommand doctor = (a, o, e) -> {
-            o.println("=== MochaAgents Doctor ===");
-            o.println("Version: " + VERSION);
-            o.println("Java: " + System.getProperty("java.version"));
-            o.println("OS: " + System.getProperty("os.name"));
-            o.println("All checks passed.");
+            o.println("=== MochaAgents v" + VERSION + " ===");
+            o.println("Java:    " + System.getProperty("java.version")
+                    + " | OS: " + System.getProperty("os.name"));
+            o.println("Cores:   " + Runtime.getRuntime().availableProcessors()
+                    + " | Mem: " + (Runtime.getRuntime().maxMemory() >> 20) + "MB");
+            var bootstrap = AgentBootstrap.init();
+            o.println("Tools:   " + bootstrap.toolRegistry().size());
+            o.println("Skills:  " + bootstrap.pluginBootstrap().pluginManager().size());
+            o.println("Status:  OK");
             return 0;
-        };
-
-        CliCommand update = (a, o, e) -> {
-            o.println("Current version: " + VERSION);
-            o.println("MochaAgents is up to date!");
-            return 0;
-        };
-
-        CliCommand auth = (a, o, e) -> {
-            if (a.length == 0) { o.println("Usage: mocha auth <login|logout|status>"); return 1; }
-            switch (a[0]) {
-                case "login": o.println("Login flow not yet implemented."); return 0;
-                case "logout": o.println("Logged out."); return 0;
-                case "status": o.println("Not authenticated."); return 0;
-                default: o.println("Unknown auth subcommand: " + a[0]); return 1;
-            }
         };
 
         Dispatcher d = new Dispatcher()
                 .on("mcp", mcp)
                 .on("plugin", plugin).on("plugins", plugin)
                 .on("doctor", doctor)
-                .on("update", update)
-                .on("auth", auth)
                 .otherwise(repl);
 
         log.info("Dispatching: {}", args[0]);
@@ -118,6 +122,30 @@ public final class Main {
         return cfg;
     }
 
+    private static void printSessionList(PrintStream out) {
+        var store = new io.sketch.mochaagents.session.SessionManager();
+        String cwd = System.getProperty("user.dir", ".");
+        java.util.List<io.sketch.mochaagents.session.SessionManager.SessionMeta> sessions;
+        try { sessions = store.list(cwd); } catch (java.io.IOException e) { sessions = java.util.List.of(); }
+        if (sessions.isEmpty()) {
+            out.println("No sessions found in current project.");
+            return;
+        }
+        out.println("Recent sessions:");
+        int count = 0;
+        for (var s : sessions) {
+            if (count++ >= 10) break;
+            String title = s.title() != null ? s.title() : "(untitled)";
+            out.printf("  %s  %s  %s  %d msgs%n",
+                    s.id().substring(0, 8),
+                    s.startedAt().toString().substring(0, 16).replace("T", " "),
+                    title,
+                    s.messageCount());
+        }
+        out.println();
+        out.println("Resume: mocha --resume <id>    or    mocha --continue");
+    }
+
     private static void printUsage(PrintStream out) {
         out.println("MochaAgents " + VERSION + " — Java agentic coding framework");
         out.println();
@@ -126,9 +154,13 @@ public final class Main {
         out.println("Commands:");
         out.println("  (default)       Interactive REPL");
         out.println("  mcp serve       Start MCP server on stdio");
-        out.println("  plugin          Manage plugins");
-        out.println("  update          Check for updates");
+        out.println("  plugin list     List loaded plugins");
         out.println("  doctor          Run diagnostics");
+        out.println();
+        out.println("Session Options:");
+        out.println("  --list          List recent sessions");
+        out.println("  --resume <id>   Resume a specific session");
+        out.println("  --continue      Resume the latest session");
         out.println();
         out.println("Model Options:");
         out.println("  --model, -m     Model ID (default: mock)");
@@ -138,6 +170,7 @@ public final class Main {
         out.println("Examples:");
         out.println("  mocha --model deepseek-chat");
         out.println("  mocha --model llama3.2 --temperature 0.3");
-        out.println("  mocha --model gpt-4o-mini --model claude-haiku  (multi-model routing)");
+        out.println("  mocha --continue --model gpt-4o-mini");
+        out.println("  mocha --list");
     }
 }

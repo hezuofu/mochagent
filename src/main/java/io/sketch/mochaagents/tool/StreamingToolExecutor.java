@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.tool;
 
 import java.util.*;
@@ -10,14 +13,45 @@ import java.util.function.Consumer;
  * Pattern from claude-code's StreamingToolExecutor (services/tools/StreamingToolExecutor.ts).
  * @author lanxia39@163.com
  */
-public final class StreamingToolExecutor {
+public final class StreamingToolExecutor implements ToolExecutionStrategy {
 
     private final ToolRegistry registry;
-    private final ExecutorService executor = Executors.newCachedThreadPool();
+    private final ToolExecutor pipeline;
+    private final ExecutorService pool = Executors.newCachedThreadPool();
     private final List<TrackedTool> tools = new ArrayList<>();
     private final List<Consumer<ToolEvent>> listeners = new ArrayList<>();
 
-    public StreamingToolExecutor(ToolRegistry registry) { this.registry = registry; }
+    public StreamingToolExecutor(ToolRegistry registry) {
+        this(registry, new ToolExecutor(registry));
+    }
+
+    public StreamingToolExecutor(ToolRegistry registry, ToolExecutor pipeline) {
+        this.registry = registry;
+        this.pipeline = pipeline;
+    }
+
+    // ── ToolExecutionStrategy implementation ──
+
+    @Override
+    public ToolResult execute(String name, Map<String, Object> args) {
+        addTool(name, args);
+        return getRemainingResults().stream()
+                .filter(e -> e.name().equals(name)).findFirst()
+                .map(e -> e.isError() ? ToolResult.Builder.failure(name, e.error(), null)
+                        : ToolResult.Builder.success(name, e.result(), e.durationMs()))
+                .orElse(ToolResult.Builder.failure(name, "No result", null));
+    }
+
+    @Override
+    public List<ToolResult> executeBatch(List<ToolCall> calls) {
+        calls.forEach(c -> addTool(c.name(), c.arguments()));
+        return getRemainingResults().stream()
+                .map(e -> e.isError() ? ToolResult.Builder.failure(e.name(), e.error(), null)
+                        : ToolResult.Builder.success(e.name(), e.result(), e.durationMs()))
+                .toList();
+    }
+
+    // ── Streaming API ──
 
     /** Add a tool call as it streams in. Starts execution immediately if safe. */
     public StreamingToolExecutor addTool(String name, Map<String, Object> args) {
@@ -27,7 +61,9 @@ public final class StreamingToolExecutor {
         TrackedTool tt = new TrackedTool(name, args, "queued", false);
         tools.add(tt);
 
-        if (canExecute(tt)) executeTool(tt, tool);
+        if (canExecute(tt)) {
+            executeTool(tt, tool);
+        }
         return this;
     }
 
@@ -49,7 +85,9 @@ public final class StreamingToolExecutor {
         for (TrackedTool tt : tools) {
             if ("queued".equals(tt.status)) {
                 Tool tool = registry.get(tt.name);
-                if (tool != null && canExecute(tt)) executeTool(tt, tool);
+                if (tool != null && canExecute(tt)) {
+                    executeTool(tt, tool);
+                }
             }
         }
         // Wait for running tools
@@ -70,14 +108,20 @@ public final class StreamingToolExecutor {
     public void onEvent(Consumer<ToolEvent> listener) { listeners.add(listener); }
 
     private boolean canExecute(TrackedTool tt) {
-        if (!"queued".equals(tt.status)) return false;
+        if (!"queued".equals(tt.status)) {
+            return false;
+        }
         Tool tool = registry.get(tt.name);
-        if (tool == null) return true;
+        if (tool == null) {
+            return true;
+        }
         if (!tool.isConcurrencySafe()) {
             for (TrackedTool other : tools) {
                 if (other != tt && "running".equals(other.status)) {
                     Tool otherTool = registry.get(other.name);
-                    if (otherTool != null && !otherTool.isConcurrencySafe()) return false;
+                    if (otherTool != null && !otherTool.isConcurrencySafe()) {
+                        return false;
+                    }
                 }
             }
         }
@@ -89,10 +133,12 @@ public final class StreamingToolExecutor {
         tt.future = CompletableFuture.supplyAsync(() -> {
             long t0 = System.currentTimeMillis();
             try {
-                tt.result = tool.call(tt.args);
-                tt.status = "completed";
+                ToolResult tr = pipeline.execute(tt.name, tt.args);
+                tt.result = tr.isError() ? tr.error() : tr.output();
+                tt.status = tr.isError() ? "error" : "completed";
+                tt.error = tr.isError() ? tr.error() : null;
                 tt.durationMs = System.currentTimeMillis() - t0;
-                listeners.forEach(l -> l.accept(new ToolEvent(tt.name, tt.result, null, tt.durationMs)));
+                listeners.forEach(l -> l.accept(new ToolEvent(tt.name, tt.result, tt.error, tt.durationMs)));
             } catch (Exception e) {
                 tt.error = e.getMessage();
                 tt.status = "error";
@@ -100,13 +146,14 @@ public final class StreamingToolExecutor {
                 // Sibling abort: if a bash-like tool errors, cancel concurrent siblings
                 if (tool.isDestructive() || !tool.isConcurrencySafe()) {
                     for (TrackedTool sib : tools) {
-                        if (sib != tt && sib.future != null && !sib.future.isDone())
+                        if (sib != tt && sib.future != null && !sib.future.isDone()) {
                             sib.future.cancel(true);
+                        }
                     }
                 }
             }
             return null;
-        }, executor);
+        }, pool);
     }
 
     private static class TrackedTool {

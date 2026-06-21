@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.plugin;
 
 import io.sketch.mochaagents.skill.Skill;
@@ -39,6 +42,22 @@ public class PluginManager {
         enabledState.put(descriptor.name(), initialEnabled);
 
         log.debug("Plugin registered: {} (enabled={})", descriptor.name(), initialEnabled);
+    }
+
+    /** Register a Plugin instance — reads @PluginInfo for metadata. */
+    public void registerPlugin(Plugin plugin) {
+        PluginMeta info = plugin.getClass().getAnnotation(PluginMeta.class);
+        if (info == null) {
+            throw new IllegalArgumentException(
+                    "@PluginInfo required on " + plugin.getClass().getName());
+        }
+        PluginDescriptor desc = PluginDescriptor.of(info.name(), info.version(), info.description());
+        var ref = new java.util.concurrent.atomic.AtomicReference<>(desc);
+        plugin.extensions().forEach(e -> ref.set(ref.get().withExtension(e)));
+        register(ref.get());
+        if (plugin instanceof AutoCloseable ac) {
+            /* lifecycle managed by caller */
+        }
     }
 
     /** 注销插件. */

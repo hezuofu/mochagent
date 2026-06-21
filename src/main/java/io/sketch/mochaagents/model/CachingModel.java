@@ -1,0 +1,102 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
+package io.sketch.mochaagents.model;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+
+/**
+ * Response-caching Model decorator — caches identical requests to save cost.
+ * <p>LRU cache with configurable max size. Cache key = hash of messages + parameters.
+ * @author lanxia39@163.com
+ */
+public class CachingModel implements Model {
+
+    private static final Logger log = LoggerFactory.getLogger(CachingModel.class);
+
+    private final Model delegate;
+    private final CostTracker costTracker;
+    private final int maxCacheSize;
+    private final Map<String, ModelResponse> cache;
+
+    public CachingModel(Model delegate, CostTracker costTracker, int maxCacheSize) {
+        this.delegate = delegate;
+        this.costTracker = costTracker;
+        this.maxCacheSize = maxCacheSize;
+        this.cache = new LinkedHashMap<>(maxCacheSize, 0.75f, true) {
+            @Override protected boolean removeEldestEntry(Map.Entry<String, ModelResponse> e) {
+                return size() > maxCacheSize;
+            }
+        };
+    }
+
+    public CachingModel(Model delegate) { this(delegate, new CostTracker(), 100); }
+
+    @Override
+    public ModelResponse complete(ModelRequest request) {
+        String key = cacheKey(request);
+        ModelResponse cached = cache.get(key);
+        if (cached != null) {
+            log.debug("Cache hit: saved {} in + {} out tokens",
+                    cached.promptTokens(), cached.completionTokens());
+            return cached;
+        }
+
+        long start = System.currentTimeMillis();
+        ModelResponse response = delegate.complete(request);
+        long latency = System.currentTimeMillis() - start;
+
+        cache.put(key, response);
+        costTracker.record(delegate.modelName(), response.promptTokens(), response.completionTokens());
+        log.debug("Model call: {}ms, {} in + {} out tokens, total cost=${}",
+                latency, response.promptTokens(), response.completionTokens(),
+                String.format("%.4f", costTracker.estimatedTotalCost()));
+        return response;
+    }
+
+    @Override
+    public CompletableFuture<ModelResponse> completeAsync(ModelRequest request) {
+        return CompletableFuture.supplyAsync(() -> complete(request));
+    }
+
+    @Override
+    public StreamingResponse stream(ModelRequest request) {
+        // streaming not cached
+        return delegate.stream(request);
+    }
+
+    @Override public String modelName() { return delegate.modelName(); }
+    @Override public int maxContextTokens() { return delegate.maxContextTokens(); }
+
+    /** Access the cost tracker for usage reports. */
+    public CostTracker costTracker() { return costTracker; }
+
+    /** Generate usage cost report. */
+    public String report() { return costTracker.report(); }
+
+    /** Clear the cache. */
+    public void clearCache() { cache.clear(); }
+
+    /** Number of cached entries. */
+    public int cacheSize() { return cache.size(); }
+
+    private static String cacheKey(ModelRequest request) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(request.temperature()).append("|").append(request.maxTokens());
+        if (request.messages() != null) {
+            for (var m : request.messages()) {
+                sb.append("|").append(m.get("role")).append(":").append(m.get("content"));
+            }
+        }
+        if (request.prompt() != null) {
+            sb.append("|").append(request.prompt());
+        }
+        // Simple hash — use content length as lightweight key
+        return Integer.toHexString(sb.toString().hashCode()) + ":" + sb.length();
+    }
+}

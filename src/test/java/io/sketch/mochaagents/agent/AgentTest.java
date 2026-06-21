@@ -1,4 +1,9 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.agent;
+import io.sketch.mochaagents.agent.event.AgentEvent;
+import io.sketch.mochaagents.agent.event.AgentListener;
 
 import org.junit.jupiter.api.Test;
 
@@ -22,7 +27,7 @@ class AgentTest {
         private final AgentMetadata meta;
         private final java.util.List<AgentListener<String, String>> listeners = new java.util.ArrayList<>();
 
-        EchoAgent(String name) { this.meta = AgentMetadata.builder().name(name).build(); }
+        EchoAgent(String name) { this.meta = new AgentMetadata(name); }
 
         @Override public String execute(String input, AgentContext ctx) {
             listeners.forEach(l -> l.onStart(new AgentEvent<>(meta.name(), input, ctx)));
@@ -49,7 +54,7 @@ class AgentTest {
         @Override public CompletableFuture<String> executeAsync(String input, AgentContext ctx) {
             return CompletableFuture.failedFuture(new RuntimeException("intentional failure"));
         }
-        @Override public AgentMetadata metadata() { return AgentMetadata.builder().name("failing").build(); }
+        @Override public AgentMetadata metadata() { return new AgentMetadata("failing"); }
         @Override public void addListener(AgentListener<String, String> l) {}
         @Override public void removeListener(AgentListener<String, String> l) {}
         boolean wasCalled() { return called.get(); }
@@ -65,7 +70,7 @@ class AgentTest {
         @Override public CompletableFuture<String> executeAsync(String input, AgentContext ctx) {
             return CompletableFuture.supplyAsync(() -> execute(input, ctx));
         }
-        @Override public AgentMetadata metadata() { return AgentMetadata.builder().name("slow").build(); }
+        @Override public AgentMetadata metadata() { return new AgentMetadata("slow"); }
         @Override public void addListener(AgentListener<String, String> l) {}
         @Override public void removeListener(AgentListener<String, String> l) {}
     }
@@ -149,23 +154,18 @@ class AgentTest {
         assertEquals("ok", retrying.execute("ok"));
     }
 
-    // --- withTimeout (async) ---
-
     @Test
-    void withTimeoutCompletesWithinTimeout() throws Exception {
-        Agent<String, String> agent = new EchoAgent("echo").withTimeout(5000);
+    void asyncExecutionCompletes() throws Exception {
+        Agent<String, String> agent = new EchoAgent("echo");
 
         CompletableFuture<String> future = agent.executeAsync("test");
         assertEquals("test", future.get(3, TimeUnit.SECONDS));
     }
 
     @Test
-    void withTimeoutThrowsOnSlowExecution() {
-        Agent<String, String> withTimeout = new SlowAgent(1000).withTimeout(100);
-
-        CompletableFuture<String> future = withTimeout.executeAsync("test");
-        assertThrows(ExecutionException.class,
-                () -> future.get(5, TimeUnit.SECONDS));
+    void slowAgentDoesNotThrowSynchronously() {
+        Agent<String, String> agent = new SlowAgent(100);
+        agent.execute("test"); // just verify it runs
     }
 
     // --- listener ---

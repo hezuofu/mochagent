@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.tool;
 
 import org.junit.jupiter.api.Test;
@@ -103,6 +106,84 @@ class ToolEdgeTest {
             @Override public SecurityLevel getSecurityLevel() { return SecurityLevel.LOW; }
         };
         assertTrue(t.getAliases().isEmpty());
-        assertEquals("test", t.getUserFacingName());
+        assertEquals("test", t.getName());
+    }
+
+    // ── ToolSchema validation (Pydantic/Zod pattern) ──
+
+    @Test void schemaValidateRequiredFieldMissing() {
+        var schema = ToolSchema.builder()
+                .inputType("object")
+                .inputRequired("path")
+                .build();
+        var result = schema.validate(Map.of(), Map.class);
+        assertFalse(result.isValid());
+        assertTrue(result.getMessage().contains("Missing required"));
+    }
+
+    @Test void schemaValidateRequiredFieldPresent() {
+        var schema = ToolSchema.builder()
+                .inputType("object")
+                .inputRequired("path")
+                .build();
+        var result = schema.validate(Map.of("path", "/tmp"), Map.class);
+        assertTrue(result.isValid());
+    }
+
+    @Test void schemaValidateTypeMismatch() {
+        var schema = ToolSchema.builder()
+                .inputType("object")
+                .inputProperty("count", "integer", "A number", true)
+                .build();
+        var result = schema.validate(Map.of("count", "not-a-number"), Map.class);
+        assertFalse(result.isValid());
+        assertTrue(result.getMessage().contains("expected integer"));
+    }
+
+    @Test void schemaValidateTypeMatches() {
+        var schema = ToolSchema.builder()
+                .inputType("object")
+                .inputProperty("name", "string", "Name", true)
+                .inputProperty("age", "integer", "Age", false)
+                .build();
+        var result = schema.validate(Map.of("name", "Alice", "age", 30), Map.class);
+        assertTrue(result.isValid());
+    }
+
+    @Test void schemaValidateConvertsToRecord() {
+        record TestInput(String name, int count) {}
+        var schema = ToolSchema.builder()
+                .inputType("object")
+                .inputProperty("name", "string", "Name", true)
+                .inputProperty("count", "integer", "Count", true)
+                .build();
+        var result = schema.validate(Map.of("name", "test", "count", 42), TestInput.class);
+        assertTrue(result.isValid());
+        assertTrue(result.hasTypedValue());
+        TestInput typed = result.typedValue();
+        assertEquals("test", typed.name());
+        assertEquals(42, typed.count());
+    }
+
+    @Test void schemaValidateInvalidConversionReturnsError() {
+        record NumInput(int value) {}
+        var schema = ToolSchema.builder()
+                .inputType("object")
+                .inputProperty("value", "integer", "A number", true)
+                .build();
+        var result = schema.validate(Map.of("value", "abc"), NumInput.class);
+        assertFalse(result.isValid());
+    }
+
+    @Test void schemaBuilderCreatesValidSchema() {
+        var schema = ToolSchema.builder()
+                .inputType("object")
+                .inputProperty("file", "string", "File path", true)
+                .outputType("string")
+                .outputDescription("File contents")
+                .build();
+        assertNotNull(schema.getInputSchema());
+        assertNotNull(schema.getOutputSchema());
+        assertEquals("object", schema.getInputSchema().get("type"));
     }
 }

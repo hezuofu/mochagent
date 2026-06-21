@@ -1,6 +1,11 @@
-package io.sketch.mochaagents.agent;
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
 
-import io.sketch.mochaagents.llm.FallbackLLM;
+package io.sketch.mochaagents.agent;
+import io.sketch.mochaagents.MochaException;
+import io.sketch.mochaagents.context.UserWorkspace;
+
+import io.sketch.mochaagents.model.FallbackModel;
 import org.junit.jupiter.api.Test;
 import java.nio.file.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -18,20 +23,20 @@ class UserWorkspaceTest {
     }
 
     @Test void fallbackLLMReturnsHelpfulMessage() {
-        FallbackLLM llm = new FallbackLLM();
-        String r = llm.complete(io.sketch.mochaagents.llm.LLMRequest.builder().build()).content();
-        assertTrue(r.contains("No LLM configured"));
+        FallbackModel llm = new FallbackModel();
+        String r = llm.complete(io.sketch.mochaagents.model.ModelRequest.builder().build()).content();
+        assertTrue(r.contains("No Model configured"));
     }
 
     @Test void exceptionHierarchyHasErrorCodes() {
-        var e = new AgentException.LLMException("test", 429, "gpt-4");
+        var e = new MochaException.LlmException("test", 429, "gpt-4");
         assertTrue(e.isRateLimit());
-        assertTrue(e.retryable());
+        assertTrue(e.isRetryable());
         assertEquals("LLM_ERROR", e.errorCode());
     }
 
     @Test void toolExceptionCarriesContext() {
-        var e = new AgentException.ToolException("rm", "permission denied");
+        var e = new MochaException.ToolException("rm", "permission denied");
         assertEquals("rm", e.toolName());
         assertEquals("TOOL_ERROR", e.errorCode());
     }

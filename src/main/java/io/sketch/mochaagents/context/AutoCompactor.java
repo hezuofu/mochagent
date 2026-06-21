@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.context;
 
 import org.slf4j.Logger;
@@ -34,7 +37,9 @@ public class AutoCompactor {
         int currentTokens = ctx.tokenCount();
         int threshold = (int) (contextLimit * THRESHOLD);
 
-        if (currentTokens < threshold) return false;
+        if (currentTokens < threshold) {
+            return false;
+        }
 
         log.info("Auto-compact: {} / {} tokens ({}%)",
                 currentTokens, contextLimit, String.format("%.0f", 100.0 * currentTokens / contextLimit));
@@ -67,7 +72,9 @@ public class AutoCompactor {
 
     public void trackFile(String path) {
         recentFiles.add(path);
-        if (recentFiles.size() > 10) recentFiles.remove(recentFiles.iterator().next());
+        if (recentFiles.size() > 10) {
+            recentFiles.remove(recentFiles.iterator().next());
+        }
     }
 
     public int compactionCount() { return compactionCount; }

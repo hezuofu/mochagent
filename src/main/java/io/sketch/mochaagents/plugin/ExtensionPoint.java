@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.plugin;
 
 /**
@@ -61,8 +64,18 @@ public interface ExtensionPoint<T> {
         return new Simple<>("EVALUATOR", "Evaluator: " + e.getClass().getSimpleName(), e, priority);
     }
 
-    static ExtensionPoint<io.sketch.mochaagents.agent.react.AgenticLoop<String, String>> loop(
-            io.sketch.mochaagents.agent.react.AgenticLoop<String, String> l, int priority) {
+    static ExtensionPoint<io.sketch.mochaagents.skill.Skill> skill(
+            io.sketch.mochaagents.skill.Skill s, int priority) {
+        return new Simple<>("SKILL", s.name() + " skill", s, priority);
+    }
+
+    static ExtensionPoint<io.sketch.mochaagents.memory.MemoryPlugin> memory(
+            io.sketch.mochaagents.memory.MemoryPlugin p, int priority) {
+        return new Simple<>("MEMORY", "Memory: " + p.name(), p, priority);
+    }
+
+    static ExtensionPoint<io.sketch.mochaagents.agent.AgentLoop<String, String>> loop(
+            io.sketch.mochaagents.agent.AgentLoop<String, String> l, int priority) {
         return new Simple<>("LOOP", "Loop: " + l.getClass().getSimpleName(), l, priority);
     }
 

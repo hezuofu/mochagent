@@ -1,4 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2024-2026 MochaAgents Authors
+
 package io.sketch.mochaagents.skill;
+import java.util.stream.Stream;
 
 import java.util.Collections;
 import java.util.List;
